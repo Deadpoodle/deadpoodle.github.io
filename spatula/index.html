@@ -87,12 +87,13 @@
             
             lastBgIndex = newIndex;
             
-            // This creates a clean filename string like "bg1.png"
-            const imageName = bgImages[newIndex];
+            // This finds the path to your current folder (e.g., /spatula-rain/)
+            const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
             
-            // This forces the browser to treat it as a relative path 
-            // by explicitly NOT using a leading slash.
-            document.body.style.backgroundImage = "url('" + imageName + "')";
+            // This creates a path like /spatula-rain/bg1.png
+            const fullPath = `${directory}/${bgImages[newIndex]}`;
+            
+            document.body.style.backgroundImage = `url('${fullPath}')`;
         }
 
         setInterval(changeBackground, 10000);
