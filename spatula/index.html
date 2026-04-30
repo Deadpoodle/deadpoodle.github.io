@@ -199,28 +199,40 @@
             }
         }
 
-        // --- 3. INTERACTION & AUDIO FIX (ANDROID 1-TAP) ---
+// --- 3. INTERACTION & AUDIO FIX (ANDROID 1-TAP) ---
         
+        let audioUnlocked = false;
+
         function handleInteraction(x, y) {
-            if (audio.paused) {
-                audio.play().then(() => {
-                    console.log("Playback started");
-                }).catch(e => console.log("Playback blocked", e));
+            // Attempt to play immediately on every interaction until it starts
+            if (!audioUnlocked || audio.paused) {
+                audio.play()
+                .then(() => {
+                    audioUnlocked = true; // Mark as successfully playing
+                })
+                .catch(e => {
+                    console.log("Waiting for user gesture...", e);
+                });
             }
             isDragging = true;
             currentX = x;
             currentY = y;
         }
 
+        // Mouse Events
         bigSpatula.addEventListener('mousedown', (e) => {
             handleInteraction(e.clientX, e.clientY);
         });
 
+        // Android Touch Events
         bigSpatula.addEventListener('touchstart', (e) => {
-            // Android: preventDefault here is the "magic bullet" for 1-tap music
-            if (e.cancelable) e.preventDefault(); 
             const touch = e.touches[0];
+            
+            // We call this BEFORE preventDefault to ensure the browser 
+            // sees a direct link between the touch and the audio play.
             handleInteraction(touch.clientX, touch.clientY);
+            
+            if (e.cancelable) e.preventDefault(); 
         }, { passive: false });
 
         window.addEventListener('mousemove', (e) => {
