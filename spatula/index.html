@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatula Rain - Ultimate Edition</title>
+    <title>Got My Spatula!</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <style>
         body, html {
@@ -84,10 +84,13 @@
     </div>
 
     <script>
-        // --- 1. BACKGROUND CONFIGURATION (FIREFOX FIX PATHING) ---
+        // --- 1. BACKGROUND CONFIGURATION ---
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
         let currentLayer = 1;
+
+        // Apply the specific directory fix here
+        const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
 
         function changeBackground() {
             if (bgImages.length === 0) return;
@@ -98,8 +101,9 @@
             
             lastBgIndex = newIndex;
             
-            // FIREFOX FIX: Use simple relative path
-            const imgUrl = `url('${bgImages[newIndex]}')`;
+            // PATH FIX: Combines directory with image name
+            const fullPath = `${directory}/${bgImages[newIndex]}`;
+            const imgUrl = `url('${fullPath}')`;
             
             const activeLayer = document.getElementById('bg' + currentLayer);
             const nextLayer = document.getElementById('bg' + (currentLayer === 1 ? 2 : 1));
@@ -193,14 +197,11 @@
             }
         };
 
-        // Desktop
         bigSpatula.addEventListener('mousedown', (e) => {
             startInteraction(e.clientX, e.clientY);
             tryPlayAudio();
         });
 
-        // Android/Mobile Fix: Play audio immediately on touchstart 
-        // to satisfy user gesture requirements.
         bigSpatula.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             startInteraction(touch.clientX, touch.clientY);
