@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Got My Spatula!</title>
+    <title>Spatula Rain - Ultimate Edition</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <style>
         body, html {
@@ -12,6 +12,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            /* This is the fallback color if images fail */
             background-color: #e8f4f8; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
@@ -27,12 +28,15 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            transition: opacity 1.5s ease-in-out; /* Control fade speed here */
+            transition: opacity 1.5s ease-in-out;
             z-index: -1;
+            /* Ensure layers start invisible so the first load is clean */
+            opacity: 0;
         }
 
-        #bg1 { opacity: 1; }
-        #bg2 { opacity: 0; }
+        /* Force the first layer to be ready for the initial image */
+        #bg1 { z-index: -2; }
+        #bg2 { z-index: -2; }
 
         #canvas {
             display: block;
@@ -56,10 +60,6 @@
             touch-action: none;
         }
 
-        #big-spatula:active {
-            cursor: grabbing;
-        }
-
         .ui-overlay {
             position: absolute;
             bottom: 30px;
@@ -74,7 +74,6 @@
 </head>
 <body>
 
-    <!-- Two layers for seamless fading -->
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
 
@@ -91,40 +90,46 @@
 
     <script>
         // --- 1. BACKGROUND CONFIGURATION & CROSSFADE ---
-        // You can add bg4.png through bg10.png to this array as you create them
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
         let currentLayer = 1;
 
         function changeBackground() {
             if (bgImages.length === 0) return;
+            
             let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * bgImages.length);
-            } while (newIndex === lastBgIndex && bgImages.length > 1);
+            // If only one image, just use it. Otherwise, don't repeat the last one.
+            if (bgImages.length > 1) {
+                do {
+                    newIndex = Math.floor(Math.random() * bgImages.length);
+                } while (newIndex === lastBgIndex);
+            } else {
+                newIndex = 0;
+            }
             
             lastBgIndex = newIndex;
-            
-            // FIREFOX FIX: Use a simple relative path for the url() content
             const imgUrl = `url('${bgImages[newIndex]}')`;
             
             const activeLayer = document.getElementById('bg' + currentLayer);
-            const nextLayer = document.getElementById('bg' + (currentLayer === 1 ? 2 : 1));
+            const nextLayerId = (currentLayer === 1 ? 2 : 1);
+            const nextLayer = document.getElementById('bg' + nextLayerId);
 
-            // Set the image on the hidden layer
+            // Set image on the layer that's about to fade in
             nextLayer.style.backgroundImage = imgUrl;
             
-            // Wait a tiny bit for the browser to "prime" the image, then swap opacities
+            // Give the browser 50ms to register the image load
             setTimeout(() => {
-                nextLayer.style.opacity = 1;
-                activeLayer.style.opacity = 0;
-                currentLayer = (currentLayer === 1 ? 2 : 1);
+                nextLayer.style.opacity = "1";
+                activeLayer.style.opacity = "0";
+                currentLayer = nextLayerId;
             }, 50);
         }
 
-        // Cycle background every 10 seconds
-        setInterval(changeBackground, 10000);
-        changeBackground(); // Initial load
+        // IMPORTANT: Initial trigger
+        window.addEventListener('DOMContentLoaded', () => {
+            changeBackground();
+            setInterval(changeBackground, 10000);
+        });
 
         // --- 2. CANVAS & FALLING LOGIC ---
         const canvas = document.getElementById('canvas');
@@ -201,12 +206,8 @@
             currentX = x;
             currentY = y;
             lastX = x;
-
             if (audio.paused) {
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {});
-                }
+                audio.play().catch(() => {});
             }
         };
 
@@ -216,7 +217,6 @@
             if (targetRotation > maxTilt) targetRotation = maxTilt;
             if (targetRotation < -maxTilt) targetRotation = -maxTilt;
             rotation += (targetRotation - rotation) * 0.15;
-
             bigSpatula.style.left = currentX + 'px';
             bigSpatula.style.top = currentY + 'px';
             bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
@@ -229,8 +229,6 @@
             startInteraction(touch.clientX, touch.clientY);
             e.preventDefault(); 
         }, { passive: false });
-
-        bigSpatula.addEventListener('click', () => { if (audio.paused) audio.play(); });
 
         window.addEventListener('mousemove', (e) => {
             if (isDragging) { currentX = e.clientX; currentY = e.clientY; }
