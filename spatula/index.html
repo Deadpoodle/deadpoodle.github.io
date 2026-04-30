@@ -12,13 +12,11 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            /* This is the fallback color if images fail */
             background-color: #e8f4f8; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
         }
 
-        /* --- BACKGROUND FADE LAYERS --- */
         .bg-layer {
             position: fixed;
             top: 0;
@@ -30,13 +28,10 @@
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
             z-index: -1;
-            /* Ensure layers start invisible so the first load is clean */
-            opacity: 0;
         }
 
-        /* Force the first layer to be ready for the initial image */
-        #bg1 { z-index: -2; }
-        #bg2 { z-index: -2; }
+        #bg1 { opacity: 1; }
+        #bg2 { opacity: 0; }
 
         #canvas {
             display: block;
@@ -89,47 +84,37 @@
     </div>
 
     <script>
-        // --- 1. BACKGROUND CONFIGURATION & CROSSFADE ---
+        // --- 1. BACKGROUND CONFIGURATION (FIREFOX FIX PATHING) ---
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
         let currentLayer = 1;
 
         function changeBackground() {
             if (bgImages.length === 0) return;
-            
             let newIndex;
-            // If only one image, just use it. Otherwise, don't repeat the last one.
-            if (bgImages.length > 1) {
-                do {
-                    newIndex = Math.floor(Math.random() * bgImages.length);
-                } while (newIndex === lastBgIndex);
-            } else {
-                newIndex = 0;
-            }
+            do {
+                newIndex = Math.floor(Math.random() * bgImages.length);
+            } while (newIndex === lastBgIndex && bgImages.length > 1);
             
             lastBgIndex = newIndex;
+            
+            // FIREFOX FIX: Use simple relative path
             const imgUrl = `url('${bgImages[newIndex]}')`;
             
             const activeLayer = document.getElementById('bg' + currentLayer);
-            const nextLayerId = (currentLayer === 1 ? 2 : 1);
-            const nextLayer = document.getElementById('bg' + nextLayerId);
+            const nextLayer = document.getElementById('bg' + (currentLayer === 1 ? 2 : 1));
 
-            // Set image on the layer that's about to fade in
             nextLayer.style.backgroundImage = imgUrl;
             
-            // Give the browser 50ms to register the image load
             setTimeout(() => {
-                nextLayer.style.opacity = "1";
-                activeLayer.style.opacity = "0";
-                currentLayer = nextLayerId;
+                nextLayer.style.opacity = 1;
+                activeLayer.style.opacity = 0;
+                currentLayer = (currentLayer === 1 ? 2 : 1);
             }, 50);
         }
 
-        // IMPORTANT: Initial trigger
-        window.addEventListener('DOMContentLoaded', () => {
-            changeBackground();
-            setInterval(changeBackground, 10000);
-        });
+        setInterval(changeBackground, 10000);
+        changeBackground(); 
 
         // --- 2. CANVAS & FALLING LOGIC ---
         const canvas = document.getElementById('canvas');
@@ -175,22 +160,15 @@
                 this.rotation += this.spin;
                 this.x += this.vx;
                 this.vx *= 0.95;
-
                 const dx = this.x - currentX;
                 const dy = this.y - currentY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                const pushRadius = 150;
-
-                if (distance < pushRadius) {
+                if (distance < 150) {
                     const angle = Math.atan2(dy, dx);
-                    const force = (pushRadius - distance) / pushRadius;
-                    this.vx += Math.cos(angle) * force * 15;
-                    this.y += Math.sin(angle) * force * 5;
+                    this.vx += Math.cos(angle) * ((150 - distance) / 150) * 15;
+                    this.y += Math.sin(angle) * ((150 - distance) / 150) * 5;
                 }
-
                 if (this.y > height + 100) this.reset();
-                if (this.x < -50) this.x = width + 50;
-                if (this.x > width + 50) this.x = -50;
             }
             draw() {
                 ctx.save();
@@ -201,32 +179,32 @@
             }
         }
 
+        // --- 3. INTERACTION & AUDIO FIX (ANDROID) ---
         const startInteraction = (x, y) => {
             isDragging = true;
             currentX = x;
             currentY = y;
             lastX = x;
+        };
+
+        const tryPlayAudio = () => {
             if (audio.paused) {
-                audio.play().catch(() => {});
+                audio.play().catch(e => console.log("Audio play failed:", e));
             }
         };
 
-        const updateSpatulaVisuals = () => {
-            let velocityX = currentX - lastX;
-            let targetRotation = velocityX * 1.8; 
-            if (targetRotation > maxTilt) targetRotation = maxTilt;
-            if (targetRotation < -maxTilt) targetRotation = -maxTilt;
-            rotation += (targetRotation - rotation) * 0.15;
-            bigSpatula.style.left = currentX + 'px';
-            bigSpatula.style.top = currentY + 'px';
-            bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-            lastX = currentX;
-        };
+        // Desktop
+        bigSpatula.addEventListener('mousedown', (e) => {
+            startInteraction(e.clientX, e.clientY);
+            tryPlayAudio();
+        });
 
-        bigSpatula.addEventListener('mousedown', (e) => startInteraction(e.clientX, e.clientY));
+        // Android/Mobile Fix: Play audio immediately on touchstart 
+        // to satisfy user gesture requirements.
         bigSpatula.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             startInteraction(touch.clientX, touch.clientY);
+            tryPlayAudio();
             e.preventDefault(); 
         }, { passive: false });
 
@@ -248,12 +226,17 @@
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            if (!isDragging) {
-                rotation += (0 - rotation) * 0.1;
-                bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-            } else {
-                updateSpatulaVisuals();
-            }
+            let velocityX = currentX - lastX;
+            let targetRotation = isDragging ? velocityX * 1.8 : 0;
+            if (targetRotation > maxTilt) targetRotation = maxTilt;
+            if (targetRotation < -maxTilt) targetRotation = -maxTilt;
+            rotation += (targetRotation - rotation) * 0.15;
+
+            bigSpatula.style.left = currentX + 'px';
+            bigSpatula.style.top = currentY + 'px';
+            bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+            
+            lastX = currentX;
             fallingSpatulas.forEach(s => { s.update(); s.draw(); });
             requestAnimationFrame(animate);
         }
