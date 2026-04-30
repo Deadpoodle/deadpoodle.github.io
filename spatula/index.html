@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatula Rain - Pro Experience</title>
+    <title>Spatula Rain - Ultimate Edition</title>
     <style>
         body, html {
             margin: 0;
@@ -17,7 +17,7 @@
             background-position: center;
             background-repeat: no-repeat;
             background-color: #e8f4f8; 
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
         }
 
@@ -34,10 +34,10 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 50px;
+            width: 180px;
             height: auto;
             cursor: grab;
-            /* Default transform: centered */
+            /* Centering + initial rotation */
             transform: translate(-50%, -50%) rotate(0deg);
             z-index: 10;
             -webkit-user-drag: none;
@@ -66,16 +66,16 @@
 
     <img id="big-spatula" src="big_spatula.png" alt="Big Spatula" draggable="false">
 
-    <audio id="spatula-audio" src="got_my_spatula.mp3" loop></audio>
+    <!-- Preload auto helps mobile devices start the download earlier -->
+    <audio id="spatula-audio" src="got_my_spatula.mp3" preload="auto" loop></audio>
 
     <div class="ui-overlay">
-        <h2>Everything's alright!</h2>
-		<p>Everything is A-OK!</p>
+        <h2>Grab the Spatula!</h2>
     </div>
 
     <script>
         // --- 1. BACKGROUND CONFIGURATION ---
-        // Edit these names to match your files in the /img folder
+        // Using relative paths (no leading slash) for GitHub Pages compatibility
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
 
@@ -87,12 +87,12 @@
             } while (newIndex === lastBgIndex && bgImages.length > 1);
             
             lastBgIndex = newIndex;
-            const imgPath = './img/' + bgImages[newIndex];
+            // Use ./img/ to ensure it stays within the project folder
+            const imgPath = `./img/${bgImages[newIndex]}`;
             document.body.style.backgroundImage = `url('${imgPath}')`;
         }
 
-        // Cycle every 30 seconds
-        setInterval(changeBackground, 10000);
+        setInterval(changeBackground, 30000);
         changeBackground();
 
         // --- 2. CANVAS & FALLING LOGIC ---
@@ -111,7 +111,6 @@
         let currentX = window.innerWidth / 2;
         let currentY = window.innerHeight / 2;
         
-        // Rotation & Tilt Variables
         let lastX = currentX;
         let rotation = 0;
         const maxTilt = 25; 
@@ -142,7 +141,6 @@
                 this.x += this.vx;
                 this.vx *= 0.95;
 
-                // Collision Repulsion logic
                 const dx = this.x - currentX;
                 const dy = this.y - currentY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -168,29 +166,33 @@
             }
         }
 
-        // --- 3. INTERACTION LOGIC ---
+        // --- 3. INTERACTION & AUDIO UNLOCKING ---
         const startInteraction = (x, y) => {
             isDragging = true;
             currentX = x;
             currentY = y;
             lastX = x;
+
+            // Unlock audio on first touch
             if (audio.paused) {
-                audio.play().catch(e => console.log("Audio waiting for user..."));
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Browser blocked initial playback:", error);
+                    });
+                }
             }
         };
 
         const updateSpatulaVisuals = () => {
-            // Calculate tilt based on horizontal speed
             let velocityX = currentX - lastX;
             let targetRotation = velocityX * 1.8; 
             
             if (targetRotation > maxTilt) targetRotation = maxTilt;
             if (targetRotation < -maxTilt) targetRotation = -maxTilt;
 
-            // Smooth the rotation
             rotation += (targetRotation - rotation) * 0.15;
 
-            // Apply Move and Tilt
             bigSpatula.style.left = currentX + 'px';
             bigSpatula.style.top = currentY + 'px';
             bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
@@ -198,13 +200,21 @@
             lastX = currentX;
         };
 
+        // Desktop Events
         bigSpatula.addEventListener('mousedown', (e) => startInteraction(e.clientX, e.clientY));
 
+        // Mobile Events
         bigSpatula.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             startInteraction(touch.clientX, touch.clientY);
+            // Prevents scrolling while dragging the spatula
             e.preventDefault(); 
         }, { passive: false });
+
+        // Backup Click for stubborn mobile browsers
+        bigSpatula.addEventListener('click', () => {
+            if (audio.paused) audio.play();
+        });
 
         window.addEventListener('mousemove', (e) => {
             if (isDragging) {
@@ -225,11 +235,10 @@
         window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('touchend', () => isDragging = false);
 
-        // --- 4. THE ANIMATION LOOP ---
+        // --- 4. ANIMATION LOOP ---
         function animate() {
             ctx.clearRect(0, 0, width, height);
             
-            // Handle big spatula rotation even when not moving (to return to 0)
             if (!isDragging) {
                 rotation += (0 - rotation) * 0.1;
                 bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
@@ -237,7 +246,6 @@
                 updateSpatulaVisuals();
             }
 
-            // Update falling items
             fallingSpatulas.forEach(s => { 
                 s.update(); 
                 s.draw(); 
@@ -248,7 +256,6 @@
 
         window.addEventListener('resize', init);
         
-        // Final start trigger
         fallingImg.onload = () => { 
             init(); 
             animate(); 
