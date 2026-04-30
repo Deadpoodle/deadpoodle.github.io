@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatula Rain - Ultimate Edition</title>
+    <title>Got My Spatula</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <style>
         body, html {
             margin: 0;
@@ -37,7 +38,6 @@
             width: 50px;
             height: auto;
             cursor: grab;
-            /* Centering + initial rotation */
             transform: translate(-50%, -50%) rotate(0deg);
             z-index: 10;
             -webkit-user-drag: none;
@@ -66,7 +66,6 @@
 
     <img id="big-spatula" src="big_spatula.png" alt="Big Spatula" draggable="false">
 
-    <!-- Preload auto helps mobile devices start the download earlier -->
     <audio id="spatula-audio" src="got_my_spatula.mp3" preload="auto" loop></audio>
 
     <div class="ui-overlay">
@@ -76,7 +75,6 @@
 
     <script>
         // --- 1. BACKGROUND CONFIGURATION ---
-        // Images are now in the same folder as index.html
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
 
@@ -89,12 +87,12 @@
             
             lastBgIndex = newIndex;
             
-            // UPDATED: Removed the './img/' prefix as files moved to root
-            const imgPath = bgImages[newIndex];
+            // FIX: Using './' ensures the browser looks in the current project directory
+            // instead of the domain root.
+            const imgPath = `./${bgImages[newIndex]}`;
             document.body.style.backgroundImage = `url('${imgPath}')`;
         }
 
-        // Timing updated as per your current settings
         setInterval(changeBackground, 10000);
         changeBackground();
 
@@ -169,19 +167,17 @@
             }
         }
 
-        // --- 3. INTERACTION & AUDIO UNLOCKING ---
         const startInteraction = (x, y) => {
             isDragging = true;
             currentX = x;
             currentY = y;
             lastX = x;
 
-            // Unlock audio on first touch
             if (audio.paused) {
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.log("Browser blocked initial playback:", error);
+                        console.log("Audio blocked:", error);
                     });
                 }
             }
@@ -203,18 +199,14 @@
             lastX = currentX;
         };
 
-        // Desktop Events
         bigSpatula.addEventListener('mousedown', (e) => startInteraction(e.clientX, e.clientY));
 
-        // Mobile Events
         bigSpatula.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             startInteraction(touch.clientX, touch.clientY);
-            // Prevents scrolling while dragging the spatula
             e.preventDefault(); 
         }, { passive: false });
 
-        // Backup Click for stubborn mobile browsers
         bigSpatula.addEventListener('click', () => {
             if (audio.paused) audio.play();
         });
@@ -238,7 +230,6 @@
         window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('touchend', () => isDragging = false);
 
-        // --- 4. ANIMATION LOOP ---
         function animate() {
             ctx.clearRect(0, 0, width, height);
             
