@@ -87,7 +87,7 @@
             } while (newIndex === lastBgIndex && bgImages.length > 1);
             
             lastBgIndex = newIndex;
-            const imgPath = `img/${bgImages[newIndex]}`;
+            const imgPath = './img/' + bgImages[newIndex];
             document.body.style.backgroundImage = `url('${imgPath}')`;
         }
 
