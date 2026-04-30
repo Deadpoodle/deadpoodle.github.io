@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Got My Spatula</title>
+    <title>Got My Spatula!</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <style>
         body, html {
@@ -17,7 +17,7 @@
             user-select: none; 
         }
 
-        /* --- CROSSFADE LAYERS --- */
+        /* --- BACKGROUND FADE LAYERS --- */
         .bg-layer {
             position: fixed;
             top: 0;
@@ -27,8 +27,7 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            /* Smooth 1.5 second transition */
-            transition: opacity 1.5s ease-in-out;
+            transition: opacity 1.5s ease-in-out; /* Control fade speed here */
             z-index: -1;
         }
 
@@ -75,7 +74,7 @@
 </head>
 <body>
 
-    <!-- Dual layers for the fade effect -->
+    <!-- Two layers for seamless fading -->
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
 
@@ -91,15 +90,14 @@
     </div>
 
     <script>
-        // --- 1. DYNAMIC BACKGROUND CONFIGURATION ---
-        // Just add your new filenames to this list (e.g., 'bg4.png', 'bg5.png')
+        // --- 1. BACKGROUND CONFIGURATION & CROSSFADE ---
+        // Add your new backgrounds here (up to bg10.png)
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
         let currentLayer = 1;
 
         function changeBackground() {
             if (bgImages.length === 0) return;
-            
             let newIndex;
             do {
                 newIndex = Math.floor(Math.random() * bgImages.length);
@@ -107,29 +105,27 @@
             
             lastBgIndex = newIndex;
             
-            // Directory-aware path for Firefox/GitHub Pages
-            const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-            const fullPath = `${directory}/${bgImages[newIndex]}`;
+            // FIREFOX FIX: Use a simple relative path for the url() content
+            const imgUrl = `url('${bgImages[newIndex]}')`;
             
             const activeLayer = document.getElementById('bg' + currentLayer);
             const nextLayer = document.getElementById('bg' + (currentLayer === 1 ? 2 : 1));
 
-            // 1. Set the image on the layer that is currently invisible
-            nextLayer.style.backgroundImage = `url('${fullPath}')`;
+            // Set the image on the hidden layer
+            nextLayer.style.backgroundImage = imgUrl;
             
-            // 2. Small timeout ensures the browser has registered the image 
-            // before we trigger the CSS opacity transition
+            // Wait a tiny bit for the browser to "prime" the image, then swap opacities
+            // This eliminates the white flash between changes
             setTimeout(() => {
                 nextLayer.style.opacity = 1;
                 activeLayer.style.opacity = 0;
-                // Swap the tracker
                 currentLayer = (currentLayer === 1 ? 2 : 1);
-            }, 100); 
+            }, 50);
         }
 
-        // Change every 10 seconds
+        // Change background every 10 seconds
         setInterval(changeBackground, 10000);
-        changeBackground();
+        changeBackground(); // Initial load
 
         // --- 2. CANVAS & FALLING LOGIC ---
         const canvas = document.getElementById('canvas');
@@ -206,8 +202,12 @@
             currentX = x;
             currentY = y;
             lastX = x;
+
             if (audio.paused) {
-                audio.play().catch(() => {});
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(() => {});
+                }
             }
         };
 
