@@ -87,10 +87,12 @@
             
             lastBgIndex = newIndex;
             
-            // Just the filename. No slashes, no dots. 
-            // This is the most "bomb-proof" way for GitHub Pages.
-            const imgPath = bgImages[newIndex]; 
-            document.body.style.backgroundImage = `url('${imgPath}')`;
+            // This creates a clean filename string like "bg1.png"
+            const imageName = bgImages[newIndex];
+            
+            // This forces the browser to treat it as a relative path 
+            // by explicitly NOT using a leading slash.
+            document.body.style.backgroundImage = "url('" + imageName + "')";
         }
 
         setInterval(changeBackground, 10000);
