@@ -34,7 +34,7 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 180px;
+            width: 50px;
             height: auto;
             cursor: grab;
             /* Centering + initial rotation */
@@ -70,12 +70,13 @@
     <audio id="spatula-audio" src="got_my_spatula.mp3" preload="auto" loop></audio>
 
     <div class="ui-overlay">
-        <h2>Grab the Spatula!</h2>
+        <h2>Everything's Alright!</h2>
+        <p>Oh Everything is A-OK!</p>
     </div>
 
     <script>
         // --- 1. BACKGROUND CONFIGURATION ---
-        // Using relative paths (no leading slash) for GitHub Pages compatibility
+        // Images are now in the same folder as index.html
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
 
@@ -87,12 +88,14 @@
             } while (newIndex === lastBgIndex && bgImages.length > 1);
             
             lastBgIndex = newIndex;
-            // Use ./img/ to ensure it stays within the project folder
-            const imgPath = `./img/${bgImages[newIndex]}`;
+            
+            // UPDATED: Removed the './img/' prefix as files moved to root
+            const imgPath = bgImages[newIndex];
             document.body.style.backgroundImage = `url('${imgPath}')`;
         }
 
-        setInterval(changeBackground, 30000);
+        // Timing updated as per your current settings
+        setInterval(changeBackground, 10000);
         changeBackground();
 
         // --- 2. CANVAS & FALLING LOGIC ---
