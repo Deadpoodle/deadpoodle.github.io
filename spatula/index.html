@@ -28,6 +28,8 @@
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
             z-index: -1;
+            /* Ensure they are visible if opacity is 1 */
+            background-color: transparent;
         }
 
         #bg1 { opacity: 1; }
@@ -89,9 +91,6 @@
         let lastBgIndex = -1;
         let currentLayer = 1;
 
-        // Apply the specific directory fix here
-        const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-
         function changeBackground() {
             if (bgImages.length === 0) return;
             let newIndex;
@@ -101,22 +100,25 @@
             
             lastBgIndex = newIndex;
             
-            // PATH FIX: Combines directory with image name
-            const fullPath = `${directory}/${bgImages[newIndex]}`;
-            const imgUrl = `url('${fullPath}')`;
+            // CLEAN PATH FIX: Use a simple relative path which is most reliable
+            const imgUrl = `url('${bgImages[newIndex]}')`;
             
             const activeLayer = document.getElementById('bg' + currentLayer);
-            const nextLayer = document.getElementById('bg' + (currentLayer === 1 ? 2 : 1));
+            const nextLayerNum = (currentLayer === 1 ? 2 : 1);
+            const nextLayer = document.getElementById('bg' + nextLayerNum);
 
+            // 1. Set the image
             nextLayer.style.backgroundImage = imgUrl;
             
+            // 2. Short delay to ensure browser has fetched/rendered the image before fading
             setTimeout(() => {
                 nextLayer.style.opacity = 1;
                 activeLayer.style.opacity = 0;
-                currentLayer = (currentLayer === 1 ? 2 : 1);
-            }, 50);
+                currentLayer = nextLayerNum;
+            }, 100);
         }
 
+        // Initialize and Set Interval
         setInterval(changeBackground, 10000);
         changeBackground(); 
 
@@ -126,7 +128,7 @@
         const bigSpatula = document.getElementById('big-spatula');
         const audio = document.getElementById('spatula-audio');
 
-        let width, height;
+        let width, height, lastX;
         const fallingSpatulas = [];
         const spatulaCount = 45; 
         const fallingImg = new Image();
@@ -135,7 +137,6 @@
         let isDragging = false;
         let currentX = window.innerWidth / 2;
         let currentY = window.innerHeight / 2;
-        let lastX = currentX;
         let rotation = 0;
         const maxTilt = 25; 
 
@@ -146,6 +147,7 @@
             for (let i = 0; i < spatulaCount; i++) {
                 fallingSpatulas.push(new Spatula());
             }
+            lastX = currentX;
         }
 
         class Spatula {
@@ -184,29 +186,26 @@
         }
 
         // --- 3. INTERACTION & AUDIO FIX (ANDROID) ---
-        const startInteraction = (x, y) => {
+        
+        // Immediate play function to satisfy Android's gesture policy
+        function handleInteraction(x, y) {
+            if (audio.paused) {
+                audio.play().catch(e => console.log("Audio skipped:", e));
+            }
             isDragging = true;
             currentX = x;
             currentY = y;
-            lastX = x;
-        };
-
-        const tryPlayAudio = () => {
-            if (audio.paused) {
-                audio.play().catch(e => console.log("Audio play failed:", e));
-            }
-        };
+        }
 
         bigSpatula.addEventListener('mousedown', (e) => {
-            startInteraction(e.clientX, e.clientY);
-            tryPlayAudio();
+            handleInteraction(e.clientX, e.clientY);
         });
 
         bigSpatula.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
-            startInteraction(touch.clientX, touch.clientY);
-            tryPlayAudio();
-            e.preventDefault(); 
+            handleInteraction(touch.clientX, touch.clientY);
+            // preventDefault is critical here to stop the "double-tap" behavior
+            if (e.cancelable) e.preventDefault(); 
         }, { passive: false });
 
         window.addEventListener('mousemove', (e) => {
@@ -218,7 +217,6 @@
                 const touch = e.touches[0];
                 currentX = touch.clientX;
                 currentY = touch.clientY;
-                e.preventDefault();
             }
         }, { passive: false });
 
