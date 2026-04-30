@@ -91,7 +91,7 @@
 
     <script>
         // --- 1. BACKGROUND CONFIGURATION & CROSSFADE ---
-        // Add your new backgrounds here (up to bg10.png)
+        // You can add bg4.png through bg10.png to this array as you create them
         const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
         let lastBgIndex = -1;
         let currentLayer = 1;
@@ -115,7 +115,6 @@
             nextLayer.style.backgroundImage = imgUrl;
             
             // Wait a tiny bit for the browser to "prime" the image, then swap opacities
-            // This eliminates the white flash between changes
             setTimeout(() => {
                 nextLayer.style.opacity = 1;
                 activeLayer.style.opacity = 0;
@@ -123,7 +122,7 @@
             }, 50);
         }
 
-        // Change background every 10 seconds
+        // Cycle background every 10 seconds
         setInterval(changeBackground, 10000);
         changeBackground(); // Initial load
 
