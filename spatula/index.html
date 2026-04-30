@@ -28,11 +28,10 @@
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
             z-index: -1;
-            /* Ensure they are visible if opacity is 1 */
-            background-color: transparent;
         }
 
-        #bg1 { opacity: 1; }
+        /* Set initial states clearly */
+        #bg1 { opacity: 0; }
         #bg2 { opacity: 0; }
 
         #canvas {
@@ -91,36 +90,43 @@
         let lastBgIndex = -1;
         let currentLayer = 1;
 
-        function changeBackground() {
+        function changeBackground(isInitial = false) {
             if (bgImages.length === 0) return;
+            
             let newIndex;
             do {
                 newIndex = Math.floor(Math.random() * bgImages.length);
             } while (newIndex === lastBgIndex && bgImages.length > 1);
             
             lastBgIndex = newIndex;
-            
-            // CLEAN PATH FIX: Use a simple relative path which is most reliable
             const imgUrl = `url('${bgImages[newIndex]}')`;
             
-            const activeLayer = document.getElementById('bg' + currentLayer);
-            const nextLayerNum = (currentLayer === 1 ? 2 : 1);
-            const nextLayer = document.getElementById('bg' + nextLayerNum);
+            const layer1 = document.getElementById('bg1');
+            const layer2 = document.getElementById('bg2');
 
-            // 1. Set the image
-            nextLayer.style.backgroundImage = imgUrl;
-            
-            // 2. Short delay to ensure browser has fetched/rendered the image before fading
-            setTimeout(() => {
-                nextLayer.style.opacity = 1;
-                activeLayer.style.opacity = 0;
-                currentLayer = nextLayerNum;
-            }, 100);
+            if (isInitial) {
+                // Force first layer to show immediately
+                layer1.style.backgroundImage = imgUrl;
+                layer1.style.opacity = "1";
+                currentLayer = 1;
+            } else {
+                const activeLayer = (currentLayer === 1) ? layer1 : layer2;
+                const nextLayer = (currentLayer === 1) ? layer2 : layer1;
+
+                nextLayer.style.backgroundImage = imgUrl;
+                
+                // Small timeout to allow the browser to swap the image source before fading
+                setTimeout(() => {
+                    nextLayer.style.opacity = "1";
+                    activeLayer.style.opacity = "0";
+                    currentLayer = (currentLayer === 1 ? 2 : 1);
+                }, 100);
+            }
         }
 
-        // Initialize and Set Interval
-        setInterval(changeBackground, 10000);
-        changeBackground(); 
+        // Start cycling
+        changeBackground(true); 
+        setInterval(() => changeBackground(false), 10000);
 
         // --- 2. CANVAS & FALLING LOGIC ---
         const canvas = document.getElementById('canvas');
@@ -185,12 +191,12 @@
             }
         }
 
-        // --- 3. INTERACTION & AUDIO FIX (ANDROID) ---
+        // --- 3. INTERACTION & AUDIO FIX ---
         
-        // Immediate play function to satisfy Android's gesture policy
         function handleInteraction(x, y) {
+            // Android Fix: Attempt to play immediately on the first touch event
             if (audio.paused) {
-                audio.play().catch(e => console.log("Audio skipped:", e));
+                audio.play().catch(e => console.log("Audio Play Blocked:", e));
             }
             isDragging = true;
             currentX = x;
@@ -204,7 +210,6 @@
         bigSpatula.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             handleInteraction(touch.clientX, touch.clientY);
-            // preventDefault is critical here to stop the "double-tap" behavior
             if (e.cancelable) e.preventDefault(); 
         }, { passive: false });
 
