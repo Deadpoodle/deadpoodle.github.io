@@ -12,7 +12,8 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #e8f4f8; 
+            /* Changed to transparent so bg-layers show through */
+            background-color: transparent; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
         }
@@ -21,16 +22,18 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            min-width: 100%;
+            min-height: 100%;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
-            z-index: -1;
+            /* Ensure these are above the base body but below everything else */
+            z-index: -1; 
         }
 
-        /* Set initial states clearly */
         #bg1 { opacity: 0; }
         #bg2 { opacity: 0; }
 
@@ -69,6 +72,8 @@
     </style>
 </head>
 <body>
+    <!-- Fallback color container to ensure no white flash -->
+    <div style="position:fixed; top:0; left:0; width:100%; height:100%; background-color:#e8f4f8; z-index:-2;"></div>
 
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
@@ -90,6 +95,9 @@
         let lastBgIndex = -1;
         let currentLayer = 1;
 
+        // Pathing Fix
+        const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+
         function changeBackground(isInitial = false) {
             if (bgImages.length === 0) return;
             
@@ -99,13 +107,15 @@
             } while (newIndex === lastBgIndex && bgImages.length > 1);
             
             lastBgIndex = newIndex;
-            const imgUrl = `url('${bgImages[newIndex]}')`;
+            
+            // Apply the directory fix you requested
+            const fullPath = `${directory}/${bgImages[newIndex]}`;
+            const imgUrl = `url("${fullPath}")`;
             
             const layer1 = document.getElementById('bg1');
             const layer2 = document.getElementById('bg2');
 
             if (isInitial) {
-                // Force first layer to show immediately
                 layer1.style.backgroundImage = imgUrl;
                 layer1.style.opacity = "1";
                 currentLayer = 1;
@@ -115,7 +125,6 @@
 
                 nextLayer.style.backgroundImage = imgUrl;
                 
-                // Small timeout to allow the browser to swap the image source before fading
                 setTimeout(() => {
                     nextLayer.style.opacity = "1";
                     activeLayer.style.opacity = "0";
@@ -124,7 +133,6 @@
             }
         }
 
-        // Start cycling
         changeBackground(true); 
         setInterval(() => changeBackground(false), 10000);
 
@@ -191,12 +199,13 @@
             }
         }
 
-        // --- 3. INTERACTION & AUDIO FIX ---
+        // --- 3. INTERACTION & AUDIO FIX (ANDROID 1-TAP) ---
         
         function handleInteraction(x, y) {
-            // Android Fix: Attempt to play immediately on the first touch event
             if (audio.paused) {
-                audio.play().catch(e => console.log("Audio Play Blocked:", e));
+                audio.play().then(() => {
+                    console.log("Playback started");
+                }).catch(e => console.log("Playback blocked", e));
             }
             isDragging = true;
             currentX = x;
@@ -208,9 +217,10 @@
         });
 
         bigSpatula.addEventListener('touchstart', (e) => {
+            // Android: preventDefault here is the "magic bullet" for 1-tap music
+            if (e.cancelable) e.preventDefault(); 
             const touch = e.touches[0];
             handleInteraction(touch.clientX, touch.clientY);
-            if (e.cancelable) e.preventDefault(); 
         }, { passive: false });
 
         window.addEventListener('mousemove', (e) => {
