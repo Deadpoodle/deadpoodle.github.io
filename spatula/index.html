@@ -87,9 +87,9 @@
             
             lastBgIndex = newIndex;
             
-            // FIX: Using './' ensures the browser looks in the current project directory
-            // instead of the domain root.
-            const imgPath = `./${bgImages[newIndex]}`;
+            // Just the filename. No slashes, no dots. 
+            // This is the most "bomb-proof" way for GitHub Pages.
+            const imgPath = bgImages[newIndex]; 
             document.body.style.backgroundImage = `url('${imgPath}')`;
         }
 
