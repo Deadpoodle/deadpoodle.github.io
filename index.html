@@ -1080,6 +1080,7 @@
           <div class="field-group">
             <label>Item Type</label>
             <select id="itemType">
+              <option value="">— None —</option>
               <option>Weapon</option>
               <option>Armour</option>
               <option>Wand</option>
@@ -1540,7 +1541,7 @@ function syncCard() {
   if (attune === 'custom') attune = $('attunementCustom').value;
 
   $('previewName').textContent   = name;
-  $('previewSubtype').textContent = subtype ? `${type} • ${subtype}` : type;
+  $('previewSubtype').textContent = type ? (subtype ? `${type} • ${subtype}` : type) : subtype;
   $('previewBonus').textContent  = bonus  || '—';
   $('previewDamage').textContent = damage || '—';
   $('previewWeight').textContent = weight || '—';
@@ -1883,7 +1884,7 @@ function buildCardNode(s) {
   content.innerHTML = `
     <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
       <div class="card-item-name" style="font-family:Cinzel,serif;font-size:1.15rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
-      <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.subtype ? `${s.type} • ${s.subtype}` : (s.type||'')}</div>
+      <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
       <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
     <div class="card-divider"></div>
