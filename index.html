@@ -728,7 +728,7 @@
 
   /* Footer of card */
   .card-footer {
-    padding: 8px 18px 4px;
+    padding: 8px 18px 14px;
     text-align: center;
   }
 
@@ -2187,7 +2187,7 @@ function buildCardNode(s) {
       <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.6;color:${inkCol};">${descHtml}</div>
     </div>
     ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:14px;border-top:1px solid rgba(90,60,30,0.2);">Requires Attunement ${attuneText}</div>` : ''}
-    <div class="card-footer" style="padding:8px 18px 4px;text-align:center;">
+    <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
       <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.source || ''}</div>
     </div>
   `;
