@@ -324,7 +324,8 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    min-height: var(--card-h);
+    height: 580px;
+    overflow: hidden;
   }
 
   /* Ornate border frame */
@@ -487,6 +488,8 @@
   .card-body {
     padding: 8px 20px 16px;
     flex: 1;
+    overflow: hidden;
+    min-height: 0;
   }
 
   .card-description {
@@ -625,27 +628,21 @@
     z-index: 2;
     background: rgba(12, 6, 2, 0.95);
     border-bottom: 1px solid rgba(180,130,60,0.18);
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .history-bar-inner {
     display: flex;
     align-items: stretch;
-    gap: 0;
-    max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
+    overflow: hidden;
+    height: 48px;
+    flex-shrink: 0;
   }
-  .history-bar-inner::-webkit-scrollbar { display: none; }
 
+  /* Fixed left label */
   .history-label {
     font-family: 'Cinzel', serif;
     font-size: 0.62rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #6a4e2e;
-    padding: 0 1rem;
+    padding: 0 0.85rem;
     display: flex;
     align-items: center;
     white-space: nowrap;
@@ -653,6 +650,41 @@
     flex-shrink: 0;
     gap: 0.4rem;
   }
+
+  /* Arrow scroll buttons */
+  .history-arrow {
+    flex-shrink: 0;
+    width: 28px;
+    background: rgba(12,6,2,0.95);
+    border: none;
+    border-right: 1px solid rgba(180,130,60,0.1);
+    color: #6a4e2e;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s, opacity 0.2s;
+    opacity: 0.35;
+    padding: 0;
+  }
+  .history-arrow:last-of-type { border-right: none; border-left: 1px solid rgba(180,130,60,0.1); }
+  .history-arrow:hover { color: var(--gold-light); background: rgba(180,130,60,0.07); }
+  .history-arrow.active { opacity: 1; color: #c9a96e; }
+
+  /* Scrollable track — the only part that scrolls */
+  .history-track {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    /* Hide scrollbar visually but keep it functional */
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .history-track::-webkit-scrollbar { display: none; }
 
   .history-empty {
     font-family: 'Crimson Pro', serif;
@@ -662,6 +694,12 @@
     padding: 0.55rem 1rem;
     display: flex;
     align-items: center;
+    white-space: nowrap;
+  }
+
+  #historyItems {
+    display: flex;
+    align-items: stretch;
   }
 
   .history-item {
@@ -673,7 +711,7 @@
     cursor: pointer;
     transition: background 0.15s;
     flex-shrink: 0;
-    max-width: 180px;
+    max-width: 175px;
     position: relative;
   }
 
@@ -748,26 +786,26 @@
     letter-spacing: 0.1em;
     padding: 0.3rem 0.8rem;
     background: transparent;
-    border: 1px solid rgba(180,130,60,0.3);
-    border-radius: 3px;
+    border: none;
+    border-left: 1px solid rgba(180,130,60,0.2);
+    border-radius: 0;
     color: #8a6a3a;
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
     text-transform: uppercase;
-    margin: auto 0.8rem;
     flex-shrink: 0;
-    align-self: center;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
   }
 
   .history-save-btn:hover {
-    border-color: rgba(180,130,60,0.65);
     color: var(--gold-light);
     background: rgba(180,130,60,0.08);
   }
 
   .history-save-btn.flash {
-    border-color: var(--gold);
     color: var(--gold-light);
     background: rgba(180,130,60,0.15);
   }
@@ -822,69 +860,64 @@
     z-index: 9998;
   }
 
-  /* ── PRINT / EXPORT ── */
-  @media print {
-    @page { size: A4 landscape; margin: 8mm; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { background: white; margin: 0; }
-    body::before { display: none; }
-    .progress-overlay, #offscreenRender { display: none !important; }
-    /* Single-item print: hide everything except the card */
-    body.print-single header,
-    body.print-single .history-bar,
-    body.print-single .controls,
-    body.print-single .scale-control,
-    body.print-single .export-hint,
-    body.print-single .progress-overlay { display: none !important; }
-    body.print-single .workspace { grid-template-columns: 1fr; }
-    body.print-single .preview-area { padding: 2rem; background: transparent; display: flex; align-items: center; justify-content: center; }
-    body.print-single .item-card { box-shadow: none; transform: none !important; }
-    /* All-items print: show only the print sheet */
-    body.print-all > *:not(#printSheet) { display: none !important; }
-    body.print-all #printSheet { display: block !important; width: 100%; }
-    body.print-all .print-grid { border-left: 1px dashed #bbb; border-top: 1px dashed #bbb; }
-    body.print-all .print-card-wrap { border-right: 1px dashed #bbb; border-bottom: 1px dashed #bbb; }
-  }
-
-  /* ── PRINT SHEET (all items) ── */
-  #printSheet {
-    display: none;
-    background: white;
-    box-sizing: border-box;
-  }
-
-  .print-sheet-title {
-    font-family: 'Cinzel', serif;
-    font-size: 11pt;
-    color: #2c1a0e;
-    text-align: center;
-    margin-bottom: 4mm;
-    letter-spacing: 0.06em;
-  }
-
-  /* cut-line borders on the cells; cards have white padding inside */
-  .print-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border-left: 1px dashed #bbb;
-    border-top: 1px dashed #bbb;
-  }
-
-  .print-card-wrap {
-    border-right: 1px dashed #bbb;
-    border-bottom: 1px dashed #bbb;
-    padding: 3mm;
-    background: white;
+  /* ── CHAR COUNTER ── */
+  .char-counter-row {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
   }
 
-  .print-card-wrap img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 3pt;
+  .char-count {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: #6a4e2e;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .char-count.warn  { color: #b8860b; }
+  .char-count.over  { color: #8b1a1a; font-weight: 600; }
+
+  .oversized-warning {
+    display: none;
+    font-size: 0.72rem;
+    color: #8b4a00;
+    background: rgba(139,74,0,0.08);
+    border: 1px solid rgba(139,74,0,0.25);
+    border-radius: 3px;
+    padding: 0.35rem 0.6rem;
+    line-height: 1.45;
+  }
+  .oversized-warning.visible { display: block; }
+
+  /* Allow oversized text toggle — slightly more prominent */
+  .oversized-toggle-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: #8a6a3a;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .oversized-toggle-row input[type="checkbox"] {
+    width: 15px; height: 15px; margin-top: 2px;
+    accent-color: #8b1a1a;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── PRINT / EXPORT ── */
+  /* All printing is done via a popup window containing baked PNG images.
+     This @media print block only applies if someone uses Ctrl+P directly. */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { background: white; }
+    body::before { display: none; }
+    header, .history-bar, .controls, .scale-control, .export-hint,
+    .progress-overlay, #offscreenRender, #printSheet { display: none !important; }
   }
 
   @media (max-width: 860px) {
@@ -911,22 +944,16 @@
 <!-- OFF-SCREEN RENDER AREA -->
 <div id="offscreenRender"></div>
 
-<!-- PRINT SHEET (populated before print-all) -->
-<div id="printSheet">
-  <div class="print-sheet-title">✦ Arcane Codex — Magic Items ✦</div>
-  <div class="print-grid" id="printGrid"></div>
-</div>
-
 <!-- HISTORY BAR -->
 <div class="history-bar" id="historyBar">
-  <div class="history-bar-inner" id="historyBarInner">
-    <div class="history-label">
-      <span>📜</span> Recent Items
-    </div>
+  <div class="history-label"><span>📜</span> Recent</div>
+  <button class="history-arrow" id="historyPrev" title="Scroll left" aria-label="Scroll items left">&#8249;</button>
+  <div class="history-track" id="historyTrack">
     <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
-    <div id="historyItems" style="display:flex;align-items:stretch;"></div>
-    <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save to History</button>
+    <div id="historyItems"></div>
   </div>
+  <button class="history-arrow" id="historyNext" title="Scroll right" aria-label="Scroll items right">&#8250;</button>
+  <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
 </div>
 
 <div class="workspace">
@@ -1051,6 +1078,19 @@ Markdown is supported:
 - *Shape Water* (1 charge)
 
 The staff regains **1d6+4 charges** at dawn.</textarea>
+
+        <div class="char-counter-row">
+          <span class="char-count" id="charCount">0 / 450</span>
+          <label class="oversized-toggle-row">
+            <input type="checkbox" id="allowOversized">
+            <span>Allow oversized text <em style="font-size:0.68rem;opacity:0.75;">(may not print correctly)</em></span>
+          </label>
+        </div>
+
+        <div class="oversized-warning" id="oversizedWarning">
+          ⚠ Text exceeds the safe limit for a 63×88mm card. The preview is clamped — overflow will be hidden when printed. Enable "Allow oversized text" to see and edit the full content.
+        </div>
+
         <div class="md-hint">
           <code>**bold**</code> &nbsp;
           <code>*italic*</code> &nbsp;
@@ -1283,6 +1323,37 @@ function syncCard() {
   // Description (markdown)
   $('previewDesc').innerHTML = marked.parse(desc);
 
+  // ── CHAR COUNTER + OVERFLOW CONTROL ──
+  const CHAR_LIMIT = 450;
+  const len = desc.length;
+  const oversized = $('allowOversized').checked;
+  const countEl   = $('charCount');
+  const warnEl    = $('oversizedWarning');
+  const bodyEl    = $('previewDesc').closest('.card-body') || $('previewDesc').parentElement;
+
+  countEl.textContent = `${len} / ${CHAR_LIMIT}`;
+  countEl.className   = 'char-count' + (len > CHAR_LIMIT ? ' over' : len > CHAR_LIMIT * 0.85 ? ' warn' : '');
+
+  if (len > CHAR_LIMIT && !oversized) {
+    warnEl.classList.add('visible');
+  } else {
+    warnEl.classList.remove('visible');
+  }
+
+  // Clamp or unclamp card body overflow
+  const cardContent = $('itemCard').querySelector('.card-content');
+  if (oversized) {
+    cardContent.style.height    = 'auto';
+    cardContent.style.minHeight = '580px';
+    cardContent.style.overflow  = 'visible';
+    $('itemCard').style.minHeight = cardContent.scrollHeight + 'px';
+  } else {
+    cardContent.style.height    = '580px';
+    cardContent.style.minHeight = '';
+    cardContent.style.overflow  = 'hidden';
+    $('itemCard').style.minHeight = '';
+  }
+
   // Toggles
   $('imageWrap').style.display     = $('showImage').checked ? 'flex' : 'none';
   $('statsStrip').style.display    = $('showStats').checked ? 'flex' : 'none';
@@ -1313,7 +1384,8 @@ function syncCard() {
 [
   'itemName','itemType','itemSubtype','itemRarity','itemBonus',
   'itemDamage','itemWeight','itemSource','itemDescription',
-  'itemAttunement','attunementCustom','showImage','showStats','showFrame'
+  'itemAttunement','attunementCustom','showImage','showStats','showFrame',
+  'allowOversized'
 ].forEach(id => {
   const el = $(id);
   if (el) el.addEventListener('input', syncCard);
@@ -1423,16 +1495,21 @@ $('exportPng').addEventListener('click', async () => {
 });
 
 // ── PRINT (single current item) ──
-$('exportPrint').addEventListener('click', () => {
-  document.body.classList.add('print-single');
-  document.body.classList.remove('print-all');
-  // Reset card scale for print
-  const card = $('itemCard');
-  const orig = card.style.transform;
-  card.style.transform = 'scale(1)';
-  window.print();
-  card.style.transform = orig;
-  document.body.classList.remove('print-single');
+$('exportPrint').addEventListener('click', async () => {
+  showProgress('Preparing print…');
+  updateProgress(0, 1, 'Rendering card…');
+  try {
+    const state = collectCurrentState();
+    const canvas = await renderStateToCanvas(state);
+    const dataUrl = canvas.toDataURL('image/png');
+    updateProgress(1, 1, 'Opening print dialog…');
+    await new Promise(r => setTimeout(r, 150));
+    hideProgress();
+    printImagesInPopup([dataUrl], 'single');
+  } catch(e) {
+    hideProgress();
+    alert('Print failed: ' + e.message);
+  }
 });
 
 // ── SHARED: build a card DOM node from a saved state ──
@@ -1575,6 +1652,89 @@ function hideProgress() {
   $('progressOverlay').classList.remove('active');
 }
 
+// ── POPUP PRINT (used by both single and all) ──
+// Opens a clean popup window containing only card images, then prints it.
+// Because the popup contains nothing but <img> tags on a white page,
+// no browser CSS stripping can affect the output — colours are baked into the PNGs.
+//
+// Layout: A4 portrait, 3×3 grid, each card exactly 63mm × 88mm, no cut lines.
+// Single item print: card sits in the top-left cell; remaining 8 cells are empty.
+function printImagesInPopup(dataUrls, mode) {
+  // Pad to 9 slots (3×3). Single always has 1; all can have up to 8 (or 9 if ever expanded).
+  const slots = Array.from({ length: 9 }, (_, i) =>
+    dataUrls[i]
+      ? `<div class="card-cell"><img src="${dataUrls[i]}"></div>`
+      : `<div class="card-cell"></div>`
+  ).join('');
+
+  // A4 portrait = 210mm × 297mm
+  // 3 cols × 63mm + 2 × 1mm gap = 191mm → side margin = (210 - 191) / 2 = 9.5mm
+  // 3 rows × 88mm + 2 × 1mm gap = 266mm → top margin  = (297 - 266) / 2 = 15.5mm
+  const pageCSS = `
+    @page { size: A4 portrait; margin: 0; }
+    body { margin: 0; padding: 0; background: white;
+           width: 210mm; height: 297mm; overflow: hidden; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 63mm);
+      grid-template-rows: repeat(3, 88mm);
+      gap: 1mm;
+      width: 191mm;
+      height: 266mm;
+      margin: 15.5mm auto 0;
+    }
+    .card-cell {
+      width: 63mm;
+      height: 88mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: white;
+    }
+    .card-cell img {
+      width: 63mm;
+      height: 88mm;
+      display: block;
+      object-fit: fill;
+    }
+  `;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Print Magic Items</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important; }
+  ${pageCSS}
+</style>
+</head>
+<body>
+<div class="grid">${slots}</div>
+<script>
+  var imgs = document.querySelectorAll('img');
+  var total = imgs.length;
+  var loaded = 0;
+  function tryPrint() { loaded++; if (loaded >= total) { setTimeout(function(){ window.print(); }, 250); } }
+  if (total === 0) { setTimeout(function(){ window.print(); }, 250); }
+  else { imgs.forEach(function(img){ if (img.complete && img.naturalWidth > 0) { tryPrint(); } else { img.onload = tryPrint; img.onerror = tryPrint; } }); }
+<\/script>
+</body>
+</html>`;
+
+  const popup = window.open('', '_blank', 'width=820,height=1000');
+  if (!popup) {
+    alert('Pop-up blocked — please allow pop-ups for this page and try again.');
+    return;
+  }
+  popup.document.open();
+  popup.document.write(html);
+  popup.document.close();
+}
+
 // ── DOWNLOAD ALL PNGs ──
 $('exportAllPng').addEventListener('click', async () => {
   const items = getHistory();
@@ -1602,46 +1762,33 @@ $('exportAllPng').addEventListener('click', async () => {
   hideProgress();
 });
 
-// ── PRINT ALL (A4) ──
+// ── PRINT ALL (A4 landscape, popup window) ──
 $('exportAllPrint').addEventListener('click', async () => {
   const items = getHistory();
   if (!items.length) { alert('No saved items in history yet.'); return; }
 
   showProgress('Preparing print sheet…');
-
-  const grid = $('printGrid');
-  grid.innerHTML = '';
+  const dataUrls = [];
 
   for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    updateProgress(i, items.length, `Rendering "${item.name || 'Unnamed'}" (${i+1}/${items.length})…`);
+    updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i+1}/${items.length})…`);
     try {
-      const canvas = await renderStateToCanvas(item);
-      const wrap = document.createElement('div');
-      wrap.className = 'print-card-wrap';
-      const img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png');
-      img.alt = item.name || '';
-      wrap.appendChild(img);
-      grid.appendChild(wrap);
+      const canvas = await renderStateToCanvas(items[i]);
+      dataUrls.push(canvas.toDataURL('image/png'));
     } catch(e) {
-      console.error('Failed to render', item.name, e);
+      console.error('Failed to render', items[i].name, e);
     }
   }
 
   updateProgress(items.length, items.length, 'Opening print dialog…');
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise(r => setTimeout(r, 200));
   hideProgress();
-
-  document.body.classList.add('print-all');
-  document.body.classList.remove('print-single');
-  window.print();
-  document.body.classList.remove('print-all');
+  printImagesInPopup(dataUrls, 'all');
 });
 
 // ── HISTORY ──
 const HISTORY_KEY = 'dnd_item_history';
-const MAX_HISTORY = 8;
+const MAX_HISTORY = 9;
 
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -1803,6 +1950,11 @@ function renderHistoryBar() {
 
     container.appendChild(el);
   });
+
+  // Update arrow active states after DOM has updated
+  requestAnimationFrame(() => {
+    if (window._updateHistoryArrows) window._updateHistoryArrows();
+  });
 }
 
 $('historySaveBtn').addEventListener('click', () => {
@@ -1816,8 +1968,35 @@ $('historySaveBtn').addEventListener('click', () => {
   const btn = $('historySaveBtn');
   btn.classList.add('flash');
   btn.textContent = '✓ Saved';
-  setTimeout(() => { btn.classList.remove('flash'); btn.textContent = '＋ Save to History'; }, 1500);
+  setTimeout(() => { btn.classList.remove('flash'); btn.textContent = '＋ Save'; }, 1500);
 });
+
+// ── HISTORY BAR ARROWS ──
+(function() {
+  const track    = $('historyTrack');
+  const btnPrev  = $('historyPrev');
+  const btnNext  = $('historyNext');
+  const STEP     = 180; // px per click
+
+  function updateArrows() {
+    const atStart = track.scrollLeft <= 2;
+    const atEnd   = track.scrollLeft >= track.scrollWidth - track.clientWidth - 2;
+    const hasScroll = track.scrollWidth > track.clientWidth + 4;
+    btnPrev.classList.toggle('active', hasScroll && !atStart);
+    btnNext.classList.toggle('active', hasScroll && !atEnd);
+  }
+
+  btnPrev.addEventListener('click', () => {
+    track.scrollBy({ left: -STEP, behavior: 'smooth' });
+  });
+  btnNext.addEventListener('click', () => {
+    track.scrollBy({ left: STEP, behavior: 'smooth' });
+  });
+
+  track.addEventListener('scroll', updateArrows, { passive: true });
+  // Also update after render (content width changes)
+  window._updateHistoryArrows = updateArrows;
+})();
 
 // ── INITIAL RENDER ──
 syncCard();
