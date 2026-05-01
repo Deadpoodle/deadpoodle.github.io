@@ -56,34 +56,6 @@
             display: block;
         }
 
-        #big-spatula:active {
-            cursor: grabbing;
-        }
-
-        #mobile-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: none; 
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            color: white;
-            text-align: center;
-        }
-
-        #play-button-img {
-            width: 180px;
-            height: auto;
-            cursor: pointer;
-            filter: drop-shadow(0 0 20px rgba(255,255,255,0.6));
-            margin-bottom: 20px;
-        }
-
         .score-board {
             position: absolute;
             top: 20px;
@@ -122,35 +94,20 @@
             align-items: flex-end;
         }
 
-        #fire-container::before {
+        #fire-container::before, #fire-container::after {
             content: "";
             position: absolute;
             bottom: 0;
-            left: 0;
             width: 8px;
             height: 35%; 
             background-color: #000;
             border-radius: 4px 4px 0 0;
             z-index: 21;
         }
+        #fire-container::before { left: 0; }
+        #fire-container::after { right: 0; }
 
-        #fire-container::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 8px;
-            height: 35%; 
-            background-color: #000;
-            border-radius: 4px 4px 0 0;
-            z-index: 21;
-        }
-
-        #fire-gif {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
+        #fire-gif { width: 100%; height: auto; display: block; }
 
         #stop-btn {
             position: absolute;
@@ -180,11 +137,46 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
 
+        #mobile-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 200;
+            color: white; text-align: center;
+        }
+
+        #play-button-img { width: 180px; height: auto; cursor: pointer; filter: drop-shadow(0 0 20px rgba(255,255,255,0.6)); }
+
+        /* MOBILE OVERRIDES */
         @media (max-width: 600px) {
-            #big-spatula { width: 45px; display: none; }
+            #big-spatula { 
+                width: 30px; 
+                display: none; 
+            }
             #fire-container { width: 60%; left: 20%; }
             .score-board { font-size: 22px; }
             #mobile-overlay { display: flex; }
+            
+            #stop-btn {
+                width: 40px;  /* Reduced to 40px */
+                height: 40px; /* Reduced to 40px */
+                padding: 0;
+                bottom: 10px; 
+                left: 10px;   
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 12px;
+            }
+            #stop-btn span { display: none; } 
+            #stop-btn::after { content: "Stop"; } 
+
+            .metrics-container {
+                font-size: 10px; /* Reduced font size to 10px */
+                bottom: 10px;    
+                right: 10px;     
+            }
+            #high-label { display: none; } /* Hide "High Score" */
+            #mobile-high-label::before { content: "High: "; } /* Show "High" */
         }
     </style>
 </head>
@@ -192,7 +184,7 @@
 
     <div id="mobile-overlay">
         <img src="play.png" id="play-button-img" alt="Play">
-        <h2 style="margin: 0; font-family: sans-serif;">TAP TO BEGIN</h2>
+        <h2 style="margin: 20px 0 0 0; font-family: sans-serif;">TAP TO BEGIN</h2>
     </div>
 
     <div id="bg1" class="bg-layer"></div>
@@ -201,7 +193,7 @@
     <div class="score-board">Problems Solved: <span id="score">0</span></div>
 
     <div class="metrics-container">
-        <div>High Score: <span id="high-score">0</span></div>
+        <div><span id="high-label">High Score: </span><span id="mobile-high-label"></span><span id="high-score">0</span></div>
         <div>Loops: <span id="loops">0</span></div>
     </div>
 
@@ -215,7 +207,7 @@
     
     <audio id="spatula-audio" src="got_my_spatula.mp3" preload="auto" loop></audio>
     <div id="lyrics-display">Grab your Spatula!</div>
-    <button id="stop-btn">Stop Music</button>
+    <button id="stop-btn"><span>Stop Music</span></button>
 
     <script>
         let stats = {
@@ -275,17 +267,12 @@
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             updateMetricDisplay();
-            // Removed spawnSpatulas() from here so they don't fall until start
         }
 
         function spawnSpatulas() {
-            // Check to ensure we don't clear and reset if already active
             if (fallingSpatulas.length > 0) return; 
-
             let desiredCount = 35 + sessionScore;
-            let safetyCap = 100; 
-            let finalCount = Math.min(desiredCount, safetyCap);
-
+            let finalCount = Math.min(desiredCount, 100);
             for (let i = 0; i < finalCount; i++) {
                 fallingSpatulas.push(new SpatulaPiece());
             }
@@ -298,11 +285,7 @@
         }
 
         class SpatulaPiece {
-            constructor() {
-                this.gravity = 0.15;
-                this.reset();
-            }
-
+            constructor() { this.gravity = 0.15; this.reset(); }
             reset() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * -height;
@@ -314,41 +297,24 @@
                 this.spin = (Math.random() - 0.5) * 0.08;
                 this.counted = false;
             }
-
             update() {
-                this.x += this.vx;
-                this.y += this.dy;
-                this.rotation += this.spin;
-                this.vx *= 0.98;
-
-                if (this.dy < this.baseSpeed) {
-                    this.dy += this.gravity;
-                } else {
-                    this.dy *= 0.995;
-                }
-
-                const dx = this.x - currentX;
-                const dy = this.y - currentY;
+                this.x += this.vx; this.y += this.dy; this.rotation += this.spin; this.vx *= 0.98;
+                if (this.dy < this.baseSpeed) this.dy += this.gravity; else this.dy *= 0.995;
+                const dx = this.x - currentX; const dy = this.y - currentY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-
                 if (dist < 130) {
-                    const angle = Math.atan2(dy, dx);
-                    const force = (130 - dist) * 0.15;
+                    const angle = Math.atan2(dy, dx); const force = (130 - dist) * 0.15;
                     this.vx += Math.cos(angle) * force + (currentX - lastX) * 0.5;
                     this.dy += Math.sin(angle) * force + (currentY - lastY) * 0.5;
                 }
-
                 const isMobile = window.innerWidth <= 600;
                 let fireWidthPercent = isMobile ? 0.6 : 0.333;
                 let fireLeftPercent = isMobile ? 0.2 : 0.333;
-                
                 if (this.y > (height - 80) && !this.counted) {
                     let leftBound = width * fireLeftPercent;
                     let rightBound = width * (fireLeftPercent + fireWidthPercent);
-
                     if (this.x > leftBound && this.x < rightBound) {
-                        problemCounter++;
-                        sessionScore++;
+                        problemCounter++; sessionScore++;
                         if (sessionScore > stats.highScore) {
                             stats.highScore = sessionScore;
                             localStorage.setItem('spatula_high', stats.highScore);
@@ -357,14 +323,10 @@
                     }
                     this.counted = true;
                 }
-
                 if (this.y > height + 100) this.reset();
             }
-
             draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
                 ctx.drawImage(fallingImg, -this.size/2, -this.size/2, this.size, this.size);
                 ctx.restore();
             }
@@ -372,23 +334,19 @@
 
         function startMusic() {
             audio.play().then(() => {
-                audioStarted = true;
-                overlay.style.display = 'none';
-                bigSpatula.style.display = 'block';
-                spawnSpatulas(); // Spawn only on start
+                audioStarted = true; overlay.style.display = 'none';
+                bigSpatula.style.display = 'block'; spawnSpatulas();
             }).catch(err => console.log("Audio fail: ", err));
         }
 
         playImg.addEventListener('click', startMusic);
-        playImg.addEventListener('touchstart', (e) => { e.preventDefault(); startMusic(); });
 
         document.getElementById('stop-btn').addEventListener('click', () => {
-            audio.pause();
-            audio.currentTime = 0;
-            audioStarted = false;
-            problemCounter = 0; 
-            fallingSpatulas = []; // Clear spatulas on stop
-            lyricsDisplay.innerText = "Grab your Spatula!";
+            audio.pause(); audio.currentTime = 0; audioStarted = false;
+            problemCounter = 0; sessionScore = 0; 
+            fallingSpatulas = []; lyricsDisplay.innerText = "Grab your Spatula!";
+            currentX = window.innerWidth / 2; currentY = window.innerHeight / 2;
+            lastX = currentX; lastY = currentY; rotation = 0;
             updateMetricDisplay();
             if (window.innerWidth <= 600) {
                 overlay.style.display = 'flex';
@@ -398,52 +356,29 @@
 
         audio.addEventListener('timeupdate', () => {
             if (audio.currentTime < 0.5 && audioStarted && problemCounter > 0) {
-                stats.loops++;
-                localStorage.setItem('spatula_loops', stats.loops);
-                problemCounter = 0; 
-                updateMetricDisplay();
-                fallingSpatulas = []; // Clear and re-trigger spawn for new loop
-                spawnSpatulas(); 
+                stats.loops++; localStorage.setItem('spatula_loops', stats.loops);
+                problemCounter = 0; updateMetricDisplay();
+                fallingSpatulas = []; spawnSpatulas(); 
             }
         });
 
         const bgList = ['./bg1.png','./bg2.png','./bg3.png','./bg4.png','./bg5.png','./bg6.png','./bg7.png','./bg8.png'];
-        let bgIdx = 0;
-        let currentLyr = 1;
-
+        let bgIdx = 0; let currentLyr = 1;
         function cycleBg() {
-            let next;
-            do {
-                next = Math.floor(Math.random() * bgList.length);
-            } while (next === bgIdx);
-            
-            bgIdx = next;
-            const l1 = document.getElementById('bg1');
-            const l2 = document.getElementById('bg2');
-            
+            let next; do { next = Math.floor(Math.random() * bgList.length); } while (next === bgIdx);
+            bgIdx = next; const l1 = document.getElementById('bg1'); const l2 = document.getElementById('bg2');
             if (currentLyr === 1) {
-                l2.style.backgroundImage = `url("${bgList[bgIdx]}")`;
-                l2.style.opacity = 1;
-                l1.style.opacity = 0;
-                currentLyr = 2;
+                l2.style.backgroundImage = `url("${bgList[bgIdx]}")`; l2.style.opacity = 1; l1.style.opacity = 0; currentLyr = 2;
             } else {
-                l1.style.backgroundImage = `url("${bgList[bgIdx]}")`;
-                l1.style.opacity = 1;
-                l2.style.opacity = 0;
-                currentLyr = 1;
+                l1.style.backgroundImage = `url("${bgList[bgIdx]}")`; l1.style.opacity = 1; l2.style.opacity = 0; currentLyr = 1;
             }
         }
-
         document.getElementById('bg1').style.backgroundImage = `url("${bgList[0]}")`;
         setInterval(cycleBg, 12000);
 
         function updateSpatulaPosition(x, y) {
-            currentX = x;
-            currentY = y;
-            // Only start if not already started
-            if (!audioStarted && window.innerWidth > 600) {
-                startMusic();
-            }
+            currentX = x; currentY = y;
+            if (!audioStarted && window.innerWidth > 600) startMusic();
         }
 
         bigSpatula.addEventListener('mousedown', (e) => { isDragging = true; updateSpatulaPosition(e.clientX, e.clientY); });
@@ -460,32 +395,21 @@
             bigSpatula.style.left = currentX + 'px';
             bigSpatula.style.top = currentY + 'px';
             bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-            lastX = currentX;
-            lastY = currentY;
-
+            lastX = currentX; lastY = currentY;
             for (let i = 0; i < fallingSpatulas.length; i++) {
-                fallingSpatulas[i].update();
-                fallingSpatulas[i].draw();
+                fallingSpatulas[i].update(); fallingSpatulas[i].draw();
             }
-
             if (audioStarted) {
                 let currentText = lyrics[0].text;
                 for (let i = lyrics.length - 1; i >= 0; i--) {
-                    if (audio.currentTime >= lyrics[i].time) {
-                        currentText = lyrics[i].text;
-                        break;
-                    }
+                    if (audio.currentTime >= lyrics[i].time) { currentText = lyrics[i].text; break; }
                 }
                 lyricsDisplay.innerText = currentText;
             }
             requestAnimationFrame(animate);
         }
-
         window.addEventListener('resize', init);
-        fallingImg.onload = function() {
-            init();
-            animate();
-        };
+        fallingImg.onload = function() { init(); animate(); };
     </script>
 </body>
 </html>
