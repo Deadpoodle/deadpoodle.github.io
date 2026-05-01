@@ -307,8 +307,12 @@
                 if (this.dy < this.baseSpeed) this.dy += this.gravity; else this.dy *= 0.995;
                 const dx = this.x - currentX; const dy = this.y - currentY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 130) {
-                    const angle = Math.atan2(dy, dx); const force = (130 - dist) * 0.15;
+                // Use 130 for desktop, and 60 for mobile (screens <= 600px)
+                const repulsionRadius = window.innerWidth <= 600 ? 90 : 130; 
+
+                if (dist < repulsionRadius) {
+                    const angle = Math.atan2(dy, dx); 
+                    const force = (repulsionRadius - dist) * 0.15;
                     this.vx += Math.cos(angle) * force + (currentX - lastX) * 0.5;
                     this.dy += Math.sin(angle) * force + (currentY - lastY) * 0.5;
                 }
