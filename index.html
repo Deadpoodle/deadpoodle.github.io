@@ -396,7 +396,6 @@
     position: absolute;
     inset: 0;
     background: #d4b87a;
-    background-image: url('');
     background-size: cover;
     background-position: center;
     z-index: 0;
@@ -1045,10 +1044,10 @@
     font-style: italic;
   }
 
-  /* Off-screen render area — must use opacity:0 not visibility:hidden; html2canvas can't capture visibility:hidden */
+  /* Off-screen render area — positioned far left so it never overlaps page content when html2canvas composites */
   #offscreenRender {
-    position: fixed;
-    left: 0;
+    position: absolute;
+    left: -9999px;
     top: 0;
     opacity: 0;
     pointer-events: none;
@@ -1472,9 +1471,10 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:stretch;gap:1rem;">
         <button class="history-save-btn" id="historySaveBtn" style="border:1px solid rgba(180,130,60,0.4);border-radius:4px;padding:0.45rem 1.2rem;" title="Save current item to history">＋ Save to History</button>
-        <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.75rem;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear Card</button>
+        <button class="btn btn-primary" id="exportPngInline" style="padding:0.45rem 0.8rem;font-size:0.62rem;white-space:nowrap;" title="Export current card as PNG">⬇ Export PNG</button>
+        <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.45rem;white-space:nowrap;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear</button>
       </div>
 
     </div><!-- /tab-identity -->
@@ -2020,40 +2020,24 @@ function applyCardVignette(canvas) {
 }
 
 // ── EXPORT PNG ──
+async function exportCurrentPng() {
+  const state = collectCurrentState();
+  const canvas = await renderStateToCanvas(state);
+  const link = document.createElement('a');
+  const name = (state.name || 'magic_item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  link.download = `${name}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
 $('exportPng').addEventListener('click', async () => {
-  const card = $('itemCard');
-  const origTransform = card.style.transform;
-  const origTransformOrigin = card.style.transformOrigin;
-  card.style.transform = 'scale(1)';
-  card.style.transformOrigin = '';
+  try { await exportCurrentPng(); }
+  catch(e) { alert('Export failed. If you used external images, try uploading them directly.'); }
+});
 
-  try {
-    const canvas = await html2canvas(card, {
-      scale: 3,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      logging: false,
-      imageTimeout: 0,
-      ignoreElements: el => el.classList.contains('card-vignette') || el.classList.contains('img-drag-hint'),
-      onclone: (doc, el) => {
-        el.style.transform = 'scale(1)';
-        el.style.transformOrigin = '';
-        el.style.boxShadow = 'none';
-      }
-    });
-    applyCardVignette(canvas);
-    const link = document.createElement('a');
-    const name = $('itemName').value.replace(/[^a-z0-9]/gi,'_').toLowerCase() || 'magic_item';
-    link.download = `${name}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  } catch(e) {
-    alert('Export failed. If you used external images, try uploading them directly.');
-  }
-
-  card.style.transform = origTransform;
-  card.style.transformOrigin = origTransformOrigin;
+$('exportPngInline').addEventListener('click', async () => {
+  try { await exportCurrentPng(); }
+  catch(e) { alert('Export failed. If you used external images, try uploading them directly.'); }
 });
 
 // ── PRINT (single current item) ──
@@ -2219,6 +2203,8 @@ async function renderStateToCanvas(s) {
   // Extra frame for layout to settle
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
+  node.style.boxShadow = 'none';
+
   const canvas = await html2canvas(node, {
     scale: 3,
     useCORS: true,
@@ -2226,7 +2212,7 @@ async function renderStateToCanvas(s) {
     backgroundColor: null,
     logging: false,
     imageTimeout: 15000,
-    ignoreElements: el => el.classList.contains('card-vignette'),
+    ignoreElements: el => el.classList.contains('card-vignette') || el.classList.contains('img-drag-hint') || el.classList.contains('img-upload-hint'),
     onclone: (doc, el) => { el.style.boxShadow = 'none'; }
   });
   applyCardVignette(canvas);
