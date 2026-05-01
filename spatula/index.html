@@ -49,7 +49,7 @@
             height: auto;
             cursor: grab;
             transform: translate(-50%, -50%) rotate(0deg);
-            z-index: 10;
+            z-index: 40; 
             -webkit-user-drag: none;
             touch-action: none;
         }
@@ -61,64 +61,98 @@
             text-align: center;
             font-size: 28px;
             font-weight: bold;
-            color: #2c3e50;
-            z-index: 20;
+            color: #ebf5ff;
+            z-index: 50;
             pointer-events: none;
-            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
 
-        .catcher-container {
+        /* Container for Fire and Side Lines */
+        #fire-container {
             position: absolute;
             bottom: 0;
-            left: 25%;
-            width: 50%;
-            height: 40px;
-            border-left: 5px solid #2c3e50;
-            border-right: 5px solid #2c3e50;
-            border-bottom: 8px solid #2c3e50;
-            box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.2);
-            z-index: 5;
-            border-radius: 0 0 10px 10px;
+            left: 33.33%;
+            width: 33.33%;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            align-items: flex-end;
         }
 
-        /* Subtitle Styling */
+        #fire-gif {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Black Side Lines */
+        #fire-container::before, 
+        #fire-container::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            width: 6px;      /* Thickness of the line */
+            height: 25%;     
+            background-color: #000;
+            border-radius: 2px 2px 0 0;
+        }
+
+        #fire-container::before { left: 0; }  /* Left line */
+        #fire-container::after { right: 0; }  /* Right line */
+
         #lyrics-display {
             position: absolute;
-            bottom: 50px;
+            bottom: 140px; 
             width: 100%;
             text-align: center;
-            color: #2c3e50;
-            z-index: 4;
+            color: #ebf5ff;
+            z-index: 50;
             pointer-events: none;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
-            text-shadow: 0 0 8px rgba(255,255,255,0.9);
             min-height: 1.2em;
-            transition: opacity 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        }
+
+        #stop-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
+            font-family: inherit;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        #stop-btn:hover {
+            background-color: #e74c3c;
         }
     </style>
 </head>
 <body>
     <div style="position:fixed; top:0; left:0; width:100%; height:100%; background-color:#e8f4f8; z-index:-2;"></div>
-
     <div class="score-board">Problems Solved: <span id="score">0</span></div>
-
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
-
     <canvas id="canvas"></canvas>
-    <div class="catcher-container"></div>
+    
+    <div id="fire-container">
+        <img src="fire.gif" id="fire-gif" alt="Fire">
+    </div>
 
     <img id="big-spatula" src="big_spatula.png" alt="Big Spatula" draggable="false">
     <audio id="spatula-audio" src="got_my_spatula.mp3" preload="auto" loop></audio>
 
-    <!-- Subtitle Container -->
-    <div id="lyrics-display">Obtain Spatula to begin!</div>
+    <div id="lyrics-display">En Garde!</div>
+    <button id="stop-btn">Stop Music</button>
 
     <script>
-        // --- 1. LYRICS CONFIGURATION ---
-        // Set the time in seconds when each line should appear
         const lyrics = [
             { time: 5.48, text: "Everything's alright" },
             { time: 7.16, text: "Oh everything is A-O-K" },
@@ -134,38 +168,41 @@
             { time: 47.48, text: "Cuz it's my spatula that makes me swoon" },
             { time: 52.44, text: "Everything's alright" },
             { time: 55.03, text: "Oh everything is A-O-K" },
-            { time: 100.44, text: "Everything is great" }, // Note: 01:00 in SRT is 60.44 seconds
-            { time: 102.84, text: "Cuz I got my spatula" }, // 01:02 is 62.84
-            { time: 108.43, text: "Everything's alright" }, // 01:08 is 68.43
-            { time: 111.08, text: "Oh everything is A-O-K" }, // 01:11 is 71.08
-            { time: 115.43, text: "Everything is great" }, // 01:15 is 75.43
-            { time: 118.84, text: "Cuz I got my spatula" }, // 01:18 is 78.84
-            { time: 126.24, text: "Yeah" }
+            { time: 60.44, text: "Everything is great" }, 
+            { time: 62.84, text: "Cuz I got my spatula" },
+            { time: 68.43, text: "Everything's alright" },
+            { time: 71.08, text: "Oh everything is A-O-K" },
+            { time: 75.43, text: "Everything is great" },
+            { time: 78.84, text: "Cuz I got my spatula" },
+            { time: 86.24, text: "Yeah" }
         ];
 
         const lyricsDisplay = document.getElementById('lyrics-display');
         const audio = document.getElementById('spatula-audio');
+        const stopBtn = document.getElementById('stop-btn');
 
         function updateLyrics() {
             const currentTime = audio.currentTime;
-            
-            // Find the lyric line that matches the current time
-            // We loop backwards to find the latest line that has already passed its start time
-            let currentText = "Obtain Spatula to begin!"; 
+            let currentText = "En Garde!"; 
             for (let i = lyrics.length - 1; i >= 0; i--) {
                 if (currentTime >= lyrics[i].time) {
                     currentText = lyrics[i].text;
                     break;
                 }
             }
-            
             if (lyricsDisplay.innerText !== currentText) {
                 lyricsDisplay.innerText = currentText;
             }
         }
 
-        // --- 2. BACKGROUND & SCORE ---
-        const bgImages = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png']; 
+        stopBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            audio.pause();
+            audio.currentTime = 0;
+            lyricsDisplay.innerText = "En Garde!";
+        });
+
+        const bgImages = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png', 'bg7.png', 'bg8.png']; 
         let lastBgIndex = -1, currentLayer = 1, problemsSolved = 0;
         const scoreDisplay = document.getElementById('score');
         const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
@@ -190,7 +227,6 @@
         changeBackground(true); 
         setInterval(() => changeBackground(false), 12000);
 
-        // --- 3. CANVAS & PHYSICS ---
         const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
         const bigSpatula = document.getElementById('big-spatula');
         let width, height, lastX;
@@ -223,9 +259,15 @@
                     const angle = Math.atan2(dy, dx);
                     this.vx += Math.cos(angle) * 8; this.speed += Math.sin(angle) * 2;
                 }
-                const bL = width * 0.25, bR = width * 0.75;
-                if (this.y > height - 20 && !this.counted) {
-                    if (this.x > bL && this.x < bR) { problemsSolved++; scoreDisplay.innerText = problemsSolved; }
+                
+                const bL = width * 0.3333;
+                const bR = width * 0.6666;
+                
+                if (this.y > height - 100 && !this.counted) {
+                    if (this.x > bL && this.x < bR) { 
+                        problemsSolved++; 
+                        scoreDisplay.innerText = problemsSolved; 
+                    }
                     this.counted = true;
                 }
                 if (this.y > height + 50) this.reset();
@@ -236,11 +278,15 @@
             }
         }
 
-        // --- 4. INTERACTION & LOOP ---
-        function attemptPlay() { if (audio.paused) { audio.play().catch(() => {}); } }
-        window.addEventListener('touchstart', attemptPlay, { once: true });
+        const handleInteraction = (x, y) => {
+            if (audio.paused) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            }
+            isDragging = true;
+            currentX = x; currentY = y;
+        };
 
-        const handleInteraction = (x, y) => { attemptPlay(); isDragging = true; currentX = x; currentY = y; };
         bigSpatula.addEventListener('mousedown', e => handleInteraction(e.clientX, e.clientY));
         bigSpatula.addEventListener('touchstart', e => {
             if (e.cancelable) e.preventDefault();
@@ -262,10 +308,7 @@
             bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
             lastX = currentX;
             fallingSpatulas.forEach(s => { s.update(); s.draw(); });
-            
-            // Sync Lyrics
             if (!audio.paused) updateLyrics();
-            
             requestAnimationFrame(animate);
         }
 
