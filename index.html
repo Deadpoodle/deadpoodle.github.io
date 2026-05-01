@@ -111,7 +111,7 @@
 
   .section-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.72rem;
+    font-size: 0.82rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--gold);
@@ -136,7 +136,7 @@
   }
 
   label {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     color: var(--label-color);
     letter-spacing: 0.04em;
   }
@@ -150,7 +150,7 @@
     border-radius: 3px;
     color: #e8d5a3;
     font-family: 'Crimson Pro', Georgia, serif;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     padding: 0.5rem 0.75rem;
     outline: none;
     transition: border-color 0.2s, background 0.2s;
@@ -202,11 +202,30 @@
 
   .upload-placeholder {
     color: #7a5c2e;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     line-height: 1.5;
   }
 
   .upload-placeholder span { display: block; font-size: 1.4rem; margin-bottom: 0.2rem; }
+
+  /* Editable stat-label rename inputs */
+  input.stat-label-rename {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label-color);
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(180,130,60,0.3);
+    border-radius: 0;
+    padding: 2px 4px;
+  }
+  input.stat-label-rename:focus {
+    background: transparent;
+    border-color: transparent;
+    border-bottom-color: rgba(180,130,60,0.65);
+  }
 
   /* Color pickers */
   .color-row { display: flex; gap: 0.5rem; align-items: center; }
@@ -232,7 +251,7 @@
   /* Buttons */
   .btn {
     font-family: 'Cinzel', serif;
-    font-size: 0.78rem;
+    font-size: 0.86rem;
     letter-spacing: 0.12em;
     padding: 0.6rem 1.2rem;
     border-radius: 3px;
@@ -407,11 +426,56 @@
 
   /* Item image area */
   .card-image-wrap {
-    display: flex;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     align-items: center;
-    padding: 10px 0;
+    padding: 10px 20px;
     min-height: 130px;
+  }
+
+  .card-side-stat {
+    text-align: center;
+    padding: 0 6px;
+  }
+
+  /* Label rename input wrapper with edit icon */
+  .label-rename-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .label-rename-wrap input.stat-label-rename {
+    flex: 1;
+    padding-right: 18px;
+  }
+  .label-rename-icon {
+    position: absolute;
+    right: 4px;
+    font-size: 0.65rem;
+    color: rgba(180,130,60,0.35);
+    pointer-events: none;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .side-stat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.5rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-light);
+    opacity: 0.8;
+    text-transform: uppercase;
+    display: block;
+  }
+
+  .side-stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+    margin-top: 3px;
+    line-height: 1.3;
   }
 
   .card-image-container {
@@ -425,11 +489,47 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    grid-column: 2;
+    justify-self: center;
   }
 
   .card-image-container img {
-    width: 100%; height: 100%; object-fit: contain;
+    position: absolute;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-drag: none;
   }
+  .card-image-container img:active { cursor: grabbing; }
+
+  .img-drag-hint {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: rgba(0,0,0,0.52);
+    color: rgba(255,255,255,0.92);
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+    z-index: 5;
+    text-align: center;
+  }
+  .img-drag-hint .hint-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .img-drag-hint .hint-text {
+    font-family: 'Cinzel', serif;
+    font-size: 0.42rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+  .card-image-container.has-img:hover .img-drag-hint { opacity: 1; }
 
   .card-image-placeholder {
     color: rgba(90,60,30,0.4);
@@ -564,6 +664,15 @@
   .rarity-artifact    { color: #8b1a1a; border-color: #cc3a3a; }
   .rarity-unique      { color: #2e6b6b; border-color: #4a9a9a; }
 
+  /* Rarity colors on the dark history bar — use the lighter border-color values */
+  .history-rarity.rarity-common      { color: #aaa; }
+  .history-rarity.rarity-uncommon    { color: #3a9a3a; }
+  .history-rarity.rarity-rare        { color: #3a6acc; }
+  .history-rarity.rarity-very-rare   { color: #8a3acc; }
+  .history-rarity.rarity-legendary   { color: #c97d00; }
+  .history-rarity.rarity-artifact    { color: #cc3a3a; }
+  .history-rarity.rarity-unique      { color: #4a9a9a; }
+
   /* Export hint */
   .export-hint {
     font-size: 0.78rem;
@@ -588,7 +697,7 @@
 
   /* Markdown helper */
   .md-hint {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: #6a4e2e;
     padding: 0.4rem 0.6rem;
     background: rgba(180,130,60,0.06);
@@ -611,7 +720,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 0.85rem;
+    font-size: 0.93rem;
     color: var(--label-color);
     cursor: pointer;
   }
@@ -641,7 +750,7 @@
     font-size: 0.62rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #6a4e2e;
+    color: #ffdeb9;
     padding: 0 0.85rem;
     display: flex;
     align-items: center;
@@ -690,7 +799,7 @@
     font-family: 'Crimson Pro', serif;
     font-style: italic;
     font-size: 0.8rem;
-    color: #4a3520;
+    color: #c9a96e;
     padding: 0.55rem 1rem;
     display: flex;
     align-items: center;
@@ -752,7 +861,7 @@
   }
 
   .history-rarity {
-    font-size: 0.6rem;
+    font-size: 0.8rem;
     font-family: 'Crimson Pro', serif;
     font-style: italic;
     color: #6a4e2e;
@@ -789,7 +898,7 @@
     border: none;
     border-left: 1px solid rgba(180,130,60,0.2);
     border-radius: 0;
-    color: #8a6a3a;
+    color: #ffdeb9;
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
@@ -871,7 +980,7 @@
 
   .char-count {
     font-family: 'Cinzel', serif;
-    font-size: 0.68rem;
+    font-size: 0.76rem;
     letter-spacing: 0.06em;
     color: #6a4e2e;
     transition: color 0.2s;
@@ -994,31 +1103,36 @@
             <input type="text" id="itemSubtype" placeholder="e.g. Longsword, Oak" value="Quarterstaff">
           </div>
         </div>
-        <div class="row-2">
-          <div class="field-group">
-            <label>Rarity</label>
-            <select id="itemRarity">
-              <option value="common">Common</option>
-              <option value="uncommon">Uncommon</option>
-              <option value="rare" selected>Rare</option>
-              <option value="very-rare">Very Rare</option>
-              <option value="legendary">Legendary</option>
-              <option value="artifact">Artifact</option>
-              <option value="unique">Unique</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label>Bonus / Modifier</label>
-            <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="+2">
-          </div>
+        <div class="field-group">
+          <label>Rarity</label>
+          <select id="itemRarity">
+            <option value="common">Common</option>
+            <option value="uncommon">Uncommon</option>
+            <option value="rare" selected>Rare</option>
+            <option value="very-rare">Very Rare</option>
+            <option value="legendary">Legendary</option>
+            <option value="artifact">Artifact</option>
+            <option value="unique">Unique</option>
+          </select>
         </div>
-        <div class="row-2">
-          <div class="field-group">
-            <label>Damage / Effect</label>
-            <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="1d6 force">
+        <div>
+          <div class="row-3" style="margin-bottom:0.25rem;">
+            <div class="label-rename-wrap">
+              <input class="stat-label-rename" type="text" id="bonusLabel" value="Bonus" placeholder="Bonus">
+              <span class="label-rename-icon">✒</span>
+            </div>
+            <div class="label-rename-wrap">
+              <input class="stat-label-rename" type="text" id="damageLabel" value="Damage" placeholder="Damage">
+              <span class="label-rename-icon">✒</span>
+            </div>
+            <div class="label-rename-wrap">
+              <input class="stat-label-rename" type="text" id="weightLabel" value="Weight" placeholder="Weight">
+              <span class="label-rename-icon">✒</span>
+            </div>
           </div>
-          <div class="field-group">
-            <label>Weight</label>
+          <div class="row-3">
+            <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="+2">
+            <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="1d6 force">
             <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="4 lb">
           </div>
         </div>
@@ -1049,6 +1163,22 @@
         <div class="field-group" id="attunementCustomWrap" style="display:none;">
           <label>Custom Attunement Text</label>
           <input type="text" id="attunementCustom" placeholder="e.g. by an elf or half-elf">
+        </div>
+        <div>
+          <div class="row-2" style="margin-bottom:0.25rem;">
+            <div class="label-rename-wrap">
+              <input class="stat-label-rename" type="text" id="saveLabel" value="Save" placeholder="Save">
+              <span class="label-rename-icon">✒</span>
+            </div>
+            <div class="label-rename-wrap">
+              <input class="stat-label-rename" type="text" id="rangeLabel" value="Range" placeholder="Range">
+              <span class="label-rename-icon">✒</span>
+            </div>
+          </div>
+          <div class="row-2">
+            <input type="text" id="itemSave" placeholder="e.g. DC 15 Dex">
+            <input type="text" id="itemRange" placeholder="e.g. 60 ft">
+          </div>
         </div>
         <div class="field-group">
           <label>Source / Campaign</label>
@@ -1128,6 +1258,13 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             </div>
           </div>
           <button class="btn btn-secondary" id="clearItem" style="margin-top:0.3rem;font-size:0.65rem;padding:0.3rem 0.6rem;display:none;">Clear</button>
+          <div id="itemImgCropControls" style="display:none;margin-top:0.5rem;">
+            <label style="display:block;margin-bottom:0.25rem;font-size:0.78rem;color:var(--label-color);">Image zoom</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="itemImgZoom" min="0.5" max="5" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <button class="btn btn-secondary" id="resetImgCrop" style="font-size:0.62rem;padding:0.2rem 0.55rem;white-space:nowrap;">Reset</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1212,23 +1349,35 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <div class="card-divider"></div>
 
         <div class="card-image-wrap" id="imageWrap">
-          <div class="card-image-container">
+          <div class="card-side-stat" id="saveStat" style="display:none;">
+            <span class="side-stat-label" id="previewSaveLabel">Save</span>
+            <span class="side-stat-value" id="previewSave"></span>
+          </div>
+          <div class="card-image-container" id="cardImgContainer">
             <img id="cardItemImg" src="" alt="Item image" style="display:none;">
             <div class="card-image-placeholder" id="imgPlaceholder">⚔</div>
+            <div class="img-drag-hint" id="imgDragHint">
+              <span class="hint-icon">✥</span>
+              <span class="hint-text">Drag to reposition<br>Scroll to zoom</span>
+            </div>
+          </div>
+          <div class="card-side-stat" id="rangeStat" style="display:none;">
+            <span class="side-stat-label" id="previewRangeLabel">Range</span>
+            <span class="side-stat-value" id="previewRange"></span>
           </div>
         </div>
 
         <div class="card-stats" id="statsStrip">
           <div class="card-stat">
-            <span class="stat-label">Bonus</span>
+            <span class="stat-label" id="previewBonusLabel">Bonus</span>
             <span class="stat-value" id="previewBonus">+2</span>
           </div>
           <div class="card-stat">
-            <span class="stat-label">Damage</span>
+            <span class="stat-label" id="previewDamageLabel">Damage</span>
             <span class="stat-value" id="previewDamage">1d6 force</span>
           </div>
           <div class="card-stat">
-            <span class="stat-label">Weight</span>
+            <span class="stat-label" id="previewWeightLabel">Weight</span>
             <span class="stat-value" id="previewWeight">4 lb</span>
           </div>
         </div>
@@ -1281,6 +1430,98 @@ const rarityIcons = {
   'artifact': '✦',
   'unique': '◈'
 };
+
+// ── ITEM IMAGE CROP (pan / zoom) ──
+let itemImgX = 0, itemImgY = 0, itemImgScale = 1;
+let itemImgNaturalW = 0, itemImgNaturalH = 0;
+
+function updateItemImageTransform() {
+  const img = $('cardItemImg');
+  if (!img || img.style.display === 'none' || !itemImgNaturalW) return;
+  const C = 110;
+  const coverScale = Math.max(C / itemImgNaturalW, C / itemImgNaturalH);
+  const total = coverScale * itemImgScale;
+  const baseX  = (C - itemImgNaturalW * total) / 2;
+  const baseY  = (C - itemImgNaturalH * total) / 2;
+  img.style.width           = itemImgNaturalW + 'px';
+  img.style.height          = itemImgNaturalH + 'px';
+  img.style.left            = '0';
+  img.style.top             = '0';
+  img.style.transformOrigin = '0 0';
+  img.style.transform       = `translate(${baseX + itemImgX}px,${baseY + itemImgY}px) scale(${total})`;
+}
+
+function resetImageCrop() {
+  itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+  if ($('itemImgZoom')) $('itemImgZoom').value = 1;
+  updateItemImageTransform();
+}
+
+function showCropControls(visible) {
+  const el = $('itemImgCropControls');
+  if (el) el.style.display = visible ? 'block' : 'none';
+  const c = $('cardImgContainer');
+  c.style.cursor = visible ? 'grab' : '';
+  c.classList.toggle('has-img', !!visible);
+}
+
+// Drag to pan
+(function() {
+  let dragging = false, startX = 0, startY = 0;
+  const con = () => $('cardImgContainer');
+
+  document.addEventListener('mousedown', e => {
+    if (!con().contains(e.target) || !itemImgNaturalW) return;
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX - itemImgX;
+    startY = e.clientY - itemImgY;
+    con().style.cursor = 'grabbing';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    itemImgX = e.clientX - startX;
+    itemImgY = e.clientY - startY;
+    updateItemImageTransform();
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    if (itemImgNaturalW) con().style.cursor = 'grab';
+  });
+
+  // Touch pan
+  let tx = 0, ty = 0;
+  con().addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || !itemImgNaturalW) return;
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+    dragging = true; e.preventDefault();
+  }, { passive: false });
+  con().addEventListener('touchmove', e => {
+    if (!dragging || e.touches.length !== 1) return;
+    itemImgX += e.touches[0].clientX - tx;
+    itemImgY += e.touches[0].clientY - ty;
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+    updateItemImageTransform(); e.preventDefault();
+  }, { passive: false });
+  con().addEventListener('touchend', () => { dragging = false; });
+})();
+
+// Scroll to zoom
+$('cardImgContainer').addEventListener('wheel', e => {
+  if (!itemImgNaturalW) return;
+  e.preventDefault();
+  itemImgScale = Math.max(0.2, Math.min(10, itemImgScale * (e.deltaY > 0 ? 0.92 : 1.08)));
+  if ($('itemImgZoom')) $('itemImgZoom').value = itemImgScale;
+  updateItemImageTransform();
+}, { passive: false });
+
+// Zoom slider + reset button
+$('itemImgZoom').addEventListener('input', () => {
+  itemImgScale = parseFloat($('itemImgZoom').value);
+  updateItemImageTransform();
+});
+$('resetImgCrop').addEventListener('click', resetImageCrop);
 
 // ── LIVE SYNC ──
 function syncCard() {
@@ -1354,8 +1595,23 @@ function syncCard() {
     $('itemCard').style.minHeight = '';
   }
 
+  // Stat labels
+  $('previewBonusLabel').textContent  = $('bonusLabel').value  || 'Bonus';
+  $('previewDamageLabel').textContent = $('damageLabel').value || 'Damage';
+  $('previewWeightLabel').textContent = $('weightLabel').value || 'Weight';
+
+  // Side stats (save / range)
+  const saveVal  = $('itemSave').value.trim();
+  const rangeVal = $('itemRange').value.trim();
+  $('saveStat').style.display  = saveVal  ? 'block' : 'none';
+  $('rangeStat').style.display = rangeVal ? 'block' : 'none';
+  if (saveVal)  { $('previewSave').textContent  = saveVal;  $('previewSaveLabel').textContent  = $('saveLabel').value  || 'Save'; }
+  if (rangeVal) { $('previewRange').textContent = rangeVal; $('previewRangeLabel').textContent = $('rangeLabel').value || 'Range'; }
+
   // Toggles
-  $('imageWrap').style.display     = $('showImage').checked ? 'flex' : 'none';
+  const showImg = $('showImage').checked;
+  $('cardImgContainer').style.display = showImg ? 'flex' : 'none';
+  $('imageWrap').style.display     = (showImg || !!saveVal || !!rangeVal) ? 'grid' : 'none';
   $('statsStrip').style.display    = $('showStats').checked ? 'flex' : 'none';
   $('cardFrame').style.display     = $('showFrame').checked ? 'block' : 'none';
 
@@ -1367,13 +1623,13 @@ function syncCard() {
   }
   if (/^#[0-9a-fA-F]{6}$/.test(inkCol)) {
     const card = $('itemCard');
-    card.querySelectorAll('.card-item-name,.card-subtype,.stat-value,.card-source').forEach(el => {
+    card.querySelectorAll('.card-item-name,.card-subtype,.stat-value,.card-source,.side-stat-value').forEach(el => {
       el.style.color = inkCol;
     });
     card.querySelectorAll('.card-description').forEach(el => {
       el.style.color = inkCol;
     });
-    card.querySelectorAll('.stat-label,.card-attunement').forEach(el => {
+    card.querySelectorAll('.stat-label,.card-attunement,.side-stat-label').forEach(el => {
       el.style.color = inkCol;
       el.style.opacity = '0.75';
     });
@@ -1385,7 +1641,9 @@ function syncCard() {
   'itemName','itemType','itemSubtype','itemRarity','itemBonus',
   'itemDamage','itemWeight','itemSource','itemDescription',
   'itemAttunement','attunementCustom','showImage','showStats','showFrame',
-  'allowOversized'
+  'allowOversized',
+  'bonusLabel','damageLabel','weightLabel','saveLabel','rangeLabel',
+  'itemSave','itemRange'
 ].forEach(id => {
   const el = $(id);
   if (el) el.addEventListener('input', syncCard);
@@ -1441,13 +1699,23 @@ bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
   const img = $('cardItemImg');
   const placeholder = $('imgPlaceholder');
   if (src) {
+    img.onload = () => {
+      itemImgNaturalW = img.naturalWidth;
+      itemImgNaturalH = img.naturalHeight;
+      itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+      if ($('itemImgZoom')) $('itemImgZoom').value = 1;
+      updateItemImageTransform();
+      showCropControls(true);
+    };
     img.src = src;
     img.style.display = 'block';
     placeholder.style.display = 'none';
   } else {
-    img.src = '';
-    img.style.display = 'none';
+    img.src = ''; img.style.display = 'none'; img.style.transform = '';
     placeholder.style.display = 'block';
+    itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+    itemImgNaturalW = 0; itemImgNaturalH = 0;
+    showCropControls(false);
   }
 });
 
@@ -1458,6 +1726,24 @@ $('scaleSlider').addEventListener('input', () => {
   $('itemCard').style.transform = `scale(${val/100})`;
   $('itemCard').style.transformOrigin = 'top center';
 });
+
+// ── VIGNETTE POST-PROCESS ──
+// html2canvas mis-renders CSS radial-gradient on .card-vignette.
+// We skip that element during capture and redraw it precisely here instead.
+// Replicates: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.45) 100%)
+function applyCardVignette(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(w / 2, h / 2); // unit space: card corners at (±1, ±1)
+  const g = ctx.createRadialGradient(0, 0, 0.4, 0, 0, 1);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = g;
+  ctx.fillRect(-1, -1, 2, 2);
+  ctx.restore();
+}
 
 // ── EXPORT PNG ──
 $('exportPng').addEventListener('click', async () => {
@@ -1475,12 +1761,14 @@ $('exportPng').addEventListener('click', async () => {
       backgroundColor: null,
       logging: false,
       imageTimeout: 0,
+      ignoreElements: el => el.classList.contains('card-vignette') || el.classList.contains('img-drag-hint'),
       onclone: (doc, el) => {
         el.style.transform = 'scale(1)';
         el.style.transformOrigin = '';
         el.style.boxShadow = 'none';
       }
     });
+    applyCardVignette(canvas);
     const link = document.createElement('a');
     const name = $('itemName').value.replace(/[^a-z0-9]/gi,'_').toLowerCase() || 'magic_item';
     link.download = `${name}.png`;
@@ -1549,12 +1837,43 @@ function buildCardNode(s) {
   const damage = s.damage || '—';
   const weight = s.weight || '—';
 
-  const itemImgHtml = s.itemImage
-    ? `<img src="${s.itemImage}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">`
-    : `<div class="card-image-placeholder" style="color:rgba(90,60,30,0.4);font-size:2.5rem;">⚔</div>`;
+  const bonusLbl  = s.bonusLabel  || 'Bonus';
+  const damageLbl = s.damageLabel || 'Damage';
+  const weightLbl = s.weightLabel || 'Weight';
+  const saveLbl   = s.saveLabel   || 'Save';
+  const rangeLbl  = s.rangeLabel  || 'Range';
+
+  const C = 110;
+  let itemImgHtml;
+  if (s.itemImage) {
+    const nw = s.imgNaturalW || C;
+    const nh = s.imgNaturalH || C;
+    const coverScale = Math.max(C / nw, C / nh);
+    const total = coverScale * (s.imageScale || 1);
+    const baseX = (C - nw * total) / 2;
+    const baseY = (C - nh * total) / 2;
+    const tx = baseX + (s.imageOffsetX || 0);
+    const ty = baseY + (s.imageOffsetY || 0);
+    itemImgHtml = `<img src="${s.itemImage}" alt="" style="position:absolute;left:0;top:0;width:${nw}px;height:${nh}px;transform-origin:0 0;transform:translate(${tx}px,${ty}px) scale(${total});display:block;">`;
+  } else {
+    itemImgHtml = `<div class="card-image-placeholder" style="color:rgba(90,60,30,0.4);font-size:2.5rem;">⚔</div>`;
+  }
 
   const statsDisplay = s.showStats === false ? 'none' : 'flex';
-  const imageDisplay = s.showImage === false ? 'none' : 'flex';
+  const showImg      = s.showImage !== false;
+  const imageDisplay = showImg ? 'flex' : 'none';
+  const imageWrapDisplay = (showImg || !!s.savingThrow || !!s.range) ? 'grid' : 'none';
+
+  const sideStatStyle = `text-align:center;padding:0 6px;`;
+  const sideStatLabelStyle = `font-family:Cinzel,serif;font-size:0.5rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;`;
+  const sideStatValueStyle = `font-family:Cinzel,serif;font-size:0.72rem;font-weight:700;color:${inkCol};display:block;margin-top:3px;line-height:1.3;`;
+
+  const saveHtml  = s.savingThrow
+    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${saveLbl}</span><span style="${sideStatValueStyle}">${s.savingThrow}</span></div>`
+    : `<div></div>`;
+  const rangeHtml = s.range
+    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${rangeLbl}</span><span style="${sideStatValueStyle}">${s.range}</span></div>`
+    : `<div></div>`;
 
   const descHtml = typeof marked !== 'undefined' ? marked.parse(s.description || '') : (s.description || '');
 
@@ -1568,22 +1887,24 @@ function buildCardNode(s) {
       <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
     <div class="card-divider"></div>
-    <div class="card-image-wrap" style="display:${imageDisplay};justify-content:center;align-items:center;padding:10px 0;min-height:130px;">
-      <div class="card-image-container" style="width:110px;height:110px;border-radius:50%;border:2px solid rgba(90,60,30,0.45);overflow:hidden;background:rgba(90,60,30,0.12);display:flex;align-items:center;justify-content:center;">
+    <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
+      ${saveHtml}
+      <div class="card-image-container" style="width:110px;height:110px;border-radius:50%;border:2px solid rgba(90,60,30,0.45);overflow:hidden;background:rgba(90,60,30,0.12);display:${imageDisplay};align-items:center;justify-content:center;grid-column:2;">
         ${itemImgHtml}
       </div>
+      ${rangeHtml}
     </div>
     <div class="card-stats" style="display:${statsDisplay};justify-content:center;gap:0;padding:4px 20px;">
       <div class="card-stat" style="text-align:center;padding:3px 12px;border-right:1px solid rgba(90,60,30,0.3);flex:1;">
-        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">Bonus</span>
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${bonusLbl}</span>
         <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${bonus}</span>
       </div>
       <div class="card-stat" style="text-align:center;padding:3px 12px;border-right:1px solid rgba(90,60,30,0.3);flex:1;">
-        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">Damage</span>
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${damageLbl}</span>
         <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${damage}</span>
       </div>
       <div class="card-stat" style="text-align:center;padding:3px 12px;flex:1;">
-        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">Weight</span>
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${weightLbl}</span>
         <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${weight}</span>
       </div>
     </div>
@@ -1631,8 +1952,10 @@ async function renderStateToCanvas(s) {
     backgroundColor: null,
     logging: false,
     imageTimeout: 15000,
+    ignoreElements: el => el.classList.contains('card-vignette'),
     onclone: (doc, el) => { el.style.boxShadow = 'none'; }
   });
+  applyCardVignette(canvas);
   offscreen.removeChild(node);
   return canvas;
 }
@@ -1817,6 +2140,13 @@ function collectCurrentState() {
     bonus:       $('itemBonus').value,
     damage:      $('itemDamage').value,
     weight:      $('itemWeight').value,
+    bonusLabel:  $('bonusLabel').value  || 'Bonus',
+    damageLabel: $('damageLabel').value || 'Damage',
+    weightLabel: $('weightLabel').value || 'Weight',
+    savingThrow: $('itemSave').value,
+    range:       $('itemRange').value,
+    saveLabel:   $('saveLabel').value   || 'Save',
+    rangeLabel:  $('rangeLabel').value  || 'Range',
     source:      $('itemSource').value,
     description: $('itemDescription').value,
     attunement:  $('itemAttunement').value,
@@ -1832,6 +2162,11 @@ function collectCurrentState() {
     itemImage:   $('cardItemImg').src && $('cardItemImg').style.display !== 'none'
                    ? $('cardItemImg').src
                    : null,
+    imageOffsetX: itemImgX,
+    imageOffsetY: itemImgY,
+    imageScale:   itemImgScale,
+    imgNaturalW:  itemImgNaturalW,
+    imgNaturalH:  itemImgNaturalH,
   };
 }
 
@@ -1843,6 +2178,13 @@ function applyState(s) {
   $('itemBonus').value       = s.bonus       || '';
   $('itemDamage').value      = s.damage      || '';
   $('itemWeight').value      = s.weight      || '';
+  $('bonusLabel').value      = s.bonusLabel  || 'Bonus';
+  $('damageLabel').value     = s.damageLabel || 'Damage';
+  $('weightLabel').value     = s.weightLabel || 'Weight';
+  $('itemSave').value        = s.savingThrow || '';
+  $('itemRange').value       = s.range       || '';
+  $('saveLabel').value       = s.saveLabel   || 'Save';
+  $('rangeLabel').value      = s.rangeLabel  || 'Range';
   $('itemSource').value      = s.source      || '';
   $('itemDescription').value = s.description || '';
   $('itemAttunement').value  = s.attunement  || '';
@@ -1873,7 +2215,26 @@ function applyState(s) {
   const img = $('cardItemImg');
   const ph  = $('imgPlaceholder');
   if (s.itemImage) {
-    img.src = s.itemImage;
+    itemImgX        = s.imageOffsetX ?? 0;
+    itemImgY        = s.imageOffsetY ?? 0;
+    itemImgScale    = s.imageScale   ?? 1;
+    itemImgNaturalW = s.imgNaturalW  ?? 0;
+    itemImgNaturalH = s.imgNaturalH  ?? 0;
+    if ($('itemImgZoom')) $('itemImgZoom').value = itemImgScale;
+    const restoreTransform = () => {
+      if (!itemImgNaturalW) {
+        itemImgNaturalW = img.naturalWidth;
+        itemImgNaturalH = img.naturalHeight;
+      }
+      updateItemImageTransform();
+      showCropControls(true);
+    };
+    if (img.src === s.itemImage && img.complete) {
+      restoreTransform();
+    } else {
+      img.onload = restoreTransform;
+      img.src = s.itemImage;
+    }
     img.style.display = 'block';
     ph.style.display = 'none';
     $('itemImgPreview').src = s.itemImage;
@@ -1882,10 +2243,14 @@ function applyState(s) {
   } else {
     img.src = '';
     img.style.display = 'none';
+    img.style.transform = '';
     ph.style.display = 'block';
     $('itemImgPreview').src = '';
     $('itemImgZone').classList.remove('has-image');
     $('clearItem').style.display = 'none';
+    itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+    itemImgNaturalW = 0; itemImgNaturalH = 0;
+    showCropControls(false);
   }
 
   syncCard();
@@ -1926,7 +2291,7 @@ function renderHistoryBar() {
     const meta = document.createElement('div');
     meta.className = 'history-meta';
     meta.innerHTML = `<span class="history-name">${item.name || 'Unnamed'}</span>
-                      <span class="history-rarity">${rarityLabel}</span>`;
+                      <span class="history-rarity rarity-${item.rarity}">${rarityLabel}</span>`;
 
     // Delete btn
     const del = document.createElement('button');
