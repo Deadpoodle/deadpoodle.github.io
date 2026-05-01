@@ -12,7 +12,6 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #e8f4f8; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
         }
@@ -27,12 +26,11 @@
             background-position: center;
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
-            z-index: -1; 
+            z-index: -2; /* Sent to the absolute back */
         }
 
-        #bg1, #bg2 {
-            opacity: 0;
-        }
+        #bg1 { opacity: 1; } /* Force first one visible */
+        #bg2 { opacity: 0; }
 
         #canvas {
             display: block;
@@ -67,7 +65,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             display: none; 
             flex-direction: column;
             justify-content: center;
@@ -83,7 +81,6 @@
             cursor: pointer;
             filter: drop-shadow(0 0 20px rgba(255,255,255,0.6));
             margin-bottom: 20px;
-            transition: transform 0.2s;
         }
 
         .score-board {
@@ -124,7 +121,7 @@
             align-items: flex-end;
         }
 
-        /* Stove Grates / Black Bars */
+        /* Restoration of Black Bars */
         #fire-container::before {
             content: "";
             position: absolute;
@@ -184,20 +181,10 @@
         }
 
         @media (max-width: 600px) {
-            #big-spatula { 
-                width: 45px; 
-                display: none; 
-            }
-            #fire-container { 
-                width: 60%; 
-                left: 20%; 
-            }
-            .score-board { 
-                font-size: 22px; 
-            }
-            #mobile-overlay { 
-                display: flex; 
-            }
+            #big-spatula { width: 45px; display: none; }
+            #fire-container { width: 60%; left: 20%; }
+            .score-board { font-size: 22px; }
+            #mobile-overlay { display: flex; }
         }
     </style>
 </head>
@@ -208,6 +195,7 @@
         <h2 style="margin: 0; font-family: sans-serif;">TAP TO BEGIN</h2>
     </div>
 
+    <!-- Background Layers -->
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
     
@@ -246,8 +234,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        let width;
-        let height;
+        let width, height;
         let sessionScore = 0;
         let problemCounter = 0; 
         let isDragging = false;
@@ -262,7 +249,6 @@
         const fallingImg = new Image();
         fallingImg.src = 'falling_spatula.png';
 
-        // --- Lyrics Data ---
         const lyrics = [
             { time: 0, text: "Grab your Spatula!" },
             { time: 5.48, text: "Everything's alright" },
@@ -297,11 +283,8 @@
 
         function spawnSpatulas() {
             fallingSpatulas = [];
-            
-            // Logic: More spatulas as score increases
-            // Safety: Cap at 100 to avoid lag
             let desiredCount = 35 + sessionScore;
-            let safetyCap = 100;
+            let safetyCap = 100; // Safety cap as requested
             let finalCount = Math.min(desiredCount, safetyCap);
 
             for (let i = 0; i < finalCount; i++) {
@@ -315,7 +298,6 @@
             scoreDisplay.innerText = problemCounter; 
         }
 
-        // --- Spatula Physics Class ---
         class SpatulaPiece {
             constructor() {
                 this.gravity = 0.15;
@@ -338,18 +320,14 @@
                 this.x += this.vx;
                 this.y += this.dy;
                 this.rotation += this.spin;
-
-                // Air friction
                 this.vx *= 0.98;
 
-                // Gravity logic
                 if (this.dy < this.baseSpeed) {
                     this.dy += this.gravity;
                 } else {
                     this.dy *= 0.995;
                 }
 
-                // Collision with player spatula
                 const dx = this.x - currentX;
                 const dy = this.y - currentY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -361,18 +339,9 @@
                     this.dy += Math.sin(angle) * force + (currentY - lastY) * 0.5;
                 }
 
-                // Fire Zone Detection
                 const isMobile = window.innerWidth <= 600;
-                let fireWidthPercent;
-                let fireLeftPercent;
-
-                if (isMobile) {
-                    fireWidthPercent = 0.6;
-                    fireLeftPercent = 0.2;
-                } else {
-                    fireWidthPercent = 0.333;
-                    fireLeftPercent = 0.333;
-                }
+                let fireWidthPercent = isMobile ? 0.6 : 0.333;
+                let fireLeftPercent = isMobile ? 0.2 : 0.333;
                 
                 if (this.y > (height - 80) && !this.counted) {
                     let leftBound = width * fireLeftPercent;
@@ -381,7 +350,6 @@
                     if (this.x > leftBound && this.x < rightBound) {
                         problemCounter++;
                         sessionScore++;
-                        
                         if (sessionScore > stats.highScore) {
                             stats.highScore = sessionScore;
                             localStorage.setItem('spatula_high', stats.highScore);
@@ -391,9 +359,7 @@
                     this.counted = true;
                 }
 
-                if (this.y > height + 100) {
-                    this.reset();
-                }
+                if (this.y > height + 100) this.reset();
             }
 
             draw() {
@@ -405,22 +371,16 @@
             }
         }
 
-        // --- Audio and Control Functions ---
         function startMusic() {
             audio.play().then(() => {
                 audioStarted = true;
                 overlay.style.display = 'none';
                 bigSpatula.style.display = 'block';
-            }).catch(err => {
-                console.log("Audio play failed: ", err);
-            });
+            }).catch(err => console.log("Audio fail: ", err));
         }
 
         playImg.addEventListener('click', startMusic);
-        playImg.addEventListener('touchstart', (e) => { 
-            e.preventDefault(); 
-            startMusic(); 
-        });
+        playImg.addEventListener('touchstart', (e) => { e.preventDefault(); startMusic(); });
 
         document.getElementById('stop-btn').addEventListener('click', () => {
             audio.pause();
@@ -428,10 +388,7 @@
             audioStarted = false;
             problemCounter = 0; 
             lyricsDisplay.innerText = "Grab your Spatula!";
-            currentX = window.innerWidth / 2;
-            currentY = window.innerHeight / 2;
             updateMetricDisplay();
-            
             if (window.innerWidth <= 600) {
                 overlay.style.display = 'flex';
                 bigSpatula.style.display = 'none';
@@ -439,7 +396,6 @@
         });
 
         audio.addEventListener('timeupdate', () => {
-            // Loop logic: Detect the start of a new loop
             if (audio.currentTime < 0.5 && audioStarted && problemCounter > 0) {
                 stats.loops++;
                 localStorage.setItem('spatula_loops', stats.loops);
@@ -450,8 +406,8 @@
         });
 
         // --- Background Management ---
-        const bgList = ['bg1.png','bg2.png','bg3.png','bg4.png','bg5.png','bg6.png','bg7.png','bg8.png'];
-        let bgIdx = -1;
+        const bgList = ['./bg1.png','./bg2.png','./bg3.png','./bg4.png','./bg5.png','./bg6.png','./bg7.png','./bg8.png'];
+        let bgIdx = 0;
         let currentLyr = 1;
 
         function cycleBg() {
@@ -464,95 +420,51 @@
             const l1 = document.getElementById('bg1');
             const l2 = document.getElementById('bg2');
             
-            let active;
-            let target;
-
             if (currentLyr === 1) {
-                active = l1;
-                target = l2;
+                l2.style.backgroundImage = `url("${bgList[bgIdx]}")`;
+                l2.style.opacity = 1;
+                l1.style.opacity = 0;
                 currentLyr = 2;
             } else {
-                active = l2;
-                target = l1;
+                l1.style.backgroundImage = `url("${bgList[bgIdx]}")`;
+                l1.style.opacity = 1;
+                l2.style.opacity = 0;
                 currentLyr = 1;
             }
-
-            target.style.backgroundImage = "url('" + bgList[bgIdx] + "')";
-            target.style.opacity = 1;
-            active.style.opacity = 0;
         }
 
-        // Setup Initial BG
-        document.getElementById('bg1').style.backgroundImage = "url('bg1.png')";
-        document.getElementById('bg1').style.opacity = 1;
+        // Force initial Background
+        document.getElementById('bg1').style.backgroundImage = `url("${bgList[0]}")`;
         setInterval(cycleBg, 12000);
 
-        // --- Input Handling ---
         function updateSpatulaPosition(x, y) {
             currentX = x;
             currentY = y;
-            
-            // Auto-start for desktop if they click/grab
-            if (!audioStarted && window.innerWidth > 600) {
-                startMusic();
-            }
+            if (!audioStarted && window.innerWidth > 600) startMusic();
         }
 
-        // Desktop Mouse Events
-        bigSpatula.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            updateSpatulaPosition(e.clientX, e.clientY);
-        });
+        bigSpatula.addEventListener('mousedown', (e) => { isDragging = true; updateSpatulaPosition(e.clientX, e.clientY); });
+        window.addEventListener('mousemove', (e) => { if (isDragging) updateSpatulaPosition(e.clientX, e.clientY); });
+        window.addEventListener('mouseup', () => isDragging = false);
+        bigSpatula.addEventListener('touchstart', (e) => { isDragging = true; updateSpatulaPosition(e.touches[0].clientX, e.touches[0].clientY); });
+        window.addEventListener('touchmove', (e) => { if (isDragging) { e.preventDefault(); updateSpatulaPosition(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+        window.addEventListener('touchend', () => isDragging = false);
 
-        window.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                updateSpatulaPosition(e.clientX, e.clientY);
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-        
-        // Mobile Touch Events
-        bigSpatula.addEventListener('touchstart', (e) => {
-            isDragging = true;
-            updateSpatulaPosition(e.touches[0].clientX, e.touches[0].clientY);
-        });
-
-        window.addEventListener('touchmove', (e) => {
-            if (isDragging) {
-                e.preventDefault();
-                updateSpatulaPosition(e.touches[0].clientX, e.touches[0].clientY);
-            }
-        }, { passive: false });
-
-        window.addEventListener('touchend', () => {
-            isDragging = false;
-        });
-
-        // --- Main Animation Loop ---
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            
-            // Calculate big spatula rotation based on speed
             let deltaX = currentX - lastX;
             rotation += (deltaX * 1.8 - rotation) * 0.1;
-            
             bigSpatula.style.left = currentX + 'px';
             bigSpatula.style.top = currentY + 'px';
-            bigSpatula.style.transform = "translate(-50%, -50%) rotate(" + rotation + "deg)";
-            
+            bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
             lastX = currentX;
             lastY = currentY;
 
-            // Draw falling items
             for (let i = 0; i < fallingSpatulas.length; i++) {
                 fallingSpatulas[i].update();
                 fallingSpatulas[i].draw();
             }
 
-            // Lyrics Update
             if (audioStarted) {
                 let currentText = lyrics[0].text;
                 for (let i = lyrics.length - 1; i >= 0; i--) {
@@ -563,12 +475,10 @@
                 }
                 lyricsDisplay.innerText = currentText;
             }
-
             requestAnimationFrame(animate);
         }
 
         window.addEventListener('resize', init);
-        
         fallingImg.onload = function() {
             init();
             animate();
