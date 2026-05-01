@@ -210,6 +210,9 @@
         };
 
         const stopBtn = document.getElementById('stop-btn');
+        const audio = document.getElementById('spatula-audio');
+        const lyricsDisplay = document.getElementById('lyrics-display');
+        let audioStarted = false;
 
         const updateMetricDisplay = () => {
             document.getElementById('high-score').innerText = stats.highScore;
@@ -228,7 +231,6 @@
             localStorage.setItem('spatula_loops', stats.loops);
         };
 
-        const audio = document.getElementById('spatula-audio');
         audio.addEventListener('seeked', function() {
             if (audio.currentTime < 0.5) {
                 stats.loops++;
@@ -261,8 +263,6 @@
             { time: 86.74, text: "Yeah" }
         ];
 
-        const lyricsDisplay = document.getElementById('lyrics-display');
-
         function updateLyrics() {
             const currentTime = audio.currentTime;
             let currentText = "Grab your Spatula!"; 
@@ -281,6 +281,7 @@
             e.stopPropagation();
             audio.pause();
             audio.currentTime = 0;
+            audioStarted = false;
             lyricsDisplay.innerText = "Grab your Spatula!";
         });
 
@@ -347,11 +348,10 @@
                 this.y += this.dy;
                 this.vx *= 0.96;
 
-                // Gravity logic: Return to baseSpeed if pushed up or slowed down
                 if (this.dy < this.baseSpeed) {
                     this.dy += this.gravity;
                 } else {
-                    this.dy *= 0.99; // Air resistance for fast falling objects
+                    this.dy *= 0.99; 
                 }
 
                 const dx = this.x - currentX, dy = this.y - currentY;
@@ -393,18 +393,22 @@
         }
 
         const handleInteraction = (x, y) => {
-            if (audio.paused) {
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
+            if (!audioStarted) {
+                audio.play().then(() => {
+                    audioStarted = true;
+                }).catch(e => console.log("Audio block:", e));
             }
             isDragging = true;
             currentX = x; currentY = y;
         };
 
         bigSpatula.addEventListener('mousedown', e => handleInteraction(e.clientX, e.clientY));
+        
+        // Touchstart is the critical "unlock" gesture for Android
         bigSpatula.addEventListener('touchstart', e => {
             if (e.cancelable) e.preventDefault();
-            handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
+            const touch = e.touches[0];
+            handleInteraction(touch.clientX, touch.clientY);
         }, { passive: false });
 
         window.addEventListener('mousemove', e => { if (isDragging) { currentX = e.clientX; currentY = e.clientY; } });
