@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: #000;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +12,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            background-color: #000; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
         }
@@ -26,10 +27,10 @@
             background-position: center;
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
-            z-index: -2; /* Sent to the absolute back */
+            z-index: 1; 
         }
 
-        #bg1 { opacity: 1; } /* Force first one visible */
+        #bg1 { opacity: 1; }
         #bg2 { opacity: 0; }
 
         #canvas {
@@ -37,7 +38,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1;
+            z-index: 10; 
             pointer-events: none; 
         }
 
@@ -121,7 +122,6 @@
             align-items: flex-end;
         }
 
-        /* Restoration of Black Bars */
         #fire-container::before {
             content: "";
             position: absolute;
@@ -195,7 +195,6 @@
         <h2 style="margin: 0; font-family: sans-serif;">TAP TO BEGIN</h2>
     </div>
 
-    <!-- Background Layers -->
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
     
@@ -219,7 +218,6 @@
     <button id="stop-btn">Stop Music</button>
 
     <script>
-        // --- Persistence and Global State ---
         let stats = {
             highScore: parseInt(localStorage.getItem('spatula_high')) || 0,
             loops: parseInt(localStorage.getItem('spatula_loops')) || 0
@@ -273,18 +271,19 @@
             { time: 79.34, text: "Cuz I got my spatula" }
         ];
 
-        // --- Initialization ---
         function init() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             updateMetricDisplay();
-            spawnSpatulas();
+            // Removed spawnSpatulas() from here so they don't fall until start
         }
 
         function spawnSpatulas() {
-            fallingSpatulas = [];
+            // Check to ensure we don't clear and reset if already active
+            if (fallingSpatulas.length > 0) return; 
+
             let desiredCount = 35 + sessionScore;
-            let safetyCap = 100; // Safety cap as requested
+            let safetyCap = 100; 
             let finalCount = Math.min(desiredCount, safetyCap);
 
             for (let i = 0; i < finalCount; i++) {
@@ -376,6 +375,7 @@
                 audioStarted = true;
                 overlay.style.display = 'none';
                 bigSpatula.style.display = 'block';
+                spawnSpatulas(); // Spawn only on start
             }).catch(err => console.log("Audio fail: ", err));
         }
 
@@ -387,6 +387,7 @@
             audio.currentTime = 0;
             audioStarted = false;
             problemCounter = 0; 
+            fallingSpatulas = []; // Clear spatulas on stop
             lyricsDisplay.innerText = "Grab your Spatula!";
             updateMetricDisplay();
             if (window.innerWidth <= 600) {
@@ -401,11 +402,11 @@
                 localStorage.setItem('spatula_loops', stats.loops);
                 problemCounter = 0; 
                 updateMetricDisplay();
+                fallingSpatulas = []; // Clear and re-trigger spawn for new loop
                 spawnSpatulas(); 
             }
         });
 
-        // --- Background Management ---
         const bgList = ['./bg1.png','./bg2.png','./bg3.png','./bg4.png','./bg5.png','./bg6.png','./bg7.png','./bg8.png'];
         let bgIdx = 0;
         let currentLyr = 1;
@@ -433,14 +434,16 @@
             }
         }
 
-        // Force initial Background
         document.getElementById('bg1').style.backgroundImage = `url("${bgList[0]}")`;
         setInterval(cycleBg, 12000);
 
         function updateSpatulaPosition(x, y) {
             currentX = x;
             currentY = y;
-            if (!audioStarted && window.innerWidth > 600) startMusic();
+            // Only start if not already started
+            if (!audioStarted && window.innerWidth > 600) {
+                startMusic();
+            }
         }
 
         bigSpatula.addEventListener('mousedown', (e) => { isDragging = true; updateSpatulaPosition(e.clientX, e.clientY); });
