@@ -119,6 +119,7 @@
     color: rgba(180,130,60,0.5);
     font-family: 'Cinzel', serif;
     font-size: 0.58rem;
+    font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
@@ -188,6 +189,23 @@
     align-items: center;
     gap: 0.5rem;
   }
+
+  /* ── FIELD NOTE ASTERISK ── */
+  .field-note {
+    color: var(--gold);
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 3px;
+    opacity: 0.85;
+  }
+  .field-note-legend {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.76rem;
+    color: rgba(180,130,60,0.6);
+    margin-top: 0.15rem;
+  }
+  body.light .field-note-legend { color: rgba(100,65,20,0.55); }
 
   .section-title::after {
     content: '';
@@ -710,7 +728,7 @@
 
   /* Footer of card */
   .card-footer {
-    padding: 8px 18px 14px;
+    padding: 8px 18px 4px;
     text-align: center;
   }
 
@@ -918,7 +936,8 @@
 
   .history-name {
     font-family: 'Cinzel', serif;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
+    font-weight: 700;
     color: #c9a96e;
     white-space: nowrap;
     overflow: hidden;
@@ -1101,6 +1120,143 @@
     .controls { order: 2; }
     .preview-area { order: 1; padding: 1.5rem 1rem; }
   }
+
+  /* ── THEME TOGGLE BUTTON ── */
+  .theme-toggle {
+    /* inherits .history-save-btn layout; no extra positioning needed */
+  }
+
+  /* ── LIGHT MODE ── */
+  body.light {
+    background: #f0e6cc;
+    color: #2c1a0e;
+  }
+  body.light::before {
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(0,0,0,0.03) 60px, rgba(0,0,0,0.03) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,0,0,0.03) 60px, rgba(0,0,0,0.03) 61px);
+  }
+  body.light header {
+    border-bottom-color: rgba(120,80,30,0.25);
+  }
+  body.light header h1 { color: #6b4400; text-shadow: none; }
+  body.light header p   { color: #7a5828; }
+  body.light .theme-toggle {
+    border-color: rgba(100,65,20,0.35);
+    color: #7a5020;
+  }
+  body.light .theme-toggle:hover {
+    border-color: rgba(100,65,20,0.65);
+    color: #3a2008;
+    background: rgba(100,65,20,0.07);
+  }
+  body.light .history-bar {
+    background: rgba(210,178,108,0.97);
+    border-bottom-color: rgba(120,80,30,0.2);
+  }
+  body.light .history-label { color: #5a3810; }
+  body.light .history-arrow {
+    background: rgba(185,150,70,0.25);
+    border-color: rgba(120,80,30,0.15) !important;
+    color: #5a3810;
+  }
+  body.light .history-arrow:hover  { background: rgba(120,80,30,0.12); color: #3a2008; }
+  body.light .history-arrow.active { color: #3a2008; }
+  body.light .history-item          { border-right-color: rgba(120,80,30,0.15); }
+  body.light .history-item:hover    { background: rgba(120,80,30,0.08); }
+  body.light .history-name          { color: #2c1a0e; }
+  body.light .history-empty         { color: #7a5020; }
+  body.light .history-save-btn {
+    color: #6b4418;
+    border-left-color: rgba(120,80,30,0.2);
+  }
+  body.light .history-save-btn:hover  { background: rgba(120,80,30,0.1); color: #3a2008; }
+  body.light .history-save-btn.flash  { background: rgba(120,80,30,0.15); color: #3a2008; }
+  body.light .history-rarity.rarity-common    { color: #7a5820; }
+  body.light .history-rarity.rarity-uncommon  { color: #1e7a3e; }
+  body.light .history-rarity.rarity-rare      { color: #1a48a0; }
+  body.light .history-rarity.rarity-very-rare { color: #6a2a9a; }
+  body.light .history-rarity.rarity-legendary { color: #c05000; }
+  body.light .history-rarity.rarity-artifact  { color: #a01818; }
+  body.light .history-rarity.rarity-unique    { color: #8a7000; }
+  body.light .history-delete { color: rgba(100,65,20,0.4); }
+  body.light .history-delete:hover { color: #c0392b; background: rgba(192,57,43,0.1); }
+  body.light .controls {
+    background: rgba(244,234,207,0.98);
+    border-right-color: rgba(120,80,30,0.2);
+  }
+  body.light .tab-bar {
+    background: rgba(180,140,70,0.12);
+    border-bottom-color: rgba(120,80,30,0.2);
+  }
+  body.light .tab-btn       { color: rgba(100,65,20,0.5); }
+  body.light .tab-btn:hover { color: #3a2008; }
+  body.light .tab-btn.active {
+    color: #4a2e00;
+    border-bottom-color: #8b6010;
+    background: rgba(140,95,20,0.08);
+  }
+  body.light .section-title { color: #8b5e08; }
+  body.light .section-title::after {
+    background: linear-gradient(to right, rgba(120,80,30,0.3), transparent);
+  }
+  body.light input[type="text"],
+  body.light select,
+  body.light textarea {
+    background: rgba(120,80,30,0.05);
+    border-color: rgba(120,80,30,0.28);
+    color: #2c1a0e;
+  }
+  body.light input[type="text"]:focus,
+  body.light select:focus,
+  body.light textarea:focus {
+    border-color: rgba(120,80,30,0.55);
+  }
+  body.light label,
+  body.light .field-group label { color: #7a5020; }
+  body.light .toggle-row        { color: #7a5020; }
+  body.light .stat-label-rename { color: #7a5020; border-bottom-color: rgba(120,80,30,0.25); }
+  body.light .label-rename-icon { color: rgba(120,80,30,0.4); }
+  body.light .btn-secondary {
+    border-color: rgba(120,80,30,0.38);
+    color: #7a5020;
+  }
+  body.light .btn-secondary:hover {
+    border-color: rgba(120,80,30,0.65);
+    color: #3a2008;
+  }
+  body.light .preview-area { background: #e4d0a5; }
+  body.light .scale-control { color: #7a5020; }
+  body.light .export-hint   { color: #7a5020; }
+  body.light .char-count    { color: #7a5020; }
+  body.light .char-count.warn { color: #9a6e00; }
+  body.light .char-count.over { color: #8b1a1a; }
+  body.light .md-hint {
+    background: rgba(120,80,30,0.06);
+    border-color: rgba(120,80,30,0.2);
+    color: #7a5020;
+  }
+  body.light .md-hint code {
+    background: rgba(120,80,30,0.1);
+    color: #5a3810;
+  }
+  body.light .upload-zone {
+    border-color: rgba(120,80,30,0.3);
+    background: rgba(120,80,30,0.04);
+  }
+  body.light .upload-zone:hover {
+    border-color: rgba(120,80,30,0.55);
+    background: rgba(120,80,30,0.08);
+  }
+  body.light .upload-placeholder { color: rgba(100,65,20,0.55); }
+  body.light .oversized-warning {
+    background: rgba(139,26,26,0.07);
+    border-color: rgba(139,26,26,0.22);
+    color: #7a1010;
+  }
+  body.light .oversized-toggle-row { color: #7a5020; }
+  body.light .color-row input[type="color"] { border-color: rgba(120,80,30,0.3); }
+  body.light p[style*="color:rgba(180,130,60"] { color: #7a5020 !important; }
 </style>
 </head>
 <body>
@@ -1129,7 +1285,7 @@
     <div id="historyItems"></div>
   </div>
   <button class="history-arrow" id="historyNext" title="Scroll right" aria-label="Scroll items right">&#8250;</button>
-  <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
+  <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">☀ Light</button>
 </div>
 
 <div class="workspace">
@@ -1176,7 +1332,7 @@
               </select>
             </div>
             <div class="field-group">
-              <label>Subtype / Material</label>
+              <label>Subtype / Material <span class="field-note">*</span></label>
               <input type="text" id="itemSubtype" placeholder="e.g. Longsword, Oak" value="Quarterstaff">
             </div>
           </div>
@@ -1192,6 +1348,12 @@
               <option value="unique">Unique</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Properties</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
           <div>
             <div class="row-3" style="margin-bottom:0.25rem;">
               <div class="label-rename-wrap">
@@ -1213,12 +1375,28 @@
               <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="4 lb">
             </div>
           </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="section-title">Properties</div>
-        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div>
+            <div class="row-2" style="margin-bottom:0.25rem;">
+              <div style="display:flex;align-items:center;gap:0.25rem;">
+                <div class="label-rename-wrap" style="flex:1;">
+                  <input class="stat-label-rename" type="text" id="saveLabel" value="Save" placeholder="Save">
+                  <span class="label-rename-icon">✒</span>
+                </div>
+                <span class="field-note">*</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.25rem;">
+                <div class="label-rename-wrap" style="flex:1;">
+                  <input class="stat-label-rename" type="text" id="rangeLabel" value="Range" placeholder="Range">
+                  <span class="label-rename-icon">✒</span>
+                </div>
+                <span class="field-note">*</span>
+              </div>
+            </div>
+            <div class="row-2">
+              <input type="text" id="itemSave" placeholder="e.g. DC 15 Dex">
+              <input type="text" id="itemRange" placeholder="e.g. 60 ft">
+            </div>
+          </div>
           <div class="field-group">
             <label>Requires Attunement</label>
             <select id="itemAttunement">
@@ -1241,26 +1419,11 @@
             <label>Custom Attunement Text</label>
             <input type="text" id="attunementCustom" placeholder="e.g. by an elf or half-elf">
           </div>
-          <div>
-            <div class="row-2" style="margin-bottom:0.25rem;">
-              <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="saveLabel" value="Save" placeholder="Save">
-                <span class="label-rename-icon">✒</span>
-              </div>
-              <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="rangeLabel" value="Range" placeholder="Range">
-                <span class="label-rename-icon">✒</span>
-              </div>
-            </div>
-            <div class="row-2">
-              <input type="text" id="itemSave" placeholder="e.g. DC 15 Dex">
-              <input type="text" id="itemRange" placeholder="e.g. 60 ft">
-            </div>
-          </div>
           <div class="field-group">
-            <label>Source / Campaign</label>
+            <label>Source / Campaign <span class="field-note">*</span></label>
             <input type="text" id="itemSource" placeholder="e.g. Homebrew — The Shattered Realm" value="Homebrew">
           </div>
+          <p class="field-note-legend"><span class="field-note">*</span> These fields are hidden on the card when left empty</p>
         </div>
       </div>
 
@@ -1307,6 +1470,11 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             <code>---</code> (divider)
           </div>
         </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+        <button class="history-save-btn" id="historySaveBtn" style="border:1px solid rgba(180,130,60,0.4);border-radius:4px;padding:0.45rem 1.2rem;" title="Save current item to history">＋ Save to History</button>
+        <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.75rem;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear Card</button>
       </div>
 
     </div><!-- /tab-identity -->
@@ -1429,6 +1597,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
     </div>
 
     <!-- THE CARD -->
+    <div id="cardScaleWrap" style="width:100%;display:flex;justify-content:center;align-items:flex-start;height:580px;">
     <div id="itemCard" class="item-card">
       <div class="card-bg" id="cardBg"></div>
       <div class="card-texture"></div>
@@ -1500,6 +1669,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         </div>
       </div>
     </div>
+    </div><!-- /cardScaleWrap -->
 
     <div class="export-hint">
       Use <strong>Save as PNG</strong> for a high-quality image export, or <strong>Print</strong> for physical cards.
@@ -1828,6 +1998,7 @@ $('scaleSlider').addEventListener('input', () => {
   $('scaleLabel').textContent = val + '%';
   $('itemCard').style.transform = `scale(${val/100})`;
   $('itemCard').style.transformOrigin = 'top center';
+  $('cardScaleWrap').style.height = (580 * val / 100) + 'px';
 });
 
 // ── VIGNETTE POST-PROCESS ──
@@ -2015,8 +2186,8 @@ function buildCardNode(s) {
     <div class="card-body" style="padding:8px 20px 16px;flex:1;">
       <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.6;color:${inkCol};">${descHtml}</div>
     </div>
-    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">Requires Attunement ${attuneText}</div>` : ''}
-    <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
+    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:14px;border-top:1px solid rgba(90,60,30,0.2);">Requires Attunement ${attuneText}</div>` : ''}
+    <div class="card-footer" style="padding:8px 18px 4px;text-align:center;">
       <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.source || ''}</div>
     </div>
   `;
@@ -2269,6 +2440,36 @@ $('importJsonFile').addEventListener('change', e => {
     }
   };
   reader.readAsText(file);
+});
+
+// ── THEME TOGGLE ──
+(function () {
+  const btn = $('themeToggle');
+  function applyTheme(light) {
+    document.body.classList.toggle('light', light);
+    btn.textContent = light ? '☽ Dark' : '☀ Light';
+    localStorage.setItem('dnd_theme', light ? 'light' : 'dark');
+  }
+  btn.addEventListener('click', () => applyTheme(!document.body.classList.contains('light')));
+  applyTheme(localStorage.getItem('dnd_theme') === 'light');
+})();
+
+// ── CLEAR CARD ──
+$('clearCardBtn').addEventListener('click', () => {
+  if (!confirm('Clear the current card? All fields will be reset to blank.')) return;
+  applyState({
+    name: '', type: 'Weapon', subtype: '', rarity: 'common',
+    bonus: '', damage: '', weight: '',
+    bonusLabel: 'Bonus', damageLabel: 'Damage', weightLabel: 'Weight',
+    savingThrow: '', range: '', saveLabel: 'Save', rangeLabel: 'Range',
+    source: '', description: '',
+    attunement: '', attunementCustom: '',
+    cardColor: '#d4b87a', inkColor: '#2c1a0e',
+    showImage: true, showStats: true, showFrame: true,
+    bgImage: null, itemImage: null,
+    imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
+    imgNaturalW: 0, imgNaturalH: 0,
+  });
 });
 
 // ── TABS ──
