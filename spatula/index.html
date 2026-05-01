@@ -12,7 +12,6 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            /* Changed to transparent so bg-layers show through */
             background-color: transparent; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; 
@@ -24,18 +23,14 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            min-width: 100%;
-            min-height: 100%;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             transition: opacity 1.5s ease-in-out;
-            /* Ensure these are above the base body but below everything else */
             z-index: -1; 
         }
 
-        #bg1 { opacity: 0; }
-        #bg2 { opacity: 0; }
+        #bg1, #bg2 { opacity: 0; }
 
         #canvas {
             display: block;
@@ -50,7 +45,7 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 50px;
+            width: 60px;
             height: auto;
             cursor: grab;
             transform: translate(-50%, -50%) rotate(0deg);
@@ -59,211 +54,218 @@
             touch-action: none;
         }
 
-        .ui-overlay {
+        .score-board {
             position: absolute;
-            bottom: 30px;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            z-index: 20;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+
+        .catcher-container {
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            width: 50%;
+            height: 40px;
+            border-left: 5px solid #2c3e50;
+            border-right: 5px solid #2c3e50;
+            border-bottom: 8px solid #2c3e50;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 5;
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* Subtitle Styling */
+        #lyrics-display {
+            position: absolute;
+            bottom: 50px;
             width: 100%;
             text-align: center;
             color: #2c3e50;
-            z-index: 5;
+            z-index: 4;
             pointer-events: none;
-            text-shadow: 0 0 10px rgba(255,255,255,0.9);
+            font-size: 20px;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(255,255,255,0.9);
+            min-height: 1.2em;
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
 <body>
-    <!-- Fallback color container to ensure no white flash -->
     <div style="position:fixed; top:0; left:0; width:100%; height:100%; background-color:#e8f4f8; z-index:-2;"></div>
+
+    <div class="score-board">Problems Solved: <span id="score">0</span></div>
 
     <div id="bg1" class="bg-layer"></div>
     <div id="bg2" class="bg-layer"></div>
 
     <canvas id="canvas"></canvas>
+    <div class="catcher-container"></div>
 
     <img id="big-spatula" src="big_spatula.png" alt="Big Spatula" draggable="false">
-
     <audio id="spatula-audio" src="got_my_spatula.mp3" preload="auto" loop></audio>
 
-    <div class="ui-overlay">
-        <h2>Everything's Alright!</h2>
-        <p>Oh Everything is A-OK!</p>
-    </div>
+    <!-- Subtitle Container -->
+    <div id="lyrics-display">Obtain Spatula to begin!</div>
 
     <script>
-        // --- 1. BACKGROUND CONFIGURATION ---
-        const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
-        let lastBgIndex = -1;
-        let currentLayer = 1;
+        // --- 1. LYRICS CONFIGURATION ---
+        // Set the time in seconds when each line should appear
+        const lyrics = [
+            { time: 5.48, text: "Everything's alright" },
+            { time: 7.16, text: "Oh everything is A-O-K" },
+            { time: 11.48, text: "Everything is great" },
+            { time: 14.92, text: "Cuz I got my spatula" },
+            { time: 20.48, text: "Everything's alright" },
+            { time: 23.16, text: "Oh everything is A-O-K" },
+            { time: 27.48, text: "Everything is great" },
+            { time: 31.88, text: "Cuz I got my spatula" },
+            { time: 36.39, text: "Don't need no broiler pan" },
+            { time: 39.39, text: "Don't need a big spoon, yeah" },
+            { time: 44.39, text: "Don't need no Ginsu knives" },
+            { time: 47.48, text: "Cuz it's my spatula that makes me swoon" },
+            { time: 52.44, text: "Everything's alright" },
+            { time: 55.03, text: "Oh everything is A-O-K" },
+            { time: 100.44, text: "Everything is great" }, // Note: 01:00 in SRT is 60.44 seconds
+            { time: 102.84, text: "Cuz I got my spatula" }, // 01:02 is 62.84
+            { time: 108.43, text: "Everything's alright" }, // 01:08 is 68.43
+            { time: 111.08, text: "Oh everything is A-O-K" }, // 01:11 is 71.08
+            { time: 115.43, text: "Everything is great" }, // 01:15 is 75.43
+            { time: 118.84, text: "Cuz I got my spatula" }, // 01:18 is 78.84
+            { time: 126.24, text: "Yeah" }
+        ];
 
-        // Pathing Fix
+        const lyricsDisplay = document.getElementById('lyrics-display');
+        const audio = document.getElementById('spatula-audio');
+
+        function updateLyrics() {
+            const currentTime = audio.currentTime;
+            
+            // Find the lyric line that matches the current time
+            // We loop backwards to find the latest line that has already passed its start time
+            let currentText = "Obtain Spatula to begin!"; 
+            for (let i = lyrics.length - 1; i >= 0; i--) {
+                if (currentTime >= lyrics[i].time) {
+                    currentText = lyrics[i].text;
+                    break;
+                }
+            }
+            
+            if (lyricsDisplay.innerText !== currentText) {
+                lyricsDisplay.innerText = currentText;
+            }
+        }
+
+        // --- 2. BACKGROUND & SCORE ---
+        const bgImages = ['bg1.png', 'bg2.png', 'bg3.png']; 
+        let lastBgIndex = -1, currentLayer = 1, problemsSolved = 0;
+        const scoreDisplay = document.getElementById('score');
         const directory = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
 
         function changeBackground(isInitial = false) {
             if (bgImages.length === 0) return;
-            
             let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * bgImages.length);
-            } while (newIndex === lastBgIndex && bgImages.length > 1);
-            
+            do { newIndex = Math.floor(Math.random() * bgImages.length); } while (newIndex === lastBgIndex && bgImages.length > 1);
             lastBgIndex = newIndex;
-            
-            // Apply the directory fix you requested
             const fullPath = `${directory}/${bgImages[newIndex]}`;
             const imgUrl = `url("${fullPath}")`;
-            
-            const layer1 = document.getElementById('bg1');
-            const layer2 = document.getElementById('bg2');
+            const l1 = document.getElementById('bg1'), l2 = document.getElementById('bg2');
 
             if (isInitial) {
-                layer1.style.backgroundImage = imgUrl;
-                layer1.style.opacity = "1";
-                currentLayer = 1;
+                l1.style.backgroundImage = imgUrl; l1.style.opacity = "1"; currentLayer = 1;
             } else {
-                const activeLayer = (currentLayer === 1) ? layer1 : layer2;
-                const nextLayer = (currentLayer === 1) ? layer2 : layer1;
-
-                nextLayer.style.backgroundImage = imgUrl;
-                
-                setTimeout(() => {
-                    nextLayer.style.opacity = "1";
-                    activeLayer.style.opacity = "0";
-                    currentLayer = (currentLayer === 1 ? 2 : 1);
-                }, 100);
+                const active = (currentLayer === 1) ? l1 : l2, next = (currentLayer === 1) ? l2 : l1;
+                next.style.backgroundImage = imgUrl;
+                setTimeout(() => { next.style.opacity = "1"; active.style.opacity = "0"; currentLayer = (currentLayer === 1 ? 2 : 1); }, 100);
             }
         }
-
         changeBackground(true); 
-        setInterval(() => changeBackground(false), 10000);
+        setInterval(() => changeBackground(false), 12000);
 
-        // --- 2. CANVAS & FALLING LOGIC ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        // --- 3. CANVAS & PHYSICS ---
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
         const bigSpatula = document.getElementById('big-spatula');
-        const audio = document.getElementById('spatula-audio');
-
         let width, height, lastX;
-        const fallingSpatulas = [];
-        const spatulaCount = 45; 
-        const fallingImg = new Image();
-        fallingImg.src = 'falling_spatula.png';
+        const fallingSpatulas = [], spatulaCount = 40; 
+        const fallingImg = new Image(); fallingImg.src = 'falling_spatula.png';
 
-        let isDragging = false;
-        let currentX = window.innerWidth / 2;
-        let currentY = window.innerHeight / 2;
-        let rotation = 0;
-        const maxTilt = 25; 
+        let isDragging = false, currentX = window.innerWidth / 2, currentY = window.innerHeight / 2, rotation = 0;
 
         function init() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             fallingSpatulas.length = 0;
-            for (let i = 0; i < spatulaCount; i++) {
-                fallingSpatulas.push(new Spatula());
-            }
+            for (let i = 0; i < spatulaCount; i++) fallingSpatulas.push(new Spatula());
             lastX = currentX;
         }
 
         class Spatula {
             constructor() { this.reset(); }
             reset() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * -height;
-                this.size = Math.random() * 40 + 30;
-                this.speed = Math.random() * 3 + 2;
-                this.rotation = Math.random() * Math.PI * 2;
-                this.spin = (Math.random() - 0.5) * 0.04;
-                this.vx = 0;
+                this.x = Math.random() * width; this.y = Math.random() * -height;
+                this.size = Math.random() * 35 + 25; this.speed = Math.random() * 2 + 1.5;
+                this.rotation = Math.random() * Math.PI * 2; this.spin = (Math.random() - 0.5) * 0.03;
+                this.vx = 0; this.counted = false;
             }
             update() {
-                this.y += this.speed;
-                this.rotation += this.spin;
-                this.x += this.vx;
-                this.vx *= 0.95;
-                const dx = this.x - currentX;
-                const dy = this.y - currentY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < 150) {
+                this.y += this.speed; this.rotation += this.spin; this.x += this.vx; this.vx *= 0.96;
+                const dx = this.x - currentX, dy = this.y - currentY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 140) {
                     const angle = Math.atan2(dy, dx);
-                    this.vx += Math.cos(angle) * ((150 - distance) / 150) * 15;
-                    this.y += Math.sin(angle) * ((150 - distance) / 150) * 5;
+                    this.vx += Math.cos(angle) * 8; this.speed += Math.sin(angle) * 2;
                 }
-                if (this.y > height + 100) this.reset();
+                const bL = width * 0.25, bR = width * 0.75;
+                if (this.y > height - 20 && !this.counted) {
+                    if (this.x > bL && this.x < bR) { problemsSolved++; scoreDisplay.innerText = problemsSolved; }
+                    this.counted = true;
+                }
+                if (this.y > height + 50) this.reset();
             }
             draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
-                ctx.drawImage(fallingImg, -this.size / 2, -this.size / 2, this.size, this.size);
-                ctx.restore();
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                ctx.drawImage(fallingImg, -this.size/2, -this.size/2, this.size, this.size); ctx.restore();
             }
         }
 
-// --- 3. INTERACTION & AUDIO FIX (ANDROID 1-TAP) ---
-        
-        let audioUnlocked = false;
+        // --- 4. INTERACTION & LOOP ---
+        function attemptPlay() { if (audio.paused) { audio.play().catch(() => {}); } }
+        window.addEventListener('touchstart', attemptPlay, { once: true });
 
-        function handleInteraction(x, y) {
-            // Attempt to play immediately on every interaction until it starts
-            if (!audioUnlocked || audio.paused) {
-                audio.play()
-                .then(() => {
-                    audioUnlocked = true; // Mark as successfully playing
-                })
-                .catch(e => {
-                    console.log("Waiting for user gesture...", e);
-                });
-            }
-            isDragging = true;
-            currentX = x;
-            currentY = y;
-        }
-
-        // Mouse Events
-        bigSpatula.addEventListener('mousedown', (e) => {
-            handleInteraction(e.clientX, e.clientY);
-        });
-
-        // Android Touch Events
-        bigSpatula.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            
-            // We call this BEFORE preventDefault to ensure the browser 
-            // sees a direct link between the touch and the audio play.
-            handleInteraction(touch.clientX, touch.clientY);
-            
-            if (e.cancelable) e.preventDefault(); 
+        const handleInteraction = (x, y) => { attemptPlay(); isDragging = true; currentX = x; currentY = y; };
+        bigSpatula.addEventListener('mousedown', e => handleInteraction(e.clientX, e.clientY));
+        bigSpatula.addEventListener('touchstart', e => {
+            if (e.cancelable) e.preventDefault();
+            handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
         }, { passive: false });
 
-        window.addEventListener('mousemove', (e) => {
-            if (isDragging) { currentX = e.clientX; currentY = e.clientY; }
-        });
-
-        window.addEventListener('touchmove', (e) => {
-            if (isDragging) {
-                const touch = e.touches[0];
-                currentX = touch.clientX;
-                currentY = touch.clientY;
-            }
-        }, { passive: false });
-
+        window.addEventListener('mousemove', e => { if (isDragging) { currentX = e.clientX; currentY = e.clientY; } });
+        window.addEventListener('touchmove', e => { if (isDragging) { currentX = e.touches[0].clientX; currentY = e.touches[0].clientY; } }, { passive: false });
         window.addEventListener('mouseup', () => isDragging = false);
         window.addEventListener('touchend', () => isDragging = false);
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            let velocityX = currentX - lastX;
-            let targetRotation = isDragging ? velocityX * 1.8 : 0;
-            if (targetRotation > maxTilt) targetRotation = maxTilt;
-            if (targetRotation < -maxTilt) targetRotation = -maxTilt;
-            rotation += (targetRotation - rotation) * 0.15;
-
+            let velX = currentX - lastX;
+            let targetRot = isDragging ? velX * 1.5 : 0;
+            rotation += (targetRot - rotation) * 0.1;
             bigSpatula.style.left = currentX + 'px';
             bigSpatula.style.top = currentY + 'px';
             bigSpatula.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-            
             lastX = currentX;
             fallingSpatulas.forEach(s => { s.update(); s.draw(); });
+            
+            // Sync Lyrics
+            if (!audio.paused) updateLyrics();
+            
             requestAnimationFrame(animate);
         }
 
