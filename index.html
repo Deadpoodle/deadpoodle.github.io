@@ -1318,6 +1318,11 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <button class="btn btn-secondary" id="exportAllPng">⬇ Download All PNGs</button>
         <button class="btn btn-secondary" id="exportAllPrint">🖨 Print All (A4)</button>
       </div>
+      <div class="btn-row" style="margin-top:0.5rem;">
+        <button class="btn btn-secondary" id="exportJsonBtn" title="Export current item + all saved items as a shareable JSON file">⬇ Export JSON</button>
+        <button class="btn btn-secondary" id="importJsonBtn" title="Import items from a previously exported JSON file">⬆ Import JSON</button>
+        <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none;">
+      </div>
     </div>
 
   </div>
@@ -2108,6 +2113,65 @@ $('exportAllPrint').addEventListener('click', async () => {
   await new Promise(r => setTimeout(r, 200));
   hideProgress();
   printImagesInPopup(dataUrls, 'all');
+});
+
+// ── EXPORT JSON ──
+$('exportJsonBtn').addEventListener('click', () => {
+  const current = collectCurrentState();
+  const saved   = getHistory();
+  // Deduplicate: if current item name matches a saved one, prefer the live version
+  const others  = saved.filter(h => h.name !== current.name);
+  const payload = { version: 1, items: [current, ...others] };
+  const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  const now     = new Date();
+  const stamp   = now.toISOString().slice(0,19).replace('T','-').replace(/:/g,'-');
+  a.download    = `dnd-items-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ── IMPORT JSON ──
+$('importJsonBtn').addEventListener('click', () => {
+  $('importJsonFile').value = '';
+  $('importJsonFile').click();
+});
+
+$('importJsonFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // Accept either the { version, items } envelope or a bare array
+      const items = Array.isArray(data) ? data : (data.items || []);
+      if (!items.length) { alert('No items found in that JSON file.'); return; }
+
+      const history = getHistory();
+      let added = 0;
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        // Deduplicate by name — imported item wins (fresher)
+        const idx = history.findIndex(h => h.name === item.name);
+        if (idx >= 0) history.splice(idx, 1);
+        history.unshift(item);
+        added++;
+      }
+      // Trim to MAX_HISTORY
+      history.splice(MAX_HISTORY);
+      saveHistory(history);
+      renderHistoryBar();
+      // Load the first imported item into the form
+      applyState(items[0]);
+      alert(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
+    } catch {
+      alert('Could not read that file — make sure it is a valid D&D Item Creator JSON export.');
+    }
+  };
+  reader.readAsText(file);
 });
 
 // ── HISTORY ──
