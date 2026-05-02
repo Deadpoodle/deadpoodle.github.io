@@ -2097,6 +2097,15 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
       </div>
 
       <div>
+        <div class="section-title">Defaults</div>
+        <label class="toggle-row">
+          <span class="toggle-wrap"><input type="checkbox" id="defaultTypeImgToggle"><span class="toggle-knob"></span></span>
+          Use default type image
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Shows a default image in the item circle based on the selected item type, when no image has been uploaded.</p>
+      </div>
+
+      <div>
         <div class="section-title">Data</div>
         <p class="field-note-legend" style="margin-bottom:0.6rem;">Remove all data this app has stored in your browser, including saved item history and preferences.</p>
         <button class="btn btn-secondary" id="clearAllDataBtnSettings" style="width:100%;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
@@ -2485,6 +2494,7 @@ function syncCard() {
       el.style.opacity = '0.75';
     });
   }
+  updateDefaultTypeImage();
 }
 
 // ── BIND ALL INPUTS ──
@@ -2775,7 +2785,15 @@ function buildCardNode(s) {
     const ty = baseY + (s.imageOffsetY || 0);
     itemImgHtml = `<img src="${s.itemImage}" alt="" style="position:absolute;left:0;top:0;width:${nw}px;height:${nh}px;transform-origin:0 0;transform:translate(${tx}px,${ty}px) scale(${total});display:block;">`;
   } else {
-    itemImgHtml = `<div class="card-image-placeholder" style="color:rgba(90,60,30,0.4);font-size:2.5rem;">⚔</div>`;
+    const defaultToggle = $('defaultTypeImgToggle');
+    const defaultSrc = (defaultToggle && defaultToggle.checked) ? getTypeDefaultSrc(s.type) : null;
+    if (defaultSrc) {
+      const size = Math.round(C * 0.78);
+      const off  = Math.round((C - size) / 2);
+      itemImgHtml = `<img src="${defaultSrc}" alt="" style="position:absolute;left:${off}px;top:${off}px;width:${size}px;height:${size}px;object-fit:contain;display:block;">`;
+    } else {
+      itemImgHtml = `<div class="card-image-placeholder" style="color:rgba(90,60,30,0.4);font-size:2.5rem;">⚔</div>`;
+    }
   }
 
   const statsDisplay = s.showStats === false ? 'none' : 'flex';
@@ -3264,9 +3282,10 @@ function openNewCard() {
       saveHistory(hist);
     }
   }
-  applyState({ ...BLANK_STATE });
+  // Must be null BEFORE applyState so the registerNewCard() that fires inside
+  // setDirty → syncCard registers exactly one card, not two.
   activeHistoryId = null;
-  registerNewCard();
+  applyState({ ...BLANK_STATE });
 }
 
 $('clearCardBtn').addEventListener('click', () => {
@@ -3276,13 +3295,83 @@ $('clearCardBtn').addEventListener('click', () => {
   updateHistoryActiveClass();
 });
 
+// ── DEFAULT TYPE IMAGES ──
+function getTypeDefaultSrc(type) {
+  if (!type || type === 'Other') return null;
+  return 'defaults/' + type.toLowerCase().replace(/\s+/g, '_') + '.svg';
+}
+
+function updateDefaultTypeImage() {
+  const toggle  = $('defaultTypeImgToggle');
+  const img     = $('cardItemImg');
+  const ph      = $('imgPlaceholder');
+  const enabled = toggle && toggle.checked;
+  const hasUpload = itemImgNaturalW > 0;
+
+  if (!enabled || hasUpload) {
+    if (img.dataset.isDefault === 'true') {
+      img.src = '';
+      img.style.display = 'none';
+      img.style.width = img.style.height = img.style.left = img.style.top = img.style.objectFit = '';
+      img.removeAttribute('data-is-default');
+      ph.style.display = 'block';
+    }
+    return;
+  }
+
+  const src = getTypeDefaultSrc($('itemType').value);
+  if (!src) {
+    if (img.dataset.isDefault === 'true') {
+      img.src = '';
+      img.style.display = 'none';
+      img.removeAttribute('data-is-default');
+      ph.style.display = 'block';
+    }
+    return;
+  }
+
+  const C    = parseInt($('circleSize').value) || 110;
+  const size = Math.round(C * 0.78);
+  const off  = Math.round((C - size) / 2);
+
+  // Always update size/position so circle resize is reflected immediately
+  img.dataset.isDefault = 'true';
+  img.style.position  = 'absolute';
+  img.style.width     = size + 'px';
+  img.style.height    = size + 'px';
+  img.style.left      = off  + 'px';
+  img.style.top       = off  + 'px';
+  img.style.transform = '';
+  img.style.objectFit = 'contain';
+
+  const fullSrc = new URL(src, location.href).href;
+  if (img.src !== fullSrc) {
+    img.onerror = () => {
+      img.style.display = 'none';
+      img.removeAttribute('data-is-default');
+      ph.style.display = 'block';
+    };
+    img.onload = () => {
+      img.style.display = 'block';
+      ph.style.display  = 'none';
+    };
+    img.src = src;
+  } else {
+    img.style.display = 'block';
+    ph.style.display  = 'none';
+  }
+}
+
 // ── CLEAR ALL DATA ──
 function doClearAllData() {
   if (!confirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
   localStorage.clear();
-  renderHistoryBar();
-  setDirty(false);
+  // Use a sentinel so applyState's internal syncCard→setDirty→registerNewCard chain
+  // doesn't write a ghost card back into the just-cleared storage.
+  activeHistoryId = -1;
+  applyState({ ...DEFAULT_STATE });
   activeHistoryId = null;
+  renderHistoryBar();
   alert('All stored data has been cleared.');
 }
 $('clearAllDataBtnSettings').addEventListener('click', doClearAllData);
@@ -3571,7 +3660,17 @@ function makeHistoryThumb(item) {
     tImg.alt = item.name;
     thumb.appendChild(tImg);
   } else {
-    thumb.textContent = '⚔';
+    const fallback = document.createElement('img');
+    fallback.src = 'brown_logo.png';
+    fallback.alt = '';
+    fallback.style.width = '65%';
+    fallback.style.height = '65%';
+    fallback.style.objectFit = 'contain';
+    fallback.style.opacity = '0.55';
+    thumb.style.display = 'flex';
+    thumb.style.alignItems = 'center';
+    thumb.style.justifyContent = 'center';
+    thumb.appendChild(fallback);
   }
   return thumb;
 }
@@ -3735,6 +3834,13 @@ $('historySaveBtn').addEventListener('click', () => {
   window._updateHistoryArrows = updateArrows;
 })();
 
+// ── DEFAULT TYPE IMAGE PERSISTENCE ──
+$('defaultTypeImgToggle').checked = localStorage.getItem('dnd_default_type_img') === 'true';
+$('defaultTypeImgToggle').addEventListener('change', e => {
+  localStorage.setItem('dnd_default_type_img', e.target.checked);
+  updateDefaultTypeImage();
+});
+
 // ── AUTO-SAVE PERSISTENCE ──
 $('autoSave').checked = localStorage.getItem('dnd_autosave') === 'true';
 $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave', e.target.checked));
@@ -3824,6 +3930,8 @@ $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave
 })();
 
 // ── INITIAL RENDER ──
+// Snapshot the HTML default values before any localStorage state is applied.
+const DEFAULT_STATE = collectCurrentState();
 renderHistoryBar();
 const _initialHistory = getHistory();
 if (_initialHistory.length > 0) {
