@@ -235,6 +235,7 @@
   }
 
   input[type="text"],
+  input[type="number"],
   select,
   textarea {
     width: 100%;
@@ -250,6 +251,7 @@
   }
 
   input[type="text"]:focus,
+  input[type="number"]:focus,
   select:focus,
   textarea:focus {
     border-color: rgba(180,130,60,0.65);
@@ -2072,13 +2074,26 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
 
       <div>
         <div class="section-title">History</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
-          <label class="field-label" for="maxHistorySetting" style="margin-bottom:0;">Max saved cards</label>
-          <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold-light);min-width:1.5rem;text-align:right;">9</span>
+        <div id="maxHistorySliderRow">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+            <label class="field-label" for="maxHistorySetting" style="margin-bottom:0;">Max saved cards</label>
+            <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold-light);min-width:1.5rem;text-align:right;">9</span>
+          </div>
+          <input type="range" id="maxHistorySetting" min="1" max="50" step="1"
+            style="width:100%;" title="Maximum number of cards to keep in history (1–50)">
         </div>
-        <input type="range" id="maxHistorySetting" min="1" max="50" step="1"
-          style="width:100%;" title="Maximum number of cards to keep in history (1–50)">
-        <p class="field-note-legend" style="margin-top:0.4rem;">Max 50. Cards with large images use more browser storage — if storage fills up, the oldest cards are dropped automatically.</p>
+        <div id="maxHistoryUnlockedRow" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+            <label class="field-label" for="maxHistoryUnlockedInput" style="margin-bottom:0;">Max saved cards</label>
+          </div>
+          <input type="number" id="maxHistoryUnlockedInput" min="1" step="1"
+            style="width:100%;padding:0.35rem 0.5rem;" title="Maximum number of cards to keep in history">
+        </div>
+        <p class="field-note-legend" style="margin-top:0.4rem;" id="maxHistoryNote">Max 50. Cards with large images use more browser storage — if storage fills up, the oldest cards are dropped automatically.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;cursor:pointer;" title="Go beyond, Plus Ultra!">
+          <span class="toggle-wrap"><input type="checkbox" id="unlockMaxHistory"><span class="toggle-knob"></span></span>
+          <span id="unlockMaxHistoryLabel">Unlock max storage</span>
+        </label>
       </div>
 
       <div>
@@ -3287,10 +3302,9 @@ $('imgUploadHint').addEventListener('click', () => {
 // ── HISTORY ──
 const HISTORY_KEY = 'dnd_item_history';
 const MAX_HISTORY_DEFAULT = 9;
-const MAX_HISTORY_CAP = 50;
 function getMaxHistory() {
   const v = parseInt(localStorage.getItem('dnd_max_history'), 10);
-  return (isNaN(v) || v < 1) ? MAX_HISTORY_DEFAULT : Math.min(v, MAX_HISTORY_CAP);
+  return (isNaN(v) || v < 1) ? MAX_HISTORY_DEFAULT : v;
 }
 
 function getHistory() {
@@ -3700,22 +3714,86 @@ $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave
 
 // ── MAX HISTORY SETTING ──
 (function() {
-  const slider = $('maxHistorySetting');
-  const label  = $('maxHistoryValue');
-  slider.value = getMaxHistory();
-  label.textContent = slider.value;
-  slider.addEventListener('input', () => {
-    label.textContent = slider.value;
-  });
-  slider.addEventListener('change', () => {
-    const v = parseInt(slider.value, 10);
+  const slider       = $('maxHistorySetting');
+  const label        = $('maxHistoryValue');
+  const sliderRow    = $('maxHistorySliderRow');
+  const unlockedRow  = $('maxHistoryUnlockedRow');
+  const unlockedInput= $('maxHistoryUnlockedInput');
+  const unlockToggle = $('unlockMaxHistory');
+  const note         = $('maxHistoryNote');
+
+  const LOCKED_MAX = 50;
+
+  function applyMax(v) {
     localStorage.setItem('dnd_max_history', v);
     const hist = getHistory();
     if (hist.length > v) {
       saveHistory(hist.slice(0, v));
       renderHistoryBar();
     }
+  }
+
+  function getPreUnlockValue() {
+    const v = parseInt(localStorage.getItem('dnd_max_history_pre_unlock'), 10);
+    return (isNaN(v) || v < 1) ? LOCKED_MAX : Math.min(v, LOCKED_MAX);
+  }
+
+  function setUnlocked(on) {
+    unlockToggle.checked = on;
+    $('unlockMaxHistoryLabel').textContent = on ? 'Revert max storage' : 'Unlock max storage';
+    localStorage.setItem('dnd_max_history_unlocked', on ? 'true' : 'false');
+    if (on) {
+      // Save the current slider value so we can restore it on revert
+      localStorage.setItem('dnd_max_history_pre_unlock', slider.value);
+      sliderRow.style.display = 'none';
+      unlockedRow.style.display = 'block';
+      unlockedInput.value = getMaxHistory();
+      note.textContent = 'No upper limit. Be careful — very large histories with big images may exceed browser storage.';
+    } else {
+      sliderRow.style.display = 'block';
+      unlockedRow.style.display = 'none';
+      note.textContent = 'Max 50. Cards with large images use more browser storage — if storage fills up, the oldest cards are dropped automatically.';
+      const revertTo = getPreUnlockValue();
+      slider.value = revertTo;
+      label.textContent = revertTo;
+      applyMax(revertTo);
+    }
+  }
+
+  // Slider events — keep pre-unlock snapshot in sync as the user adjusts the slider
+  slider.addEventListener('input', () => { label.textContent = slider.value; });
+  slider.addEventListener('change', () => {
+    const v = parseInt(slider.value, 10);
+    localStorage.setItem('dnd_max_history_pre_unlock', v);
+    applyMax(v);
   });
+
+  // Unlocked text input
+  unlockedInput.addEventListener('change', () => {
+    let v = parseInt(unlockedInput.value, 10);
+    if (isNaN(v) || v < 1) v = 1;
+    unlockedInput.value = v;
+    applyMax(v);
+  });
+
+  // Toggle
+  unlockToggle.addEventListener('change', () => {
+    if (!unlockToggle.checked) {
+      const revertTo = getPreUnlockValue();
+      if (!confirm(`Reset max saved cards to ${revertTo}? Your oldest saved cards will be removed if you have more than ${revertTo}.`)) {
+        unlockToggle.checked = true;
+        return;
+      }
+    }
+    setUnlocked(unlockToggle.checked);
+  });
+
+  // Init
+  const wasUnlocked = localStorage.getItem('dnd_max_history_unlocked') === 'true';
+  const lockedVal = wasUnlocked ? getPreUnlockValue() : Math.min(getMaxHistory(), LOCKED_MAX);
+  slider.value = lockedVal;
+  label.textContent = lockedVal;
+  setUnlocked(wasUnlocked);
 })();
 
 // ── INITIAL RENDER ──
