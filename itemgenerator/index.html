@@ -919,6 +919,8 @@
   }
 
   .history-item:hover { background: rgba(180,130,60,0.08); }
+  .history-item.history-active { background: rgba(180,130,60,0.14); border-right-color: rgba(180,130,60,0.35); }
+  .history-item.history-active .history-name { color: var(--gold-light); }
 
   .history-thumb {
     width: 32px;
@@ -1048,6 +1050,8 @@
 
   .history-dropdown-item:last-child { border-bottom: none; }
   .history-dropdown-item:hover { background: rgba(180,130,60,0.1); }
+  .history-dropdown-item.history-active { background: rgba(180,130,60,0.14); }
+  .history-dropdown-item.history-active .history-name { color: var(--gold-light); }
 
   .history-dropdown-item .history-thumb {
     width: 28px;
@@ -2803,6 +2807,8 @@ function collectCurrentState() {
   };
 }
 
+let activeHistoryId = null;
+
 function applyState(s) {
   $('itemName').value        = s.name        || '';
   $('itemType').value        = s.type        || 'Weapon';
@@ -2897,7 +2903,17 @@ function applyState(s) {
     showCropControls(false);
   }
 
+  if (s.id) {
+    activeHistoryId = s.id;
+    updateHistoryActiveClass();
+  }
   syncCard();
+}
+
+function updateHistoryActiveClass() {
+  document.querySelectorAll('.history-item, .history-dropdown-item').forEach(el => {
+    el.classList.toggle('history-active', el.dataset.historyId === String(activeHistoryId));
+  });
 }
 
 function makeHistoryThumb(item) {
@@ -2937,6 +2953,7 @@ function renderHistoryBar() {
     // ── Bar item ──
     const el = document.createElement('div');
     el.className = 'history-item';
+    el.dataset.historyId = item.id;
     el.title = `Load: ${item.name || 'Unnamed Item'}`;
 
     const meta = document.createElement('div');
@@ -2964,6 +2981,7 @@ function renderHistoryBar() {
     // ── Dropdown item ──
     const ddEl = document.createElement('div');
     ddEl.className = 'history-dropdown-item';
+    ddEl.dataset.historyId = item.id;
 
     const ddMeta = document.createElement('div');
     ddMeta.className = 'history-meta';
@@ -2991,9 +3009,10 @@ function renderHistoryBar() {
     ddContainer.appendChild(ddEl);
   });
 
-  // Update arrow active states after DOM has updated
+  // Update arrow active states and selection highlight after DOM has updated
   requestAnimationFrame(() => {
     if (window._updateHistoryArrows) window._updateHistoryArrows();
+    updateHistoryActiveClass();
   });
 }
 
@@ -3048,8 +3067,13 @@ $('historySaveBtn').addEventListener('click', () => {
 })();
 
 // ── INITIAL RENDER ──
-syncCard();
 renderHistoryBar();
+const _initialHistory = getHistory();
+if (_initialHistory.length > 0) {
+  applyState(_initialHistory[0]);
+} else {
+  syncCard();
+}
 </script>
 </body>
 </html>
