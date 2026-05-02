@@ -2149,7 +2149,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             </div>
             <div class="img-drag-hint" id="imgDragHint">
               <span class="hint-icon">✥</span>
-              <span class="hint-text">Drag to reposition<br>Scroll to zoom</span>
+              <span class="hint-text">Drag to reposition<br>Scroll to zoom<br>Drag outside to remove</span>
             </div>
           </div>
           <div class="card-side-stat" id="rangeStat" style="display:none;">
@@ -2276,10 +2276,27 @@ function showCropControls(visible) {
     itemImgY = e.clientY - startY;
     updateItemImageTransform();
   });
-  document.addEventListener('mouseup', () => {
+  function isOutsideCircle(clientX, clientY) {
+    const rect = con().getBoundingClientRect();
+    const dx = clientX - (rect.left + rect.width  / 2);
+    const dy = clientY - (rect.top  + rect.height / 2);
+    return Math.sqrt(dx * dx + dy * dy) > rect.width / 2;
+  }
+
+  function confirmRemoveImage() {
+    if (confirm('Remove the item image?')) {
+      $('clearItem').click();
+    } else {
+      resetImageCrop();
+    }
+  }
+
+  document.addEventListener('mouseup', e => {
     if (!dragging) return;
     dragging = false;
-    if (itemImgNaturalW) con().style.cursor = 'grab';
+    if (!itemImgNaturalW) return;
+    con().style.cursor = 'grab';
+    if (isOutsideCircle(e.clientX, e.clientY)) confirmRemoveImage();
   });
 
   // Touch pan
@@ -2296,7 +2313,14 @@ function showCropControls(visible) {
     tx = e.touches[0].clientX; ty = e.touches[0].clientY;
     updateItemImageTransform(); e.preventDefault();
   }, { passive: false });
-  con().addEventListener('touchend', () => { dragging = false; });
+  con().addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    if (!itemImgNaturalW) return;
+    if (e.changedTouches.length > 0 && isOutsideCircle(e.changedTouches[0].clientX, e.changedTouches[0].clientY)) {
+      confirmRemoveImage();
+    }
+  });
 })();
 
 // Scroll to zoom
@@ -2617,13 +2641,16 @@ bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
 });
 
 // ── SCALE SLIDER ──
-$('scaleSlider').addEventListener('input', () => {
-  const val = $('scaleSlider').value;
+function applyCardScale(val) {
   $('scaleLabel').textContent = val + '%';
   $('itemCard').style.transform = `scale(${val/100})`;
   $('itemCard').style.transformOrigin = 'top center';
   $('cardScaleWrap').style.height = (580 * val / 100) + 'px';
-});
+}
+$('scaleSlider').addEventListener('input', () => applyCardScale($('scaleSlider').value));
+// Reset to 100% on every load so slider and card are always in sync
+$('scaleSlider').value = 100;
+applyCardScale(100);
 
 // ── VIGNETTE POST-PROCESS ──
 // html2canvas mis-renders CSS radial-gradient on .card-vignette.
