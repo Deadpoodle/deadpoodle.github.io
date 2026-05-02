@@ -2587,26 +2587,31 @@ $('importJsonFile').addEventListener('change', e => {
     try {
       const data = JSON.parse(ev.target.result);
       // Accept either the { version, items } envelope or a bare array
-      const items = Array.isArray(data) ? data : (data.items || []);
-      if (!items.length) { alert('No items found in that JSON file.'); return; }
+      const incoming = (Array.isArray(data) ? data : (data.items || []))
+                         .filter(item => item && typeof item === 'object');
+      if (!incoming.length) { alert('No items found in that JSON file.'); return; }
 
-      const history = getHistory();
-      let added = 0;
-      for (const item of items) {
-        if (!item || typeof item !== 'object') continue;
-        // Deduplicate by name — imported item wins (fresher)
-        const idx = history.findIndex(h => h.name === item.name);
-        if (idx >= 0) history.splice(idx, 1);
-        history.unshift(item);
-        added++;
+      const existing = getHistory();
+
+      // Build merged list: incoming first (newest), then existing items not duplicated by name
+      const merged = [...incoming];
+      for (const ex of existing) {
+        if (!incoming.find(i => i.name === ex.name)) merged.push(ex);
       }
-      // Trim to MAX_HISTORY
-      history.splice(MAX_HISTORY);
-      saveHistory(history);
+
+      // Check whether existing items would be dropped
+      const wouldDrop = Math.max(0, merged.length - MAX_HISTORY);
+      if (wouldDrop > 0) {
+        const msg = `You have ${existing.length} saved item${existing.length !== 1 ? 's' : ''} and are importing ${incoming.length}. ` +
+                    `This would remove ${wouldDrop} of your oldest saved item${wouldDrop !== 1 ? 's' : ''}.\n\nContinue?`;
+        if (!confirm(msg)) return;
+      }
+
+      merged.splice(MAX_HISTORY);
+      saveHistory(merged);
       renderHistoryBar();
-      // Load the first imported item into the form
-      applyState(items[0]);
-      alert(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
+      applyState(incoming[0]);
+      alert(`Imported ${incoming.length} item${incoming.length !== 1 ? 's' : ''}.`);
     } catch {
       alert('Could not read that file — make sure it is a valid D&D Item Creator JSON export.');
     }
