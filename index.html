@@ -1582,6 +1582,10 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             <input type="checkbox" id="showFrame" checked>
             Show ornate border frame
           </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="squareCorners">
+            Square card corners
+          </label>
         </div>
       </div>
 
@@ -1614,6 +1618,12 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           <button class="btn btn-secondary" id="importJsonBtn">⬆ Import JSON</button>
           <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none;">
         </div>
+      </div>
+
+      <div>
+        <div class="section-title">Cleanup</div>
+        <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Remove all data this app has stored in your browser, including saved item history and preferences.</p>
+        <button class="btn btn-secondary" id="clearAllDataBtn" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
       </div>
 
     </div><!-- /tab-export -->
@@ -1928,6 +1938,7 @@ function syncCard() {
   $('imageWrap').style.display     = (showImg || !!saveVal || !!rangeVal) ? 'grid' : 'none';
   $('statsStrip').style.display    = $('showStats').checked ? 'flex' : 'none';
   $('cardFrame').style.display     = $('showFrame').checked ? 'block' : 'none';
+  $('itemCard').style.borderRadius = $('squareCorners').checked ? '0' : '8px';
 
   // Background image opacity
   const bgOpacityVal = parseFloat($('bgOpacity').value) || 1;
@@ -1969,7 +1980,7 @@ function syncCard() {
 [
   'itemName','itemType','itemSubtype','itemRarity','itemBonus',
   'itemDamage','itemWeight','itemSource','itemDescription',
-  'itemAttunement','attunementCustom','showImage','showStats','showFrame',
+  'itemAttunement','attunementCustom','showImage','showStats','showFrame','squareCorners',
   'allowOversized',
   'bonusLabel','damageLabel','weightLabel','saveLabel','rangeLabel',
   'itemSave','itemRange'
@@ -2130,7 +2141,8 @@ $('exportPrint').addEventListener('click', async () => {
 function buildCardNode(s) {
   const wrap = document.createElement('div');
   wrap.className = 'item-card';
-  wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:8px;overflow:hidden;flex-shrink:0;`;
+  const radius = s.squareCorners ? '0' : '8px';
+  wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:${radius};overflow:hidden;flex-shrink:0;`;
 
   // bg colour layer
   const bg = document.createElement('div');
@@ -2457,11 +2469,8 @@ $('exportAllPrint').addEventListener('click', async () => {
 
 // ── EXPORT JSON ──
 $('exportJsonBtn').addEventListener('click', () => {
-  const current = collectCurrentState();
   const saved   = getHistory();
-  // Deduplicate: if current item name matches a saved one, prefer the live version
-  const others  = saved.filter(h => h.name !== current.name);
-  const payload = { version: 1, items: [current, ...others] };
+  const payload = { version: 1, items: saved };
   const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url     = URL.createObjectURL(blob);
   const a       = document.createElement('a');
@@ -2538,11 +2547,19 @@ $('clearCardBtn').addEventListener('click', () => {
     attunement: '', attunementCustom: '',
     cardColor: '#d4b87a', inkColor: '#2c1a0e',
     rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
-    showImage: true, showStats: true, showFrame: true,
+    showImage: true, showStats: true, showFrame: true, squareCorners: false,
     bgImage: null, itemImage: null,
     imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
     imgNaturalW: 0, imgNaturalH: 0,
   });
+});
+
+// ── CLEAR ALL DATA ──
+$('clearAllDataBtn').addEventListener('click', () => {
+  if (!confirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
+  localStorage.clear();
+  renderHistoryBar();
+  alert('All stored data has been cleared.');
 });
 
 // ── TABS ──
@@ -2611,6 +2628,7 @@ function collectCurrentState() {
     showImage:   $('showImage').checked,
     showStats:   $('showStats').checked,
     showFrame:   $('showFrame').checked,
+    squareCorners: $('squareCorners').checked,
     bgImage:     $('cardBgImg').style.backgroundImage
                    ? $('cardBgImg').style.backgroundImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '')
                    : null,
@@ -2657,9 +2675,10 @@ function applyState(s) {
   $('circleBorderColor').value    = /^#[0-9a-fA-F]{6}$/.test(cbc) ? cbc : '#5a3c1e';
   $('circleSize').value      = s.circleSize  ?? 110;
   $('bgOpacity').value       = s.bgOpacity   ?? 1;
-  $('showImage').checked     = s.showImage   !== false;
-  $('showStats').checked     = s.showStats   !== false;
-  $('showFrame').checked     = s.showFrame   !== false;
+  $('showImage').checked     = s.showImage    !== false;
+  $('showStats').checked     = s.showStats    !== false;
+  $('showFrame').checked     = s.showFrame    !== false;
+  $('squareCorners').checked = s.squareCorners === true;
 
   // Background image
   if (s.bgImage) {
