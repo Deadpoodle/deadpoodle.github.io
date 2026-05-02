@@ -1955,7 +1955,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
       </div>
 
       <div>
-        <div class="section-title">Appearance</div>
+        <div class="section-title">Colours</div>
         <div style="display:flex;flex-direction:column;gap:0.7rem;">
           <div class="row-2">
             <div class="field-group">
@@ -1987,6 +1987,12 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
               <input type="text" id="rarityColorHex" value="" placeholder="auto" maxlength="7">
             </div>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Card Elements</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
           <label class="toggle-row">
             <span class="toggle-wrap"><input type="checkbox" id="showImage" checked><span class="toggle-knob"></span></span>
             Show item image circle
@@ -2063,20 +2069,26 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
     <div class="tab-panel" id="tab-settings">
 
       <div>
-        <div class="section-title">Editing</div>
-        <label class="toggle-row">
-          <span class="toggle-wrap"><input type="checkbox" id="autoSave"><span class="toggle-knob"></span></span>
-          Auto-save changes
-        </label>
-        <p class="field-note-legend" style="margin-top:0.4rem;">Automatically saves edits to the current item a moment after you stop typing. Has no effect if no item is loaded from history.</p>
-      </div>
-
-      <div>
-        <div class="section-title">Theme</div>
+        <div class="section-title">Preferences</div>
         <label class="toggle-row" style="cursor:pointer;" id="themeSettingsRow">
           <span class="toggle-wrap"><input type="checkbox" id="themeSettingsCheck"><span class="toggle-knob"></span></span>
           <span id="themeSettingsLabel">Light mode</span>
         </label>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="autoSave"><span class="toggle-knob"></span></span>
+          Auto-save changes
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Automatically saves edits to the current item a moment after you stop typing. Has no effect if no item is loaded from history.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="suppressConfirmToggle"><span class="toggle-knob"></span></span>
+          Skip confirmation dialogs
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Removes "Are you sure?" prompts when deleting, clearing, or resetting cards.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="persistScaleToggle"><span class="toggle-knob"></span></span>
+          Remember card scale
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Restores your preferred card preview scale the next time you open the app.</p>
       </div>
 
       <div>
@@ -2110,6 +2122,69 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           Use default type image
         </label>
         <p class="field-note-legend" style="margin-top:0.4rem;">Shows a default image in the item circle based on the selected item type, when no image has been uploaded.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="rememberTypeToggle"><span class="toggle-knob"></span></span>
+          Remember last used type
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">New cards start with the last item type you selected, overriding the default type below.</p>
+        <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.45rem;">
+          <p class="field-note-legend" style="margin-bottom:0.1rem;">Pre-fill new cards with these values:</p>
+          <div class="field-group" style="margin:0;">
+            <label>Default type</label>
+            <select id="defaultType" style="width:100%;">
+              <option value="">— no default —</option>
+              <option>Weapon</option>
+              <option>Armour</option>
+              <option>Wand</option>
+              <option>Staff</option>
+              <option>Ring</option>
+              <option>Amulet</option>
+              <option>Cloak</option>
+              <option>Rod</option>
+              <option>Potion</option>
+              <option>Scroll</option>
+              <option>Shield</option>
+              <option>Boots</option>
+              <option>Gloves</option>
+              <option>Helm</option>
+              <option>Wondrous Item</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin:0;">
+            <label>Default rarity</label>
+            <select id="defaultRarity" style="width:100%;">
+              <option value="">— no default —</option>
+              <option value="common">Common</option>
+              <option value="uncommon">Uncommon</option>
+              <option value="rare">Rare</option>
+              <option value="very-rare">Very Rare</option>
+              <option value="legendary">Legendary</option>
+              <option value="artifact">Artifact</option>
+              <option value="unique">Unique</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin:0;">
+            <label>Default source / campaign</label>
+            <input type="text" id="defaultSource" placeholder="e.g. Homebrew" style="width:100%;">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Export Quality</div>
+        <p class="field-note-legend" style="margin-bottom:0.5rem;">Higher quality produces sharper PNGs but takes longer to render.</p>
+        <div style="display:flex;flex-direction:column;gap:0.35rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+            <input type="radio" name="exportQuality" value="draft" id="qualityDraft" style="accent-color:var(--gold);"> Draft (1.5×) — faster, smaller file
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+            <input type="radio" name="exportQuality" value="standard" id="qualityStandard" checked style="accent-color:var(--gold);"> Standard (2×)
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+            <input type="radio" name="exportQuality" value="high" id="qualityHigh" style="accent-color:var(--gold);"> High (3×) — sharper for print
+          </label>
+        </div>
       </div>
 
       <div>
@@ -2235,6 +2310,17 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
 // ── HELPERS ──
 const $ = id => document.getElementById(id);
 
+function safeConfirm(msg) {
+  const el = $('suppressConfirmToggle');
+  if (el && el.checked) return true;
+  return confirm(msg);
+}
+
+function getExportScale() {
+  const q = localStorage.getItem('dnd_export_quality') || 'standard';
+  return { draft: 1.5, standard: 2, high: 3 }[q] || 2;
+}
+
 const rarityLabels = {
   'common': 'Common',
   'uncommon': 'Uncommon',
@@ -2316,7 +2402,7 @@ function showCropControls(visible) {
   }
 
   function confirmRemoveImage() {
-    if (confirm('Remove the item image?')) {
+    if (safeConfirm('Remove the item image?')) {
       $('clearItem').click();
     } else {
       resetImageCrop();
@@ -2582,7 +2668,7 @@ $('resetCircleBorderColor').addEventListener('click', () => {
 });
 
 $('resetAppearanceBtn').addEventListener('click', () => {
-  if (!confirm('Reset all appearance settings to their defaults? This will also remove any uploaded images.')) return;
+  if (!safeConfirm('Reset all appearance settings to their defaults? This will also remove any uploaded images.')) return;
 
   // Colours
   $('cardColor').value    = '#d4b87a'; $('cardColorHex').value    = '#d4b87a';
@@ -2681,6 +2767,8 @@ function applyCardScale(val) {
   $('itemCard').style.transformOrigin = 'top center';
   const oversized = $('allowOversized') && $('allowOversized').checked;
   $('cardScaleWrap').style.height = oversized ? 'auto' : (580 * val / 100) + 'px';
+  const persistEl = $('persistScaleToggle');
+  if (persistEl && persistEl.checked) localStorage.setItem('dnd_card_scale', val);
 }
 $('scaleSlider').addEventListener('input', () => applyCardScale($('scaleSlider').value));
 // Reset to 100% on every load so slider and card are always in sync
@@ -2911,7 +2999,7 @@ async function renderStateToCanvas(s) {
   node.style.boxShadow = 'none';
 
   const canvas = await html2canvas(node, {
-    scale: 2,
+    scale: getExportScale(),
     useCORS: true,
     allowTaint: true,
     backgroundColor: null,
@@ -3252,7 +3340,7 @@ $('importJsonFile').addEventListener('change', e => {
       if (wouldDrop > 0) {
         const msg = `You have ${existing.length} saved item${existing.length !== 1 ? 's' : ''} and are importing ${incoming.length}. ` +
                     `This would remove ${wouldDrop} of your oldest saved item${wouldDrop !== 1 ? 's' : ''}.\n\nContinue?`;
-        if (!confirm(msg)) return;
+        if (!safeConfirm(msg)) return;
       }
 
       merged.splice(getMaxHistory());
@@ -3295,6 +3383,22 @@ const BLANK_STATE = {
   imgNaturalW: 0, imgNaturalH: 0,
 };
 
+function getNewCardState() {
+  const state = { ...BLANK_STATE };
+  const defType   = localStorage.getItem('dnd_default_type');
+  const defRarity = localStorage.getItem('dnd_default_rarity');
+  const defSource = localStorage.getItem('dnd_default_source');
+  if (defType)   state.type   = defType;
+  if (defRarity) state.rarity = defRarity;
+  if (defSource) state.source = defSource;
+  const rememberEl = $('rememberTypeToggle');
+  if (rememberEl && rememberEl.checked) {
+    const lastType = localStorage.getItem('dnd_last_type');
+    if (lastType) state.type = lastType;
+  }
+  return state;
+}
+
 function openNewCard() {
   // Save current card to history only if it is already tracked (has an id in history)
   if (activeHistoryId) {
@@ -3310,12 +3414,12 @@ function openNewCard() {
   // Must be null BEFORE applyState so the registerNewCard() that fires inside
   // setDirty → syncCard registers exactly one card, not two.
   activeHistoryId = null;
-  applyState({ ...BLANK_STATE });
+  applyState(getNewCardState());
 }
 
 $('clearCardBtn').addEventListener('click', () => {
-  if (!confirm('Clear the current card? All fields will be reset to blank.')) return;
-  applyState({ ...BLANK_STATE });
+  if (!safeConfirm('Clear the current card? All fields will be reset to blank.')) return;
+  applyState(getNewCardState());
   activeHistoryId = null;
   updateHistoryActiveClass();
 });
@@ -3389,7 +3493,7 @@ function updateDefaultTypeImage() {
 
 // ── CLEAR ALL DATA ──
 function doClearAllData() {
-  if (!confirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
+  if (!safeConfirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
   localStorage.clear();
   // Use a sentinel so applyState's internal syncCard→setDirty→registerNewCard chain
   // doesn't write a ghost card back into the just-cleared storage.
@@ -3869,6 +3973,61 @@ $('defaultTypeImgToggle').addEventListener('change', e => {
 $('autoSave').checked = localStorage.getItem('dnd_autosave') === 'true';
 $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave', e.target.checked));
 
+// ── SUPPRESS CONFIRMATIONS ──
+$('suppressConfirmToggle').checked = localStorage.getItem('dnd_no_confirm') === 'true';
+$('suppressConfirmToggle').addEventListener('change', e => localStorage.setItem('dnd_no_confirm', e.target.checked));
+
+// ── PERSIST CARD SCALE ──
+$('persistScaleToggle').checked = localStorage.getItem('dnd_persist_scale') === 'true';
+$('persistScaleToggle').addEventListener('change', e => {
+  localStorage.setItem('dnd_persist_scale', e.target.checked);
+  if (!e.target.checked) localStorage.removeItem('dnd_card_scale');
+});
+if ($('persistScaleToggle').checked) {
+  const savedScale = localStorage.getItem('dnd_card_scale');
+  if (savedScale) { $('scaleSlider').value = savedScale; applyCardScale(savedScale); }
+}
+
+// ── EXPORT QUALITY ──
+(function() {
+  const saved = localStorage.getItem('dnd_export_quality') || 'standard';
+  const el = document.querySelector(`input[name="exportQuality"][value="${saved}"]`);
+  if (el) el.checked = true;
+  document.querySelectorAll('input[name="exportQuality"]').forEach(r =>
+    r.addEventListener('change', e => localStorage.setItem('dnd_export_quality', e.target.value))
+  );
+})();
+
+// ── REMEMBER LAST TYPE ──
+$('rememberTypeToggle').checked = localStorage.getItem('dnd_remember_type') === 'true';
+$('rememberTypeToggle').addEventListener('change', e => localStorage.setItem('dnd_remember_type', e.target.checked));
+$('itemType').addEventListener('change', () => {
+  if ($('rememberTypeToggle').checked) localStorage.setItem('dnd_last_type', $('itemType').value);
+});
+
+// ── DEFAULT CARD VALUES ──
+(function() {
+  const savedType   = localStorage.getItem('dnd_default_type');
+  const savedRarity = localStorage.getItem('dnd_default_rarity');
+  const savedSource = localStorage.getItem('dnd_default_source');
+  if (savedType)   $('defaultType').value   = savedType;
+  if (savedRarity) $('defaultRarity').value = savedRarity;
+  if (savedSource) $('defaultSource').value = savedSource;
+
+  $('defaultType').addEventListener('change', e => {
+    if (e.target.value) localStorage.setItem('dnd_default_type', e.target.value);
+    else localStorage.removeItem('dnd_default_type');
+  });
+  $('defaultRarity').addEventListener('change', e => {
+    if (e.target.value) localStorage.setItem('dnd_default_rarity', e.target.value);
+    else localStorage.removeItem('dnd_default_rarity');
+  });
+  $('defaultSource').addEventListener('input', e => {
+    if (e.target.value) localStorage.setItem('dnd_default_source', e.target.value);
+    else localStorage.removeItem('dnd_default_source');
+  });
+})();
+
 // ── MAX HISTORY SETTING ──
 (function() {
   const slider       = $('maxHistorySetting');
@@ -3937,7 +4096,7 @@ $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave
   unlockToggle.addEventListener('change', () => {
     if (!unlockToggle.checked) {
       const revertTo = getPreUnlockValue();
-      if (!confirm(`Reset max saved cards to ${revertTo}? Your oldest saved cards will be removed if you have more than ${revertTo}.`)) {
+      if (!safeConfirm(`Reset max saved cards to ${revertTo}? Your oldest saved cards will be removed if you have more than ${revertTo}.`)) {
         unlockToggle.checked = true;
         return;
       }
