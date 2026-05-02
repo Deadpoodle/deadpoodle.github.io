@@ -1307,6 +1307,74 @@
   }
   .confirm-modal-btns .btn-cancel:hover { border-color: rgba(180,130,60,0.6); color: var(--gold-light); }
 
+  /* ── PRINT SELECTION MODAL ── */
+  .print-select-box { max-width: 460px; width: 92%; }
+  .print-select-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .print-select-meta-btn {
+    font-size: 0.68rem;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid rgba(180,130,60,0.3);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--label-color);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .print-select-meta-btn:hover { border-color: rgba(180,130,60,0.6); color: var(--gold-light); }
+  .print-select-page-hint {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: rgba(180,130,60,0.55);
+    font-family: 'Crimson Pro', serif;
+  }
+  .print-select-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid rgba(180,130,60,0.2);
+    border-radius: 4px;
+    margin-bottom: 0.85rem;
+  }
+  .print-select-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid rgba(180,130,60,0.1);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .print-select-item:last-child { border-bottom: none; }
+  .print-select-item:hover { background: rgba(180,130,60,0.07); }
+  .print-select-item input[type="checkbox"] {
+    accent-color: var(--gold);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .print-select-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: #e8d898;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .print-select-rarity {
+    font-size: 0.68rem;
+    font-family: 'Crimson Pro', serif;
+    flex-shrink: 0;
+  }
+  body.light .print-select-item:hover { background: rgba(120,80,30,0.07); }
+  body.light .print-select-name { color: #2c1a0e; }
+
   /* ── PROGRESS OVERLAY ── */
   .progress-overlay {
     position: fixed;
@@ -1583,6 +1651,7 @@
   <div class="progress-title" id="progressTitle">Rendering items…</div>
   <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
   <div class="progress-label" id="progressLabel">Preparing…</div>
+  <button class="btn btn-secondary" id="progressCancelBtn" style="margin-top:1.2rem;font-size:0.72rem;padding:0.35rem 1.2rem;border-color:rgba(139,26,26,0.5);color:rgba(200,90,90,0.9);display:none;">✕ Cancel</button>
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -1594,6 +1663,23 @@
       <button class="btn btn-primary" id="confirmModalSave">Save &amp; Load</button>
       <button class="btn btn-secondary" id="confirmModalOk">Discard &amp; Load</button>
       <button class="btn-cancel" id="confirmModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT SELECTION MODAL -->
+<div class="confirm-modal" id="printSelectModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Select Cards to Print</div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="printSelectAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="printSelectNone">Select None</button>
+      <span class="print-select-page-hint" id="printSelectPageHint"></span>
+    </div>
+    <div id="printSelectList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="printSelectConfirm">🖨 Print Selected (0)</button>
+      <button class="btn-cancel" id="printSelectCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -1947,6 +2033,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <div class="section-title">All Saved Items</div>
         <div class="btn-row">
           <button class="btn btn-secondary" id="exportAllPng">⬇ Download All PNGs</button>
+          <button class="btn btn-secondary" id="printSelectionBtn">🖨 Print Selection</button>
           <button class="btn btn-secondary" id="exportAllPrint">🖨 Print All (A4)</button>
         </div>
       </div>
@@ -2754,10 +2841,15 @@ async function renderStateToCanvas(s) {
 }
 
 // ── PROGRESS HELPERS ──
-function showProgress(title) {
+let _exportCancelled = false;
+$('progressCancelBtn').addEventListener('click', () => { _exportCancelled = true; });
+
+function showProgress(title, cancellable = false) {
+  _exportCancelled = false;
   $('progressTitle').textContent = title;
   $('progressFill').style.width = '0%';
   $('progressLabel').textContent = 'Preparing…';
+  $('progressCancelBtn').style.display = cancellable ? 'block' : 'none';
   $('progressOverlay').classList.add('active');
 }
 function updateProgress(done, total, label) {
@@ -2766,6 +2858,8 @@ function updateProgress(done, total, label) {
 }
 function hideProgress() {
   $('progressOverlay').classList.remove('active');
+  $('progressCancelBtn').style.display = 'none';
+  _exportCancelled = false;
 }
 
 // ── POPUP PRINT (used by both single and all) ──
@@ -2776,20 +2870,36 @@ function hideProgress() {
 // Layout: A4 portrait, 3×3 grid, each card exactly 63mm × 88mm, no cut lines.
 // Single item print: card sits in the top-left cell; remaining 8 cells are empty.
 function printImagesInPopup(dataUrls, mode) {
-  // Pad to 9 slots (3×3). Single always has 1; all can have up to 8 (or 9 if ever expanded).
-  const slots = Array.from({ length: 9 }, (_, i) =>
-    dataUrls[i]
-      ? `<div class="card-cell"><img src="${dataUrls[i]}"></div>`
-      : `<div class="card-cell"></div>`
-  ).join('');
-
   // A4 portrait = 210mm × 297mm
-  // 3 cols × 63mm + 2 × 1mm gap = 191mm → side margin = (210 - 191) / 2 = 9.5mm
-  // 3 rows × 88mm + 2 × 1mm gap = 266mm → top margin  = (297 - 266) / 2 = 15.5mm
-  const pageCSS = `
+  // 3 cols × 63mm + 2 × 1mm gap = 191mm  →  side margin = (210 - 191) / 2 = 9.5mm
+  // 3 rows × 88mm + 2 × 1mm gap = 266mm  →  top margin  = (297 - 266) / 2 = 15.5mm
+  const PER_PAGE = 9;
+  const totalPages = Math.max(1, Math.ceil(dataUrls.length / PER_PAGE));
+
+  const pagesHTML = Array.from({ length: totalPages }, (_, p) => {
+    const pageUrls = dataUrls.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+    const slots = Array.from({ length: PER_PAGE }, (_, i) =>
+      pageUrls[i]
+        ? `<div class="card-cell"><img src="${pageUrls[i]}"></div>`
+        : `<div class="card-cell"></div>`
+    ).join('');
+    const pageLabel = totalPages > 1 ? ` &bull; Page ${p + 1} of ${totalPages}` : '';
+    return `<div class="page">
+  <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
+  <div class="grid">${slots}</div>
+</div>`;
+  }).join('\n');
+
+  const css = `
     @page { size: A4 portrait; margin: 0; }
-    html, body { margin: 0; padding: 0; width: 210mm; height: 297mm;
-                 overflow: hidden; background: white; }
+    html, body { margin: 0; padding: 0; background: white; }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      overflow: hidden;
+      break-after: page;
+    }
+    .page:last-child { break-after: avoid; }
     .print-header {
       font-family: Georgia, serif;
       font-size: 7pt;
@@ -2804,7 +2914,7 @@ function printImagesInPopup(dataUrls, mode) {
       gap: 1mm;
       width: 191mm;
       height: 266mm;
-      margin: 0 9.5mm 0;
+      margin: 0 9.5mm;
     }
     .card-cell {
       width: 63mm;
@@ -2832,12 +2942,11 @@ function printImagesInPopup(dataUrls, mode) {
   * { box-sizing: border-box; margin: 0; padding: 0;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important; }
-  ${pageCSS}
+  ${css}
 </style>
 </head>
 <body>
-<div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator</div>
-<div class="grid">${slots}</div>
+${pagesHTML}
 <script>
   var imgs = document.querySelectorAll('img');
   var total = imgs.length;
@@ -2864,25 +2973,34 @@ $('exportAllPng').addEventListener('click', async () => {
   const items = getHistory();
   if (!items.length) { alert('No saved items in history yet.'); return; }
 
-  showProgress('Rendering all items…');
+  showProgress('Rendering all items…', true);
+  let exportedCount = 0;
   for (let i = 0; i < items.length; i++) {
+    if (_exportCancelled) break;
     const item = items[i];
     updateProgress(i, items.length, `Rendering "${item.name || 'Unnamed'}" (${i+1}/${items.length})…`);
     try {
       const canvas = await renderStateToCanvas(item);
+      if (_exportCancelled) break;
       const link = document.createElement('a');
       const safeName = (item.name || 'item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
       link.download = `${String(i+1).padStart(2,'0')}_${safeName}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+      exportedCount++;
       // Small delay between downloads so browser doesn't block them
       await new Promise(r => setTimeout(r, 400));
     } catch(e) {
       console.error('Failed to render', item.name, e);
     }
   }
-  updateProgress(items.length, items.length, 'Done!');
-  await new Promise(r => setTimeout(r, 600));
+  if (_exportCancelled) {
+    updateProgress(exportedCount, items.length, `Cancelled — ${exportedCount} of ${items.length} downloaded.`);
+    await new Promise(r => setTimeout(r, 1200));
+  } else {
+    updateProgress(items.length, items.length, 'Done!');
+    await new Promise(r => setTimeout(r, 600));
+  }
   hideProgress();
 });
 
@@ -2891,24 +3009,117 @@ $('exportAllPrint').addEventListener('click', async () => {
   const items = getHistory();
   if (!items.length) { alert('No saved items in history yet.'); return; }
 
-  showProgress('Preparing print sheet…');
+  showProgress('Preparing print sheet…', true);
   const dataUrls = [];
 
   for (let i = 0; i < items.length; i++) {
+    if (_exportCancelled) break;
     updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i+1}/${items.length})…`);
     try {
       const canvas = await renderStateToCanvas(items[i]);
+      if (_exportCancelled) break;
       dataUrls.push(canvas.toDataURL('image/png'));
     } catch(e) {
       console.error('Failed to render', items[i].name, e);
     }
   }
 
-  updateProgress(items.length, items.length, 'Opening print dialog…');
-  await new Promise(r => setTimeout(r, 200));
-  hideProgress();
-  printImagesInPopup(dataUrls, 'all');
+  if (_exportCancelled) {
+    updateProgress(dataUrls.length, items.length, `Cancelled — ${dataUrls.length} of ${items.length} rendered.`);
+    await new Promise(r => setTimeout(r, 1200));
+    hideProgress();
+  } else {
+    updateProgress(items.length, items.length, 'Opening print dialog…');
+    await new Promise(r => setTimeout(r, 200));
+    hideProgress();
+    printImagesInPopup(dataUrls, 'all');
+  }
 });
+
+// ── PRINT SELECTION ──
+(function () {
+  function updatePrintSelectUI() {
+    const checked = $('printSelectList').querySelectorAll('input[type="checkbox"]:checked').length;
+    const pages = Math.max(1, Math.ceil(checked / 9));
+    $('printSelectConfirm').textContent = `🖨 Print Selected (${checked})`;
+    $('printSelectConfirm').disabled = checked === 0;
+    $('printSelectPageHint').textContent = checked > 0
+      ? `${pages} page${pages !== 1 ? 's' : ''}`
+      : '';
+  }
+
+  $('printSelectionBtn').addEventListener('click', () => {
+    const items = getHistory();
+    if (!items.length) { alert('No saved items in history yet.'); return; }
+
+    const list = $('printSelectList');
+    list.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('label');
+      row.className = 'print-select-item';
+      row.innerHTML = `
+        <input type="checkbox" checked value="${item.id}">
+        <span class="print-select-name">${item.name || 'Unnamed Item'}</span>
+        <span class="print-select-rarity rarity-${item.rarity}">${rarityLabels[item.rarity] || item.rarity}</span>`;
+      row.querySelector('input').addEventListener('change', updatePrintSelectUI);
+      list.appendChild(row);
+    });
+
+    updatePrintSelectUI();
+    $('printSelectModal').classList.add('active');
+  });
+
+  $('printSelectAll').addEventListener('click', () => {
+    $('printSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    updatePrintSelectUI();
+  });
+
+  $('printSelectNone').addEventListener('click', () => {
+    $('printSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updatePrintSelectUI();
+  });
+
+  $('printSelectCancel').addEventListener('click', () => {
+    $('printSelectModal').classList.remove('active');
+  });
+
+  $('printSelectConfirm').addEventListener('click', async () => {
+    $('printSelectModal').classList.remove('active');
+
+    const selectedIds = new Set(
+      [...$('printSelectList').querySelectorAll('input[type="checkbox"]:checked')]
+        .map(cb => parseInt(cb.value, 10))
+    );
+    const items = getHistory().filter(h => selectedIds.has(h.id));
+    if (!items.length) return;
+
+    showProgress('Preparing print sheet…', true);
+    const dataUrls = [];
+
+    for (let i = 0; i < items.length; i++) {
+      if (_exportCancelled) break;
+      updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i + 1}/${items.length})…`);
+      try {
+        const canvas = await renderStateToCanvas(items[i]);
+        if (_exportCancelled) break;
+        dataUrls.push(canvas.toDataURL('image/png'));
+      } catch (e) {
+        console.error('Failed to render', items[i].name, e);
+      }
+    }
+
+    if (_exportCancelled) {
+      updateProgress(dataUrls.length, items.length, `Cancelled — ${dataUrls.length} of ${items.length} rendered.`);
+      await new Promise(r => setTimeout(r, 1200));
+      hideProgress();
+    } else {
+      updateProgress(items.length, items.length, 'Opening print dialog…');
+      await new Promise(r => setTimeout(r, 200));
+      hideProgress();
+      printImagesInPopup(dataUrls, 'all');
+    }
+  });
+})();
 
 // ── EXPORT JSON ──
 $('exportJsonBtn').addEventListener('click', () => {
