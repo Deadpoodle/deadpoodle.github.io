@@ -834,7 +834,6 @@
     border-bottom: 1px solid rgba(180,130,60,0.18);
     display: flex;
     align-items: stretch;
-    overflow: hidden;
     height: 48px;
     flex-shrink: 0;
   }
@@ -850,7 +849,6 @@
     display: flex;
     align-items: center;
     white-space: nowrap;
-    border-right: 1px solid rgba(180,130,60,0.15);
     flex-shrink: 0;
     gap: 0.4rem;
   }
@@ -984,6 +982,86 @@
   }
 
   .history-delete:hover { color: #c0392b; background: rgba(192,57,43,0.12); }
+
+  /* ── HISTORY DROPDOWN ── */
+  .history-label-wrap {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch;
+    border-right: 1px solid rgba(180,130,60,0.15);
+  }
+
+  .history-label {
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .history-label:hover { background: rgba(180,130,60,0.07); }
+
+  .dropdown-caret {
+    font-size: 0.55rem;
+    letter-spacing: -0.05em;
+    opacity: 0.7;
+    margin-left: 0.3rem;
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  .history-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 230px;
+    background: rgba(12, 6, 2, 0.98);
+    border: 1px solid rgba(180,130,60,0.25);
+    border-top: none;
+    z-index: 200;
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180,130,60,0.2) transparent;
+  }
+
+  .history-dropdown.open { display: block; }
+
+  .history-dropdown-empty {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: #6a4e2e;
+    padding: 0.75rem 1rem;
+  }
+
+  .history-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(180,130,60,0.08);
+    transition: background 0.12s;
+  }
+
+  .history-dropdown-item:last-child { border-bottom: none; }
+  .history-dropdown-item:hover { background: rgba(180,130,60,0.1); }
+
+  .history-dropdown-item .history-thumb {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .history-dropdown-item .history-name {
+    max-width: 140px;
+  }
+
+  .history-dropdown-item .history-delete {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
 
   .history-save-btn {
     font-family: 'Cinzel', serif;
@@ -1288,7 +1366,13 @@
 
 <!-- HISTORY BAR -->
 <div class="history-bar" id="historyBar">
-  <div class="history-label"><span>📜</span> Recent</div>
+  <div class="history-label-wrap">
+    <button class="history-label" id="historyDropdownBtn"><span>📜</span> Recent <span class="dropdown-caret">▼</span></button>
+    <div class="history-dropdown" id="historyDropdown">
+      <div class="history-dropdown-empty" id="historyDropdownEmpty">No saved items yet</div>
+      <div id="historyDropdownItems"></div>
+    </div>
+  </div>
   <button class="history-arrow" id="historyPrev" title="Scroll left" aria-label="Scroll items left">&#8249;</button>
   <div class="history-track" id="historyTrack">
     <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
@@ -2747,44 +2831,50 @@ function applyState(s) {
   syncCard();
 }
 
+function makeHistoryThumb(item) {
+  const thumb = document.createElement('div');
+  thumb.className = 'history-thumb';
+  if (item.itemImage) {
+    const tImg = document.createElement('img');
+    tImg.src = item.itemImage;
+    tImg.alt = item.name;
+    thumb.appendChild(tImg);
+  } else {
+    thumb.textContent = '⚔';
+  }
+  return thumb;
+}
+
 function renderHistoryBar() {
   const items      = getHistory();
   const container  = $('historyItems');
   const emptyMsg   = $('historyEmpty');
+  const ddContainer = $('historyDropdownItems');
+  const ddEmpty     = $('historyDropdownEmpty');
   container.innerHTML = '';
+  ddContainer.innerHTML = '';
 
   if (items.length === 0) {
     emptyMsg.style.display = 'flex';
+    ddEmpty.style.display = 'block';
     return;
   }
   emptyMsg.style.display = 'none';
+  ddEmpty.style.display = 'none';
 
   items.forEach(item => {
+    const rarityLabel = rarityLabels[item.rarity] || item.rarity || '';
+
+    // ── Bar item ──
     const el = document.createElement('div');
     el.className = 'history-item';
     el.title = `Load: ${item.name || 'Unnamed Item'}`;
 
-    const rarityLabel = rarityLabels[item.rarity] || item.rarity || '';
-
-    // Thumb
-    const thumb = document.createElement('div');
-    thumb.className = 'history-thumb';
-    if (item.itemImage) {
-      const tImg = document.createElement('img');
-      tImg.src = item.itemImage;
-      tImg.alt = item.name;
-      thumb.appendChild(tImg);
-    } else {
-      thumb.textContent = '⚔';
-    }
-
-    // Meta
     const meta = document.createElement('div');
     meta.className = 'history-meta';
     meta.innerHTML = `<span class="history-name">${item.name || 'Unnamed'}</span>
                       <span class="history-rarity rarity-${item.rarity}">${rarityLabel}</span>`;
 
-    // Delete btn
     const del = document.createElement('button');
     del.className = 'history-delete';
     del.title = 'Remove from history';
@@ -2796,15 +2886,40 @@ function renderHistoryBar() {
       renderHistoryBar();
     });
 
-    el.appendChild(thumb);
+    el.appendChild(makeHistoryThumb(item));
     el.appendChild(meta);
     el.appendChild(del);
+    el.addEventListener('click', () => applyState(item));
+    container.appendChild(el);
 
-    el.addEventListener('click', () => {
-      applyState(item);
+    // ── Dropdown item ──
+    const ddEl = document.createElement('div');
+    ddEl.className = 'history-dropdown-item';
+
+    const ddMeta = document.createElement('div');
+    ddMeta.className = 'history-meta';
+    ddMeta.innerHTML = `<span class="history-name">${item.name || 'Unnamed'}</span>
+                        <span class="history-rarity rarity-${item.rarity}">${rarityLabel}</span>`;
+
+    const ddDel = document.createElement('button');
+    ddDel.className = 'history-delete';
+    ddDel.title = 'Remove from history';
+    ddDel.textContent = '✕';
+    ddDel.addEventListener('click', e => {
+      e.stopPropagation();
+      const updated = getHistory().filter(h => h.id !== item.id);
+      saveHistory(updated);
+      renderHistoryBar();
     });
 
-    container.appendChild(el);
+    ddEl.appendChild(makeHistoryThumb(item));
+    ddEl.appendChild(ddMeta);
+    ddEl.appendChild(ddDel);
+    ddEl.addEventListener('click', () => {
+      applyState(item);
+      $('historyDropdown').classList.remove('open');
+    });
+    ddContainer.appendChild(ddEl);
   });
 
   // Update arrow active states after DOM has updated
@@ -2812,6 +2927,15 @@ function renderHistoryBar() {
     if (window._updateHistoryArrows) window._updateHistoryArrows();
   });
 }
+
+// Dropdown toggle
+$('historyDropdownBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  $('historyDropdown').classList.toggle('open');
+});
+document.addEventListener('click', () => {
+  $('historyDropdown').classList.remove('open');
+});
 
 $('historySaveBtn').addEventListener('click', () => {
   const state   = collectCurrentState();
