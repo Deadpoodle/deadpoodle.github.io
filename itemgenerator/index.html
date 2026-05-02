@@ -1,0 +1,2862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="icon" href="favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="icon" href="android-chrome-192x192.png" sizes="192x192" type="image/png">
+<link rel="icon" href="android-chrome-512x512.png" sizes="512x512" type="image/png">
+<title>Artifex Arcanum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f4e8c1;
+    --parchment-dark: #e8d5a3;
+    --parchment-darker: #d4b87a;
+    --ink: #2c1a0e;
+    --ink-light: #5a3e28;
+    --red-wax: #8b1a1a;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --border-ornate: #7a5c2e;
+    --bg-dark: #1a0f07;
+    --panel-bg: rgba(20, 10, 3, 0.92);
+    --input-bg: rgba(244, 232, 193, 0.08);
+    --input-border: rgba(180, 130, 60, 0.35);
+    --label-color: #c9a96e;
+    --card-w: 380px;
+    --card-h: 580px;
+  }
+
+  body {
+    background: var(--bg-dark);
+    color: #d4b87a;
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Subtle dungeon stone pattern background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 1px solid rgba(180,130,60,0.25);
+  }
+
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 40px rgba(212,160,23,0.3);
+  }
+
+  header p {
+    color: var(--ink-light);
+    color: #9a7a4a;
+    font-size: 1rem;
+    margin-top: 0.4rem;
+    letter-spacing: 0.04em;
+  }
+
+  .ornament {
+    display: inline-block;
+    color: var(--gold);
+    margin: 0 0.6rem;
+    opacity: 0.7;
+    font-size: 1.1em;
+  }
+
+  .workspace {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 0;
+    flex: 1;
+    min-height: calc(100vh - 100px);
+  }
+
+  /* ── LEFT PANEL ── */
+  .controls {
+    background: var(--panel-bg);
+    border-right: 1px solid rgba(180,130,60,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(180,130,60,0.2);
+    background: rgba(0,0,0,0.3);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 0.7rem 0.3rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(180,130,60,0.5);
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--gold-light); }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: rgba(180,130,60,0.06);
+  }
+  .tab-panel {
+    display: none;
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1.5rem 1.6rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .tab-panel.active { display: flex; }
+  .tab-panel::-webkit-scrollbar { width: 5px; }
+  .tab-panel::-webkit-scrollbar-track { background: transparent; }
+  .tab-panel::-webkit-scrollbar-thumb { background: rgba(180,130,60,0.3); border-radius: 3px; }
+
+  /* ── UPLOAD HINT (card image circle, no image loaded) ── */
+  .img-upload-hint {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: rgba(255,255,255,0);
+    opacity: 0;
+    transition: opacity 0.18s;
+    cursor: pointer;
+    z-index: 4;
+    text-align: center;
+  }
+  .img-upload-hint .hint-icon { font-size: 1.1rem; line-height: 1; }
+  .img-upload-hint .hint-text {
+    font-family: 'Cinzel', serif;
+    font-size: 0.42rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+  .card-image-container:not(.has-img):hover .img-upload-hint {
+    opacity: 1;
+    background: rgba(0,0,0,0.52);
+    color: rgba(255,255,255,0.92);
+  }
+  .card-image-container.has-img .img-upload-hint { pointer-events: none; }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── FIELD NOTE ASTERISK ── */
+  .field-note {
+    color: var(--gold);
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 3px;
+    opacity: 0.85;
+  }
+  .field-note-legend {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.76rem;
+    color: rgba(180,130,60,0.6);
+    margin-top: 0.15rem;
+  }
+  body.light .field-note-legend { color: rgba(100,65,20,0.55); }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(180,130,60,0.4), transparent);
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  label {
+    font-size: 0.9rem;
+    color: var(--label-color);
+    letter-spacing: 0.04em;
+  }
+
+  input[type="text"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 3px;
+    color: #e8d5a3;
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 1.05rem;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  input[type="text"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: rgba(180,130,60,0.65);
+    background: rgba(244,232,193,0.13);
+  }
+
+  select option { background: #1a0f07; color: #e8d5a3; }
+
+  textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+  /* Image upload zones */
+  .upload-zone {
+    border: 1.5px dashed rgba(180,130,60,0.35);
+    border-radius: 4px;
+    padding: 0.8rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover { border-color: rgba(180,130,60,0.65); background: rgba(244,232,193,0.05); }
+  .upload-zone.has-image { border-style: solid; border-color: rgba(180,130,60,0.5); }
+
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-preview {
+    width: 100%;
+    max-height: 80px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: none;
+  }
+
+  .upload-zone.has-image .upload-preview { display: block; }
+  .upload-zone.has-image .upload-placeholder { display: none; }
+
+  .upload-placeholder {
+    color: #7a5c2e;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .upload-placeholder span { display: block; font-size: 1.4rem; margin-bottom: 0.2rem; }
+
+  /* Editable stat-label rename inputs */
+  input.stat-label-rename {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--label-color);
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed rgba(180,130,60,0.3);
+    border-radius: 0;
+    padding: 2px 4px;
+  }
+  input.stat-label-rename:focus {
+    background: transparent;
+    border-color: transparent;
+    border-bottom-color: rgba(180,130,60,0.65);
+  }
+
+  /* Color pickers */
+  .color-row { display: flex; gap: 0.5rem; align-items: center; }
+  .color-row input[type="color"] {
+    width: 36px; height: 36px; border-radius: 3px;
+    border: 1px solid var(--input-border);
+    padding: 2px; cursor: pointer; background: transparent;
+    flex-shrink: 0;
+  }
+  .color-row input[type="text"] { flex: 1; }
+
+  /* Rarity badge preview */
+  .rarity-preview {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 2px;
+    font-size: 0.72rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.08em;
+    border: 1px solid currentColor;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.86rem;
+    letter-spacing: 0.12em;
+    padding: 0.6rem 1.2rem;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #6b3a1f, #8b4a2a);
+    border-color: var(--gold);
+    color: var(--parchment);
+  }
+
+  .btn-primary:hover { background: linear-gradient(135deg, #8b4a2a, #a05a35); box-shadow: 0 0 20px rgba(184,134,11,0.3); }
+
+  .btn-secondary {
+    background: transparent;
+    border-color: rgba(180,130,60,0.4);
+    color: var(--label-color);
+  }
+
+  .btn-secondary:hover { border-color: rgba(180,130,60,0.7); color: var(--gold-light); }
+
+  .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  /* ── RIGHT PANEL ── */
+  .preview-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2.5rem 2rem;
+    gap: 1.5rem;
+    overflow-y: auto;
+    background: rgba(10,5,2,0.5);
+  }
+
+  .preview-area::-webkit-scrollbar { width: 5px; }
+  .preview-area::-webkit-scrollbar-track { background: transparent; }
+  .preview-area::-webkit-scrollbar-thumb { background: rgba(180,130,60,0.25); border-radius: 3px; }
+
+  /* ── ITEM CARD ── */
+  .item-card {
+    width: var(--card-w);
+    min-height: var(--card-h);
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(180,130,60,0.3);
+    flex-shrink: 0;
+  }
+
+  /* Background layer — solid colour only */
+  .card-bg {
+    position: absolute;
+    inset: 0;
+    background: #d4b87a;
+    z-index: 0;
+  }
+
+  /* Background image layer — separate so opacity can be controlled independently */
+  .card-bg-img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+
+  /* Parchment texture overlay — real div so html2canvas captures it */
+  .card-texture {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px),
+      linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Vignette */
+  .card-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.45) 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .card-content {
+    position: relative;
+    z-index: 2;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 580px;
+    overflow: hidden;
+  }
+
+  /* Ornate border frame */
+  .card-frame {
+    position: absolute;
+    inset: 8px;
+    border: 1.5px solid rgba(100,70,30,0.5);
+    border-radius: 5px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Inner frame line — real div */
+  .card-frame-inner {
+    position: absolute;
+    inset: 3px;
+    border: 0.5px solid rgba(100,70,30,0.25);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  /* Top ornament — real div */
+  .card-frame-ornament {
+    position: absolute;
+    top: -8px; left: 50%; transform: translateX(-50%);
+    color: rgba(100,70,30,0.6);
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* Header band */
+  .card-header {
+    padding: 18px 20px 10px;
+    text-align: center;
+    position: relative;
+  }
+
+  .card-item-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--ink);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    letter-spacing: 0.04em;
+  }
+
+  .card-subtype {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    color: var(--ink-light);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 3px;
+    opacity: 0.85;
+  }
+
+  /* Divider */
+  .card-divider {
+    height: 1px;
+    margin: 0 16px;
+    background: linear-gradient(to right, transparent, rgba(90,60,30,0.5) 20%, rgba(90,60,30,0.5) 80%, transparent);
+    position: relative;
+  }
+
+  .card-divider::before {
+    content: '◆';
+    position: absolute;
+    left: 50%; transform: translate(-50%,-50%);
+    font-size: 10px;
+    line-height: 1;
+    color: rgba(90,60,30,0.6);
+  }
+
+  /* Item image area */
+  .card-image-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+    padding: 10px 20px;
+    min-height: 130px;
+  }
+
+  .card-side-stat {
+    text-align: center;
+    padding: 0 6px;
+  }
+
+  /* Label rename input wrapper with edit icon */
+  .label-rename-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .label-rename-wrap input.stat-label-rename {
+    flex: 1;
+    padding-right: 18px;
+  }
+  .label-rename-icon {
+    position: absolute;
+    right: 4px;
+    font-size: 0.65rem;
+    color: rgba(180,130,60,0.35);
+    pointer-events: none;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .side-stat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.5rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-light);
+    opacity: 0.8;
+    text-transform: uppercase;
+    display: block;
+  }
+
+  .side-stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+    margin-top: 3px;
+    line-height: 1.3;
+  }
+
+  .card-image-container {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 2px solid rgba(90,60,30,0.45);
+    overflow: hidden;
+    background: rgba(90,60,30,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .card-image-container img {
+    position: absolute;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .card-image-container img:active { cursor: grabbing; }
+
+  .img-drag-hint {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: rgba(0,0,0,0.52);
+    color: rgba(255,255,255,0.92);
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+    z-index: 5;
+    text-align: center;
+  }
+  .img-drag-hint .hint-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .img-drag-hint .hint-text {
+    font-family: 'Cinzel', serif;
+    font-size: 0.42rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+  .card-image-container.has-img:hover .img-drag-hint { opacity: 1; }
+
+  .card-image-placeholder {
+    color: rgba(90,60,30,0.4);
+    font-size: 2.5rem;
+    user-select: none;
+  }
+
+  /* Stats strip */
+  .card-stats {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    padding: 4px 20px;
+  }
+
+  .card-stat {
+    text-align: center;
+    padding: 3px 12px;
+    border-right: 1px solid rgba(90,60,30,0.3);
+    flex: 1;
+  }
+
+  .card-stat:last-child { border-right: none; }
+
+  .stat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.52rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-light);
+    opacity: 0.8;
+    text-transform: uppercase;
+    display: block;
+  }
+
+  .stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+    margin-top: 1px;
+  }
+
+  /* Rarity badge on card */
+  .card-rarity {
+    display: block;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 2px 0;
+  }
+
+  /* Description body */
+  .card-body {
+    padding: 8px 20px 16px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .card-description {
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 0.87rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  /* Markdown styles inside card */
+  .card-description p { margin-bottom: 0.5em; }
+  .card-description p:last-child { margin-bottom: 0; }
+  .card-description strong { font-weight: 600; color: var(--ink); }
+  .card-description em { font-style: italic; }
+  .card-description ul { padding-left: 1.2em; margin: 0.3em 0; }
+  .card-description li { margin-bottom: 0.2em; }
+  .card-description h1,
+  .card-description h2,
+  .card-description h3 {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0.5em 0 0.3em;
+    font-size: 0.88rem;
+  }
+  .card-description hr {
+    border: none;
+    border-top: 1px solid rgba(90,60,30,0.3);
+    margin: 0.5em 0;
+  }
+  .card-description blockquote {
+    border-left: 2px solid rgba(90,60,30,0.4);
+    padding-left: 0.7em;
+    font-style: italic;
+    color: var(--ink-light);
+    margin: 0.4em 0;
+  }
+
+  /* Attunement tag */
+  .card-attunement {
+    margin: 0 16px 4px;
+    text-align: center;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.75rem;
+    color: var(--ink-light);
+    opacity: 0.85;
+    padding-top: 4px;
+    border-top: 1px solid rgba(90,60,30,0.2);
+  }
+
+  /* Footer of card */
+  .card-footer {
+    padding: 8px 18px 14px;
+    text-align: center;
+  }
+
+  .card-source {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    color: rgba(44,26,14,0.45);
+    text-transform: uppercase;
+  }
+
+  /* Rarity colors */
+  .rarity-common      { color: #555; border-color: #aaa; }
+  .rarity-uncommon    { color: #1a6e1a; border-color: #3a9a3a; }
+  .rarity-rare        { color: #1a3e8b; border-color: #3a6acc; }
+  .rarity-very-rare   { color: #5a1a8b; border-color: #8a3acc; }
+  .rarity-legendary   { color: #8b4a00; border-color: #c97d00; }
+  .rarity-artifact    { color: #8b1a1a; border-color: #cc3a3a; }
+  .rarity-unique      { color: #2e6b6b; border-color: #4a9a9a; }
+
+  /* Rarity colors on the dark history bar — use the lighter border-color values */
+  .history-rarity.rarity-common      { color: #aaa; }
+  .history-rarity.rarity-uncommon    { color: #3a9a3a; }
+  .history-rarity.rarity-rare        { color: #3a6acc; }
+  .history-rarity.rarity-very-rare   { color: #8a3acc; }
+  .history-rarity.rarity-legendary   { color: #c97d00; }
+  .history-rarity.rarity-artifact    { color: #cc3a3a; }
+  .history-rarity.rarity-unique      { color: #4a9a9a; }
+
+  /* Export hint */
+  .export-hint {
+    font-size: 0.78rem;
+    color: #7a5c2e;
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+
+  /* Scale control */
+  .scale-control {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.8rem;
+    color: var(--label-color);
+  }
+
+  .scale-control input[type="range"] {
+    width: 100px;
+    accent-color: var(--gold);
+  }
+
+  /* Markdown helper */
+  .md-hint {
+    font-size: 0.85rem;
+    color: #6a4e2e;
+    padding: 0.4rem 0.6rem;
+    background: rgba(180,130,60,0.06);
+    border-radius: 3px;
+    border: 1px solid rgba(180,130,60,0.12);
+    line-height: 1.5;
+  }
+
+  .md-hint code {
+    font-family: monospace;
+    background: rgba(180,130,60,0.12);
+    padding: 0 3px;
+    border-radius: 2px;
+    font-size: 0.85em;
+    color: #a0804a;
+  }
+
+  /* Checkbox toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.93rem;
+    color: var(--label-color);
+    cursor: pointer;
+  }
+
+  .toggle-row input[type="checkbox"] {
+    width: 15px; height: 15px;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+
+  /* ── HISTORY BAR ── */
+  .history-bar {
+    position: relative;
+    z-index: 2;
+    background: rgba(12, 6, 2, 0.95);
+    border-bottom: 1px solid rgba(180,130,60,0.18);
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  /* Fixed left label */
+  .history-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffdeb9;
+    padding: 0 0.85rem;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    border-right: 1px solid rgba(180,130,60,0.15);
+    flex-shrink: 0;
+    gap: 0.4rem;
+  }
+
+  /* Arrow scroll buttons */
+  .history-arrow {
+    flex-shrink: 0;
+    width: 28px;
+    background: rgba(12,6,2,0.95);
+    border: none;
+    border-right: 1px solid rgba(180,130,60,0.1);
+    color: #c9a96e;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s, opacity 0.2s;
+    opacity: 0.35;
+    padding: 0;
+  }
+  .history-arrow:last-of-type { border-right: none; border-left: 1px solid rgba(180,130,60,0.1); }
+  .history-arrow:hover { color: var(--gold-light); background: rgba(180,130,60,0.07); }
+  .history-arrow.active { opacity: 1; color: #c9a96e; }
+
+  /* Scrollable track — the only part that scrolls */
+  .history-track {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    /* Hide scrollbar visually but keep it functional */
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .history-track::-webkit-scrollbar { display: none; }
+
+  .history-empty {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.8rem;
+    color: #c9a96e;
+    padding: 0.55rem 1rem;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  #historyItems {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem 0.4rem 0.6rem;
+    border-right: 1px solid rgba(180,130,60,0.1);
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    max-width: 175px;
+    position: relative;
+  }
+
+  .history-item:hover { background: rgba(180,130,60,0.08); }
+
+  .history-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(180,130,60,0.3);
+    flex-shrink: 0;
+    background: rgba(90,60,30,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #5a3e28;
+    overflow: hidden;
+  }
+
+  .history-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .history-meta {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .history-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #c9a96e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+    display: block;
+  }
+
+  .history-rarity {
+    font-size: 0.8rem;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    color: #6a4e2e;
+    display: block;
+    margin-top: 1px;
+  }
+
+  .history-delete {
+    width: 16px;
+    height: 16px;
+    background: none;
+    border: none;
+    color: #4a3520;
+    cursor: pointer;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .history-delete:hover { color: #c0392b; background: rgba(192,57,43,0.12); }
+
+  .history-save-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    padding: 0.3rem 0.8rem;
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(180,130,60,0.2);
+    border-radius: 0;
+    color: #ffdeb9;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+  }
+
+  .history-save-btn:hover {
+    color: var(--gold-light);
+    background: rgba(180,130,60,0.08);
+  }
+
+  .history-save-btn.flash {
+    color: var(--gold-light);
+    background: rgba(180,130,60,0.15);
+  }
+
+  /* ── PROGRESS OVERLAY ── */
+  .progress-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,5,2,0.88);
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+  }
+  .progress-overlay.active { display: flex; }
+  .progress-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+  }
+  .progress-bar-wrap {
+    width: 280px;
+    height: 6px;
+    background: rgba(180,130,60,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--gold), var(--gold-light));
+    border-radius: 3px;
+    transition: width 0.2s;
+    width: 0%;
+  }
+  .progress-label {
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.85rem;
+    color: #9a7a4a;
+    font-style: italic;
+  }
+
+  /* Off-screen render area — positioned far left so it never overlaps page content when html2canvas composites */
+  #offscreenRender {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ── CHAR COUNTER ── */
+  .char-counter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .char-count {
+    font-family: 'Cinzel', serif;
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    color: #6a4e2e;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .char-count.warn  { color: #b8860b; }
+  .char-count.over  { color: #8b1a1a; font-weight: 600; }
+
+  .oversized-warning {
+    display: none;
+    font-size: 0.72rem;
+    color: #8b4a00;
+    background: rgba(139,74,0,0.08);
+    border: 1px solid rgba(139,74,0,0.25);
+    border-radius: 3px;
+    padding: 0.35rem 0.6rem;
+    line-height: 1.45;
+  }
+  .oversized-warning.visible { display: block; }
+
+  /* Allow oversized text toggle — slightly more prominent */
+  .oversized-toggle-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: #8a6a3a;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .oversized-toggle-row input[type="checkbox"] {
+    width: 15px; height: 15px; margin-top: 2px;
+    accent-color: #8b1a1a;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── PRINT / EXPORT ── */
+  /* All printing is done via a popup window containing baked PNG images.
+     This @media print block only applies if someone uses Ctrl+P directly. */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { background: white; }
+    body::before { display: none; }
+    header, .history-bar, .controls, .scale-control, .export-hint,
+    .progress-overlay, #offscreenRender, #printSheet { display: none !important; }
+  }
+
+  @media (max-width: 860px) {
+    .workspace { grid-template-columns: 1fr; }
+    .controls { order: 2; }
+    .preview-area { order: 1; padding: 1.5rem 1rem; }
+  }
+
+  /* ── THEME TOGGLE BUTTON ── */
+  .theme-toggle {
+    /* inherits .history-save-btn layout; no extra positioning needed */
+  }
+
+  /* ── LIGHT MODE ── */
+  body.light {
+    background: #f0e6cc;
+    color: #2c1a0e;
+  }
+  body.light::before {
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(0,0,0,0.03) 60px, rgba(0,0,0,0.03) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,0,0,0.03) 60px, rgba(0,0,0,0.03) 61px);
+  }
+  body.light header {
+    border-bottom-color: rgba(120,80,30,0.25);
+  }
+  body.light header h1 { color: #6b4400; text-shadow: none; }
+  body.light header p   { color: #7a5828; }
+  body.light .theme-toggle {
+    border-color: rgba(100,65,20,0.35);
+    color: #7a5020;
+  }
+  body.light .theme-toggle:hover {
+    border-color: rgba(100,65,20,0.65);
+    color: #3a2008;
+    background: rgba(100,65,20,0.07);
+  }
+  body.light .history-bar {
+    background: rgba(210,178,108,0.97);
+    border-bottom-color: rgba(120,80,30,0.2);
+  }
+  body.light .history-label { color: #5a3810; }
+  body.light .history-arrow {
+    background: rgba(185,150,70,0.25);
+    border-color: rgba(120,80,30,0.15) !important;
+    color: #5a3810;
+  }
+  body.light .history-arrow:hover  { background: rgba(120,80,30,0.12); color: #3a2008; }
+  body.light .history-arrow.active { color: #3a2008; }
+  body.light .history-item          { border-right-color: rgba(120,80,30,0.15); }
+  body.light .history-item:hover    { background: rgba(120,80,30,0.08); }
+  body.light .history-name          { color: #2c1a0e; }
+  body.light .history-empty         { color: #7a5020; }
+  body.light .history-save-btn {
+    color: #6b4418;
+    border-left-color: rgba(120,80,30,0.2);
+  }
+  body.light .history-save-btn:hover  { background: rgba(120,80,30,0.1); color: #3a2008; }
+  body.light .history-save-btn.flash  { background: rgba(120,80,30,0.15); color: #3a2008; }
+  body.light .history-rarity.rarity-common    { color: #7a5820; }
+  body.light .history-rarity.rarity-uncommon  { color: #1e7a3e; }
+  body.light .history-rarity.rarity-rare      { color: #1a48a0; }
+  body.light .history-rarity.rarity-very-rare { color: #6a2a9a; }
+  body.light .history-rarity.rarity-legendary { color: #c05000; }
+  body.light .history-rarity.rarity-artifact  { color: #a01818; }
+  body.light .history-rarity.rarity-unique    { color: #8a7000; }
+  body.light .history-delete { color: rgba(100,65,20,0.4); }
+  body.light .history-delete:hover { color: #c0392b; background: rgba(192,57,43,0.1); }
+  body.light .controls {
+    background: rgba(244,234,207,0.98);
+    border-right-color: rgba(120,80,30,0.2);
+  }
+  body.light .tab-bar {
+    background: rgba(180,140,70,0.12);
+    border-bottom-color: rgba(120,80,30,0.2);
+  }
+  body.light .tab-btn       { color: rgba(100,65,20,0.5); }
+  body.light .tab-btn:hover { color: #3a2008; }
+  body.light .tab-btn.active {
+    color: #4a2e00;
+    border-bottom-color: #8b6010;
+    background: rgba(140,95,20,0.08);
+  }
+  body.light .section-title { color: #8b5e08; }
+  body.light .section-title::after {
+    background: linear-gradient(to right, rgba(120,80,30,0.3), transparent);
+  }
+  body.light input[type="text"],
+  body.light select,
+  body.light textarea {
+    background: rgba(120,80,30,0.05);
+    border-color: rgba(120,80,30,0.28);
+    color: #2c1a0e;
+  }
+  body.light input[type="text"]:focus,
+  body.light select:focus,
+  body.light textarea:focus {
+    border-color: rgba(120,80,30,0.55);
+  }
+  body.light label,
+  body.light .field-group label { color: #7a5020; }
+  body.light .toggle-row        { color: #7a5020; }
+  body.light .stat-label-rename { color: #7a5020; border-bottom-color: rgba(120,80,30,0.25); }
+  body.light .label-rename-icon { color: rgba(120,80,30,0.4); }
+  body.light .btn-secondary {
+    border-color: rgba(120,80,30,0.38);
+    color: #7a5020;
+  }
+  body.light .btn-secondary:hover {
+    border-color: rgba(120,80,30,0.65);
+    color: #3a2008;
+  }
+  body.light .preview-area { background: #e4d0a5; }
+  body.light .scale-control { color: #7a5020; }
+  body.light .export-hint   { color: #7a5020; }
+  body.light .char-count    { color: #7a5020; }
+  body.light .char-count.warn { color: #9a6e00; }
+  body.light .char-count.over { color: #8b1a1a; }
+  body.light .md-hint {
+    background: rgba(120,80,30,0.06);
+    border-color: rgba(120,80,30,0.2);
+    color: #7a5020;
+  }
+  body.light .md-hint code {
+    background: rgba(120,80,30,0.1);
+    color: #5a3810;
+  }
+  body.light .upload-zone {
+    border-color: rgba(120,80,30,0.3);
+    background: rgba(120,80,30,0.04);
+  }
+  body.light .upload-zone:hover {
+    border-color: rgba(120,80,30,0.55);
+    background: rgba(120,80,30,0.08);
+  }
+  body.light .upload-placeholder { color: rgba(100,65,20,0.55); }
+  body.light .oversized-warning {
+    background: rgba(139,26,26,0.07);
+    border-color: rgba(139,26,26,0.22);
+    color: #7a1010;
+  }
+  body.light .oversized-toggle-row { color: #7a5020; }
+  body.light .color-row input[type="color"] { border-color: rgba(120,80,30,0.3); }
+  body.light p[style*="color:rgba(180,130,60"] { color: #7a5020 !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="ornament">✦</span> Artifex Arcanum <span class="ornament">✦</span></h1>
+  <p>Homebrew Magic Item Creator</p>
+</header>
+
+<!-- PROGRESS OVERLAY -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-title" id="progressTitle">Rendering items…</div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
+  <div class="progress-label" id="progressLabel">Preparing…</div>
+</div>
+
+<!-- OFF-SCREEN RENDER AREA -->
+<div id="offscreenRender"></div>
+
+<!-- HISTORY BAR -->
+<div class="history-bar" id="historyBar">
+  <div class="history-label"><span>📜</span> Recent</div>
+  <button class="history-arrow" id="historyPrev" title="Scroll left" aria-label="Scroll items left">&#8249;</button>
+  <div class="history-track" id="historyTrack">
+    <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
+    <div id="historyItems"></div>
+  </div>
+  <button class="history-arrow" id="historyNext" title="Scroll right" aria-label="Scroll items right">&#8250;</button>
+  <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">☀ Light</button>
+</div>
+
+<div class="workspace">
+  <!-- LEFT: CONTROLS -->
+  <div class="controls">
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="identity">Details</button>
+      <button class="tab-btn" data-tab="appearance">Appearance</button>
+      <button class="tab-btn" data-tab="export">Export</button>
+    </div>
+
+    <!-- TAB 1: IDENTITY -->
+    <div class="tab-panel active" id="tab-identity">
+
+      <div>
+        <div class="section-title">Identity</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div class="field-group">
+            <label>Item Name</label>
+            <input type="text" id="itemName" placeholder="e.g. Blade of Eternal Frost" value="Staff of the Arcane Tide">
+          </div>
+          <div class="row-2">
+            <div class="field-group">
+              <label>Item Type</label>
+              <select id="itemType">
+                <option value="">— None —</option>
+                <option>Weapon</option>
+                <option>Armour</option>
+                <option>Wand</option>
+                <option selected>Staff</option>
+                <option>Ring</option>
+                <option>Amulet</option>
+                <option>Cloak</option>
+                <option>Rod</option>
+                <option>Potion</option>
+                <option>Scroll</option>
+                <option>Shield</option>
+                <option>Boots</option>
+                <option>Gloves</option>
+                <option>Helm</option>
+                <option>Wondrous Item</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Subtype / Material <span class="field-note">*</span></label>
+              <input type="text" id="itemSubtype" placeholder="e.g. Longsword, Oak" value="Quarterstaff">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Rarity</label>
+            <select id="itemRarity">
+              <option value="common">Common</option>
+              <option value="uncommon">Uncommon</option>
+              <option value="rare" selected>Rare</option>
+              <option value="very-rare">Very Rare</option>
+              <option value="legendary">Legendary</option>
+              <option value="artifact">Artifact</option>
+              <option value="unique">Unique</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Properties</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div>
+            <div class="row-3" style="margin-bottom:0.25rem;">
+              <div class="label-rename-wrap">
+                <input class="stat-label-rename" type="text" id="bonusLabel" value="Bonus" placeholder="Bonus">
+                <span class="label-rename-icon">✒</span>
+              </div>
+              <div class="label-rename-wrap">
+                <input class="stat-label-rename" type="text" id="damageLabel" value="Damage" placeholder="Damage">
+                <span class="label-rename-icon">✒</span>
+              </div>
+              <div class="label-rename-wrap">
+                <input class="stat-label-rename" type="text" id="weightLabel" value="Weight" placeholder="Weight">
+                <span class="label-rename-icon">✒</span>
+              </div>
+            </div>
+            <div class="row-3">
+              <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="+2">
+              <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="1d6 force">
+              <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="4 lb">
+            </div>
+          </div>
+          <div>
+            <div class="row-2" style="margin-bottom:0.25rem;">
+              <div style="display:flex;align-items:center;gap:0.25rem;">
+                <div class="label-rename-wrap" style="flex:1;">
+                  <input class="stat-label-rename" type="text" id="saveLabel" value="Save" placeholder="Save">
+                  <span class="label-rename-icon">✒</span>
+                </div>
+                <span class="field-note">*</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.25rem;">
+                <div class="label-rename-wrap" style="flex:1;">
+                  <input class="stat-label-rename" type="text" id="rangeLabel" value="Range" placeholder="Range">
+                  <span class="label-rename-icon">✒</span>
+                </div>
+                <span class="field-note">*</span>
+              </div>
+            </div>
+            <div class="row-2">
+              <input type="text" id="itemSave" placeholder="e.g. DC 15 Dex">
+              <input type="text" id="itemRange" placeholder="e.g. 60 ft">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Requires Attunement</label>
+            <select id="itemAttunement">
+              <option value="">No attunement required</option>
+              <option value="by a spellcaster" selected>by a spellcaster</option>
+              <option value="by a wizard">by a wizard</option>
+              <option value="by a cleric or paladin">by a cleric or paladin</option>
+              <option value="by a bard">by a bard</option>
+              <option value="by a warlock">by a warlock</option>
+              <option value="by a druid">by a druid</option>
+              <option value="by a ranger">by a ranger</option>
+              <option value="by a fighter">by a fighter</option>
+              <option value="by a rogue">by a rogue</option>
+              <option value="by a creature of good alignment">by a creature of good alignment</option>
+              <option value="by a creature of evil alignment">by a creature of evil alignment</option>
+              <option value="custom">Custom…</option>
+            </select>
+          </div>
+          <div class="field-group" id="attunementCustomWrap" style="display:none;">
+            <label>Custom Attunement Text</label>
+            <input type="text" id="attunementCustom" placeholder="e.g. by an elf or half-elf">
+          </div>
+          <div class="field-group">
+            <label>Source / Campaign <span class="field-note">*</span></label>
+            <input type="text" id="itemSource" placeholder="e.g. Homebrew — The Shattered Realm" value="Homebrew">
+          </div>
+          <p class="field-note-legend"><span class="field-note">*</span> These fields are hidden on the card when left empty</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Description <span style="font-size:0.65rem;opacity:0.6;font-family:'Crimson Pro';text-transform:none;letter-spacing:0;">(Markdown supported)</span></div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <textarea id="itemDescription" rows="9" placeholder="Write the item's description here…
+Markdown is supported:
+
+**Bold text**, *italic*, ***bold italic***
+- Bullet list
+- Item two
+> Blockquote for flavour text
+---
+### Section heading">While attuned to this staff, you gain a **+2 bonus** to spell attack rolls and spell save DC.
+
+*The staff is topped with a swirling orb of trapped seawater, perpetually in motion.*
+
+**Spells.** The staff has **10 charges**. While holding it, you can use an action to expend charges to cast the following spells:
+- *Control Water* (3 charges)
+- *Tidal Wave* (3 charges)
+- *Shape Water* (1 charge)
+
+The staff regains **1d6+4 charges** at dawn.</textarea>
+
+          <div class="char-counter-row">
+            <span class="char-count" id="charCount">0 / 450</span>
+            <label class="oversized-toggle-row">
+              <input type="checkbox" id="allowOversized">
+              <span>Allow oversized text <em style="font-size:0.68rem;opacity:0.75;">(may not print correctly)</em></span>
+            </label>
+          </div>
+
+          <div class="oversized-warning" id="oversizedWarning">
+            ⚠ Text exceeds the safe limit for a 63×88mm card. The preview is clamped — overflow will be hidden when printed. Enable "Allow oversized text" to see and edit the full content.
+          </div>
+
+          <div class="md-hint">
+            <code>**bold**</code> &nbsp;
+            <code>*italic*</code> &nbsp;
+            <code>### Heading</code> &nbsp;
+            <code>- list</code> &nbsp;
+            <code>> quote</code> &nbsp;
+            <code>---</code> (divider)
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:stretch;gap:1rem;">
+        <button class="history-save-btn" id="historySaveBtn" style="border:1px solid rgba(180,130,60,0.4);border-radius:4px;padding:0.45rem 1.2rem;" title="Save current item to history">＋ Save to History</button>
+        <button class="btn btn-primary" id="exportPngInline" style="padding:0.45rem 0.8rem;font-size:0.62rem;white-space:nowrap;" title="Export current card as PNG">⬇ Export PNG</button>
+        <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.45rem;white-space:nowrap;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear</button>
+      </div>
+
+    </div><!-- /tab-identity -->
+
+    <!-- TAB 2: APPEARANCE -->
+    <div class="tab-panel" id="tab-appearance">
+
+      <div>
+        <div class="section-title">Images</div>
+        <div class="row-2">
+          <div>
+            <label style="display:block;margin-bottom:0.3rem;">Background Image</label>
+            <div class="upload-zone" id="bgZone">
+              <input type="file" id="bgUpload" accept="image/*" title="Upload background image">
+              <img class="upload-preview" id="bgPreview" alt="Background preview">
+              <div class="upload-placeholder">
+                <span>🖼</span>
+                Parchment / texture<br><small>PNG, JPG, WEBP</small>
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="clearBg" style="margin-top:0.3rem;font-size:0.65rem;padding:0.3rem 0.6rem;display:none;">Clear</button>
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:0.3rem;">Item Image</label>
+            <div class="upload-zone" id="itemImgZone">
+              <input type="file" id="itemImgUpload" accept="image/*" title="Upload item image">
+              <img class="upload-preview" id="itemImgPreview" alt="Item preview">
+              <div class="upload-placeholder">
+                <span>⚔</span>
+                Item artwork<br><small>PNG, JPG, WEBP</small>
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="clearItem" style="margin-top:0.3rem;font-size:0.65rem;padding:0.3rem 0.6rem;display:none;">Clear</button>
+            <div id="itemImgCropControls" style="display:none;margin-top:0.5rem;">
+              <label style="display:block;margin-bottom:0.25rem;font-size:0.78rem;color:var(--label-color);">Image zoom</label>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <input type="range" id="itemImgZoom" min="0.5" max="5" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+                <button class="btn btn-secondary" id="resetImgCrop" style="font-size:0.62rem;padding:0.2rem 0.55rem;white-space:nowrap;">Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Appearance</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div class="row-2">
+            <div class="field-group">
+              <label>Card base colour</label>
+              <div class="color-row">
+                <input type="color" id="cardColor" value="#d4b87a">
+                <input type="text" id="cardColorHex" value="#d4b87a" placeholder="#d4b87a" maxlength="7">
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Ink colour</label>
+              <div class="color-row">
+                <input type="color" id="inkColor" value="#2c1a0e">
+                <input type="text" id="inkColorHex" value="#2c1a0e" placeholder="#2c1a0e" maxlength="7">
+              </div>
+            </div>
+          </div>
+          <div class="field-group" id="bgOpacityRow" style="display:none;">
+            <label>Background image opacity</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <span id="bgOpacityLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Rarity colour <button id="resetRarityColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="rarityColor" value="#1a3e8b">
+              <input type="text" id="rarityColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
+          <label class="toggle-row">
+            <input type="checkbox" id="showImage" checked>
+            Show item image circle
+          </label>
+          <div class="field-group">
+            <label>Circle border colour</label>
+            <div class="color-row">
+              <input type="color" id="circleBorderColor" value="#5a3c1e">
+              <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Circle size</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="circleSize" min="70" max="160" step="5" value="110" style="flex:1;accent-color:var(--gold);">
+              <span id="circleSizeLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">110px</span>
+            </div>
+          </div>
+          <label class="toggle-row">
+            <input type="checkbox" id="showStats" checked>
+            Show stats strip (damage / weight / bonus)
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="showFrame" checked>
+            Show ornate border frame
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="squareCorners">
+            Square card corners
+          </label>
+        </div>
+      </div>
+
+    </div><!-- /tab-appearance -->
+
+    <!-- TAB 3: EXPORT -->
+    <div class="tab-panel" id="tab-export">
+
+      <div>
+        <div class="section-title">Current Item</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="exportPng">⬇ Save as PNG</button>
+          <button class="btn btn-secondary" id="exportPrint">🖨 Print This</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">All Saved Items</div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="exportAllPng">⬇ Download All PNGs</button>
+          <button class="btn btn-secondary" id="exportAllPrint">🖨 Print All (A4)</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Share</div>
+        <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Export all items (including images) as a single JSON file. Share it with others — they can import it to load and edit your items.</p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="exportJsonBtn">⬇ Export JSON</button>
+          <button class="btn btn-secondary" id="importJsonBtn">⬆ Import JSON</button>
+          <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none;">
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Cleanup</div>
+        <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Remove all data this app has stored in your browser, including saved item history and preferences.</p>
+        <button class="btn btn-secondary" id="clearAllDataBtn" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
+      </div>
+
+    </div><!-- /tab-export -->
+
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="preview-area">
+    <div class="scale-control">
+      <span>Card scale:</span>
+      <input type="range" id="scaleSlider" min="60" max="150" value="100" step="5">
+      <span id="scaleLabel">100%</span>
+    </div>
+
+    <!-- THE CARD -->
+    <div id="cardScaleWrap" style="width:100%;display:flex;justify-content:center;align-items:flex-start;height:580px;">
+    <div id="itemCard" class="item-card">
+      <div class="card-bg" id="cardBg"></div>
+      <div class="card-bg-img" id="cardBgImg"></div>
+      <div class="card-texture"></div>
+      <div class="card-vignette"></div>
+      <div class="card-frame" id="cardFrame">
+        <div class="card-frame-inner"></div>
+        <div class="card-frame-ornament">✦</div>
+      </div>
+
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-item-name" id="previewName">Staff of the Arcane Tide</div>
+          <div class="card-subtype" id="previewSubtype">Staff • Quarterstaff</div>
+          <div class="card-rarity rarity-rare" id="previewRarity">◆ Rare ◆</div>
+        </div>
+
+        <div class="card-divider"></div>
+
+        <div class="card-image-wrap" id="imageWrap">
+          <div class="card-side-stat" id="saveStat" style="display:none;">
+            <span class="side-stat-label" id="previewSaveLabel">Save</span>
+            <span class="side-stat-value" id="previewSave"></span>
+          </div>
+          <div class="card-image-container" id="cardImgContainer">
+            <img id="cardItemImg" src="" alt="Item image" style="display:none;">
+            <div class="card-image-placeholder" id="imgPlaceholder">⚔</div>
+            <div class="img-upload-hint" id="imgUploadHint">
+              <span class="hint-icon">⬆</span>
+              <span class="hint-text">Click to<br>add image</span>
+            </div>
+            <div class="img-drag-hint" id="imgDragHint">
+              <span class="hint-icon">✥</span>
+              <span class="hint-text">Drag to reposition<br>Scroll to zoom</span>
+            </div>
+          </div>
+          <div class="card-side-stat" id="rangeStat" style="display:none;">
+            <span class="side-stat-label" id="previewRangeLabel">Range</span>
+            <span class="side-stat-value" id="previewRange"></span>
+          </div>
+        </div>
+
+        <div class="card-stats" id="statsStrip">
+          <div class="card-stat">
+            <span class="stat-label" id="previewBonusLabel">Bonus</span>
+            <span class="stat-value" id="previewBonus">+2</span>
+          </div>
+          <div class="card-stat">
+            <span class="stat-label" id="previewDamageLabel">Damage</span>
+            <span class="stat-value" id="previewDamage">1d6 force</span>
+          </div>
+          <div class="card-stat">
+            <span class="stat-label" id="previewWeightLabel">Weight</span>
+            <span class="stat-value" id="previewWeight">4 lb</span>
+          </div>
+        </div>
+
+        <div class="card-divider" style="margin-top:4px;"></div>
+
+        <div class="card-body">
+          <div class="card-description" id="previewDesc"></div>
+        </div>
+
+        <div class="card-attunement" id="previewAttunement">
+          Requires Attunement by a spellcaster
+        </div>
+
+        <div class="card-footer">
+          <div class="card-source" id="previewSource">Homebrew</div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /cardScaleWrap -->
+
+    <div class="export-hint">
+      Use <strong>Save as PNG</strong> for a high-quality image export, or <strong>Print</strong> for physical cards.
+    </div>
+  </div>
+</div>
+
+<!-- html2canvas for PNG export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+// ── HELPERS ──
+const $ = id => document.getElementById(id);
+
+const rarityLabels = {
+  'common': 'Common',
+  'uncommon': 'Uncommon',
+  'rare': 'Rare',
+  'very-rare': 'Very Rare',
+  'legendary': 'Legendary',
+  'artifact': 'Artifact',
+  'unique': 'Unique'
+};
+
+const rarityIcons = {
+  'common': '○',
+  'uncommon': '◇',
+  'rare': '◆',
+  'very-rare': '❖',
+  'legendary': '★',
+  'artifact': '✦',
+  'unique': '◈'
+};
+
+// ── ITEM IMAGE CROP (pan / zoom) ──
+let itemImgX = 0, itemImgY = 0, itemImgScale = 1;
+let itemImgNaturalW = 0, itemImgNaturalH = 0;
+
+function updateItemImageTransform() {
+  const img = $('cardItemImg');
+  if (!img || img.style.display === 'none' || !itemImgNaturalW) return;
+  const C = 110;
+  const coverScale = Math.max(C / itemImgNaturalW, C / itemImgNaturalH);
+  const total = coverScale * itemImgScale;
+  const baseX  = (C - itemImgNaturalW * total) / 2;
+  const baseY  = (C - itemImgNaturalH * total) / 2;
+  img.style.width           = itemImgNaturalW + 'px';
+  img.style.height          = itemImgNaturalH + 'px';
+  img.style.left            = '0';
+  img.style.top             = '0';
+  img.style.transformOrigin = '0 0';
+  img.style.transform       = `translate(${baseX + itemImgX}px,${baseY + itemImgY}px) scale(${total})`;
+}
+
+function resetImageCrop() {
+  itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+  if ($('itemImgZoom')) $('itemImgZoom').value = 1;
+  updateItemImageTransform();
+}
+
+function showCropControls(visible) {
+  const el = $('itemImgCropControls');
+  if (el) el.style.display = visible ? 'block' : 'none';
+  const c = $('cardImgContainer');
+  c.style.cursor = visible ? 'grab' : '';
+  c.classList.toggle('has-img', !!visible);
+}
+
+// Drag to pan
+(function() {
+  let dragging = false, startX = 0, startY = 0;
+  const con = () => $('cardImgContainer');
+
+  document.addEventListener('mousedown', e => {
+    if (!con().contains(e.target) || !itemImgNaturalW) return;
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX - itemImgX;
+    startY = e.clientY - itemImgY;
+    con().style.cursor = 'grabbing';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    itemImgX = e.clientX - startX;
+    itemImgY = e.clientY - startY;
+    updateItemImageTransform();
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    if (itemImgNaturalW) con().style.cursor = 'grab';
+  });
+
+  // Touch pan
+  let tx = 0, ty = 0;
+  con().addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || !itemImgNaturalW) return;
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+    dragging = true; e.preventDefault();
+  }, { passive: false });
+  con().addEventListener('touchmove', e => {
+    if (!dragging || e.touches.length !== 1) return;
+    itemImgX += e.touches[0].clientX - tx;
+    itemImgY += e.touches[0].clientY - ty;
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+    updateItemImageTransform(); e.preventDefault();
+  }, { passive: false });
+  con().addEventListener('touchend', () => { dragging = false; });
+})();
+
+// Scroll to zoom
+$('cardImgContainer').addEventListener('wheel', e => {
+  if (!itemImgNaturalW) return;
+  e.preventDefault();
+  itemImgScale = Math.max(0.2, Math.min(10, itemImgScale * (e.deltaY > 0 ? 0.92 : 1.08)));
+  if ($('itemImgZoom')) $('itemImgZoom').value = itemImgScale;
+  updateItemImageTransform();
+}, { passive: false });
+
+// Zoom slider + reset button
+$('itemImgZoom').addEventListener('input', () => {
+  itemImgScale = parseFloat($('itemImgZoom').value);
+  updateItemImageTransform();
+});
+$('resetImgCrop').addEventListener('click', resetImageCrop);
+
+// ── LIVE SYNC ──
+function syncCard() {
+  const name    = $('itemName').value || 'Unnamed Item';
+  const type    = $('itemType').value;
+  const subtype = $('itemSubtype').value;
+  const rarity  = $('itemRarity').value;
+  const bonus   = $('itemBonus').value;
+  const damage  = $('itemDamage').value;
+  const weight  = $('itemWeight').value;
+  const source  = $('itemSource').value;
+  const desc    = $('itemDescription').value;
+
+  // Attunement
+  let attune = $('itemAttunement').value;
+  if (attune === 'custom') attune = $('attunementCustom').value;
+
+  $('previewName').textContent   = name;
+  $('previewSubtype').textContent = type ? (subtype ? `${type} • ${subtype}` : type) : subtype;
+  $('previewBonus').textContent  = bonus  || '—';
+  $('previewDamage').textContent = damage || '—';
+  $('previewWeight').textContent = weight || '—';
+  $('previewSource').textContent = source || '';
+
+  // Rarity badge
+  const rarityEl = $('previewRarity');
+  rarityEl.className = `card-rarity rarity-${rarity}`;
+  const icon = rarityIcons[rarity] || '◆';
+  rarityEl.textContent = `${icon} ${rarityLabels[rarity]} ${icon}`;
+  const rarityHex = $('rarityColorHex').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(rarityHex)) {
+    rarityEl.style.color = rarityHex;
+    rarityEl.style.borderColor = rarityHex;
+  } else {
+    rarityEl.style.color = '';
+    rarityEl.style.borderColor = '';
+  }
+
+  // Attunement
+  const attuneEl = $('previewAttunement');
+  if (attune) {
+    attuneEl.style.display = 'block';
+    attuneEl.textContent = `Requires Attunement ${attune}`;
+  } else {
+    attuneEl.style.display = 'none';
+  }
+
+  // Description (markdown)
+  $('previewDesc').innerHTML = marked.parse(desc);
+
+  // ── CHAR COUNTER + OVERFLOW CONTROL ──
+  const CHAR_LIMIT = 450;
+  const len = desc.length;
+  const oversized = $('allowOversized').checked;
+  const countEl   = $('charCount');
+  const warnEl    = $('oversizedWarning');
+  const bodyEl    = $('previewDesc').closest('.card-body') || $('previewDesc').parentElement;
+
+  countEl.textContent = `${len} / ${CHAR_LIMIT}`;
+  countEl.className   = 'char-count' + (len > CHAR_LIMIT ? ' over' : len > CHAR_LIMIT * 0.85 ? ' warn' : '');
+
+  if (len > CHAR_LIMIT && !oversized) {
+    warnEl.classList.add('visible');
+  } else {
+    warnEl.classList.remove('visible');
+  }
+
+  // Clamp or unclamp card body overflow
+  const cardContent = $('itemCard').querySelector('.card-content');
+  if (oversized) {
+    cardContent.style.height    = 'auto';
+    cardContent.style.minHeight = '580px';
+    cardContent.style.overflow  = 'visible';
+    $('itemCard').style.minHeight = cardContent.scrollHeight + 'px';
+  } else {
+    cardContent.style.height    = '580px';
+    cardContent.style.minHeight = '';
+    cardContent.style.overflow  = 'hidden';
+    $('itemCard').style.minHeight = '';
+  }
+
+  // Stat labels
+  $('previewBonusLabel').textContent  = $('bonusLabel').value  || 'Bonus';
+  $('previewDamageLabel').textContent = $('damageLabel').value || 'Damage';
+  $('previewWeightLabel').textContent = $('weightLabel').value || 'Weight';
+
+  // Side stats (save / range)
+  const saveVal  = $('itemSave').value.trim();
+  const rangeVal = $('itemRange').value.trim();
+  $('saveStat').style.display  = saveVal  ? 'block' : 'none';
+  $('rangeStat').style.display = rangeVal ? 'block' : 'none';
+  if (saveVal)  { $('previewSave').textContent  = saveVal;  $('previewSaveLabel').textContent  = $('saveLabel').value  || 'Save'; }
+  if (rangeVal) { $('previewRange').textContent = rangeVal; $('previewRangeLabel').textContent = $('rangeLabel').value || 'Range'; }
+
+  // Toggles
+  const showImg = $('showImage').checked;
+  $('cardImgContainer').style.display = showImg ? 'flex' : 'none';
+  $('imageWrap').style.display     = (showImg || !!saveVal || !!rangeVal) ? 'grid' : 'none';
+  $('statsStrip').style.display    = $('showStats').checked ? 'flex' : 'none';
+  $('cardFrame').style.display     = $('showFrame').checked ? 'block' : 'none';
+  $('itemCard').style.borderRadius = $('squareCorners').checked ? '0' : '8px';
+
+  // Background image opacity
+  const bgOpacityVal = parseFloat($('bgOpacity').value) || 1;
+  $('bgOpacityLabel').textContent = Math.round(bgOpacityVal * 100) + '%';
+  $('cardBgImg').style.opacity = bgOpacityVal;
+
+  // Circle size + border colour
+  const circleSize = parseInt($('circleSize').value) || 110;
+  $('circleSizeLabel').textContent = circleSize + 'px';
+  const circleContainer = $('cardImgContainer');
+  circleContainer.style.width  = circleSize + 'px';
+  circleContainer.style.height = circleSize + 'px';
+  const circleBorderHex = $('circleBorderColorHex').value;
+  circleContainer.style.borderColor = /^#[0-9a-fA-F]{6}$/.test(circleBorderHex)
+    ? circleBorderHex : 'rgba(90,60,30,0.45)';
+
+  // Colors
+  const cardCol = $('cardColorHex').value;
+  const inkCol  = $('inkColorHex').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(cardCol)) {
+    $('cardBg').style.backgroundColor = cardCol;
+  }
+  if (/^#[0-9a-fA-F]{6}$/.test(inkCol)) {
+    const card = $('itemCard');
+    card.querySelectorAll('.card-item-name,.card-subtype,.stat-value,.card-source,.side-stat-value').forEach(el => {
+      el.style.color = inkCol;
+    });
+    card.querySelectorAll('.card-description').forEach(el => {
+      el.style.color = inkCol;
+    });
+    card.querySelectorAll('.stat-label,.card-attunement,.side-stat-label').forEach(el => {
+      el.style.color = inkCol;
+      el.style.opacity = '0.75';
+    });
+  }
+}
+
+// ── BIND ALL INPUTS ──
+[
+  'itemName','itemType','itemSubtype','itemRarity','itemBonus',
+  'itemDamage','itemWeight','itemSource','itemDescription',
+  'itemAttunement','attunementCustom','showImage','showStats','showFrame','squareCorners',
+  'allowOversized',
+  'bonusLabel','damageLabel','weightLabel','saveLabel','rangeLabel',
+  'itemSave','itemRange'
+].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', syncCard);
+});
+
+// Custom attunement reveal
+$('itemAttunement').addEventListener('change', () => {
+  $('attunementCustomWrap').style.display =
+    $('itemAttunement').value === 'custom' ? 'flex' : 'none';
+});
+
+// ── COLOR PICKERS ──
+function bindColor(pickerId, hexId) {
+  const picker = $(pickerId), hex = $(hexId);
+  picker.addEventListener('input', () => { hex.value = picker.value; syncCard(); });
+  hex.addEventListener('input', () => {
+    if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) picker.value = hex.value;
+    syncCard();
+  });
+}
+bindColor('cardColor','cardColorHex');
+bindColor('inkColor','inkColorHex');
+bindColor('rarityColor','rarityColorHex');
+bindColor('circleBorderColor','circleBorderColorHex');
+
+$('bgOpacity').addEventListener('input', syncCard);
+$('circleSize').addEventListener('input', syncCard);
+
+$('resetRarityColor').addEventListener('click', () => {
+  $('rarityColorHex').value = '';
+  $('rarityColor').value = '#1a3e8b';
+  syncCard();
+});
+
+// ── IMAGE UPLOADS ──
+function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad) {
+  const input = $(inputId), preview = $(previewId), zone = $(zoneId), clearBtn = $(clearBtnId);
+  input.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      preview.src = ev.target.result;
+      zone.classList.add('has-image');
+      clearBtn.style.display = 'inline-block';
+      if (onLoad) onLoad(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  });
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    preview.src = '';
+    zone.classList.remove('has-image');
+    clearBtn.style.display = 'none';
+    if (onLoad) onLoad(null);
+  });
+}
+
+bindUpload('bgUpload','bgPreview','bgZone','clearBg', src => {
+  $('cardBgImg').style.backgroundImage = src ? `url('${src}')` : '';
+  $('bgOpacityRow').style.display = src ? 'block' : 'none';
+});
+
+bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
+  const img = $('cardItemImg');
+  const placeholder = $('imgPlaceholder');
+  if (src) {
+    img.onload = () => {
+      itemImgNaturalW = img.naturalWidth;
+      itemImgNaturalH = img.naturalHeight;
+      itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+      if ($('itemImgZoom')) $('itemImgZoom').value = 1;
+      updateItemImageTransform();
+      showCropControls(true);
+    };
+    img.src = src;
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    img.src = ''; img.style.display = 'none'; img.style.transform = '';
+    placeholder.style.display = 'block';
+    itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+    itemImgNaturalW = 0; itemImgNaturalH = 0;
+    showCropControls(false);
+  }
+});
+
+// ── SCALE SLIDER ──
+$('scaleSlider').addEventListener('input', () => {
+  const val = $('scaleSlider').value;
+  $('scaleLabel').textContent = val + '%';
+  $('itemCard').style.transform = `scale(${val/100})`;
+  $('itemCard').style.transformOrigin = 'top center';
+  $('cardScaleWrap').style.height = (580 * val / 100) + 'px';
+});
+
+// ── VIGNETTE POST-PROCESS ──
+// html2canvas mis-renders CSS radial-gradient on .card-vignette.
+// We skip that element during capture and redraw it precisely here instead.
+// Replicates: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.45) 100%)
+function applyCardVignette(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(w / 2, h / 2); // unit space: card corners at (±1, ±1)
+  const g = ctx.createRadialGradient(0, 0, 0.4, 0, 0, 1);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = g;
+  ctx.fillRect(-1, -1, 2, 2);
+  ctx.restore();
+}
+
+// ── EXPORT PNG ──
+async function exportCurrentPng() {
+  const state = collectCurrentState();
+  const canvas = await renderStateToCanvas(state);
+  const link = document.createElement('a');
+  const name = (state.name || 'magic_item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  link.download = `${name}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+$('exportPng').addEventListener('click', async () => {
+  try { await exportCurrentPng(); }
+  catch(e) { alert('Export failed. If you used external images, try uploading them directly.'); }
+});
+
+$('exportPngInline').addEventListener('click', async () => {
+  try { await exportCurrentPng(); }
+  catch(e) { alert('Export failed. If you used external images, try uploading them directly.'); }
+});
+
+// ── PRINT (single current item) ──
+$('exportPrint').addEventListener('click', async () => {
+  showProgress('Preparing print…');
+  updateProgress(0, 1, 'Rendering card…');
+  try {
+    const state = collectCurrentState();
+    const canvas = await renderStateToCanvas(state);
+    const dataUrl = canvas.toDataURL('image/png');
+    updateProgress(1, 1, 'Opening print dialog…');
+    await new Promise(r => setTimeout(r, 150));
+    hideProgress();
+    printImagesInPopup([dataUrl], 'single');
+  } catch(e) {
+    hideProgress();
+    alert('Print failed: ' + e.message);
+  }
+});
+
+// ── SHARED: build a card DOM node from a saved state ──
+function buildCardNode(s) {
+  const wrap = document.createElement('div');
+  wrap.className = 'item-card';
+  const radius = s.squareCorners ? '0' : '8px';
+  wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:${radius};overflow:hidden;flex-shrink:0;`;
+
+  // bg colour layer
+  const bg = document.createElement('div');
+  bg.className = 'card-bg';
+  bg.style.backgroundColor = s.cardColor || '#d4b87a';
+
+  // bg image layer (separate so opacity is independent of colour)
+  const bgImg = document.createElement('div');
+  bgImg.className = 'card-bg-img';
+  if (s.bgImage) {
+    bgImg.style.backgroundImage = `url('${s.bgImage}')`;
+    bgImg.style.opacity = s.bgOpacity ?? 1;
+  }
+
+  const texture = document.createElement('div');
+  texture.className = 'card-texture';
+
+  const vignette = document.createElement('div');
+  vignette.className = 'card-vignette';
+
+  const frame = document.createElement('div');
+  frame.className = 'card-frame';
+  frame.style.display = s.showFrame === false ? 'none' : 'block';
+  frame.innerHTML = '<div class="card-frame-inner"></div><div class="card-frame-ornament">✦</div>';
+
+  // attunement text
+  let attuneText = s.attunement || '';
+  if (attuneText === 'custom') attuneText = s.attunementCustom || '';
+
+  const rarityLabel = rarityLabels[s.rarity] || s.rarity || '';
+  const rarityIcon  = rarityIcons[s.rarity]  || '◆';
+  const inkCol      = s.inkColor || '#2c1a0e';
+
+  const bonus  = s.bonus  || '—';
+  const damage = s.damage || '—';
+  const weight = s.weight || '—';
+
+  const bonusLbl  = s.bonusLabel  || 'Bonus';
+  const damageLbl = s.damageLabel || 'Damage';
+  const weightLbl = s.weightLabel || 'Weight';
+  const saveLbl   = s.saveLabel   || 'Save';
+  const rangeLbl  = s.rangeLabel  || 'Range';
+
+  const C = s.circleSize || 110;
+  const circleBorder = s.circleBorderColor && /^#[0-9a-fA-F]{6}$/.test(s.circleBorderColor)
+    ? s.circleBorderColor : 'rgba(90,60,30,0.45)';
+  const rarityColorStyle = s.rarityColor && /^#[0-9a-fA-F]{6}$/.test(s.rarityColor)
+    ? `color:${s.rarityColor};border-color:${s.rarityColor};` : '';
+  let itemImgHtml;
+  if (s.itemImage) {
+    const nw = s.imgNaturalW || C;
+    const nh = s.imgNaturalH || C;
+    const coverScale = Math.max(C / nw, C / nh);
+    const total = coverScale * (s.imageScale || 1);
+    const baseX = (C - nw * total) / 2;
+    const baseY = (C - nh * total) / 2;
+    const tx = baseX + (s.imageOffsetX || 0);
+    const ty = baseY + (s.imageOffsetY || 0);
+    itemImgHtml = `<img src="${s.itemImage}" alt="" style="position:absolute;left:0;top:0;width:${nw}px;height:${nh}px;transform-origin:0 0;transform:translate(${tx}px,${ty}px) scale(${total});display:block;">`;
+  } else {
+    itemImgHtml = `<div class="card-image-placeholder" style="color:rgba(90,60,30,0.4);font-size:2.5rem;">⚔</div>`;
+  }
+
+  const statsDisplay = s.showStats === false ? 'none' : 'flex';
+  const showImg      = s.showImage !== false;
+  const imageDisplay = showImg ? 'flex' : 'none';
+  const imageWrapDisplay = (showImg || !!s.savingThrow || !!s.range) ? 'grid' : 'none';
+
+  const sideStatStyle = `text-align:center;padding:0 6px;`;
+  const sideStatLabelStyle = `font-family:Cinzel,serif;font-size:0.5rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;`;
+  const sideStatValueStyle = `font-family:Cinzel,serif;font-size:0.72rem;font-weight:700;color:${inkCol};display:block;margin-top:3px;line-height:1.3;`;
+
+  const saveHtml  = s.savingThrow
+    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${saveLbl}</span><span style="${sideStatValueStyle}">${s.savingThrow}</span></div>`
+    : `<div></div>`;
+  const rangeHtml = s.range
+    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${rangeLbl}</span><span style="${sideStatValueStyle}">${s.range}</span></div>`
+    : `<div></div>`;
+
+  const descHtml = typeof marked !== 'undefined' ? marked.parse(s.description || '') : (s.description || '');
+
+  const content = document.createElement('div');
+  content.className = 'card-content';
+  content.style.cssText = 'position:relative;z-index:2;padding:0;display:flex;flex-direction:column;min-height:580px;';
+  content.innerHTML = `
+    <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
+      <div class="card-item-name" style="font-family:Cinzel,serif;font-size:1.15rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
+      <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
+      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
+    </div>
+    <div class="card-divider"></div>
+    <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
+      ${saveHtml}
+      <div class="card-image-container" style="width:${C}px;height:${C}px;border-radius:50%;border:2px solid ${circleBorder};overflow:hidden;background:rgba(90,60,30,0.12);display:${imageDisplay};align-items:center;justify-content:center;grid-column:2;">
+        ${itemImgHtml}
+      </div>
+      ${rangeHtml}
+    </div>
+    <div class="card-stats" style="display:${statsDisplay};justify-content:center;gap:0;padding:4px 20px;">
+      <div class="card-stat" style="text-align:center;padding:3px 12px;border-right:1px solid rgba(90,60,30,0.3);flex:1;">
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${bonusLbl}</span>
+        <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${bonus}</span>
+      </div>
+      <div class="card-stat" style="text-align:center;padding:3px 12px;border-right:1px solid rgba(90,60,30,0.3);flex:1;">
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${damageLbl}</span>
+        <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${damage}</span>
+      </div>
+      <div class="card-stat" style="text-align:center;padding:3px 12px;flex:1;">
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${weightLbl}</span>
+        <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${weight}</span>
+      </div>
+    </div>
+    <div class="card-divider"></div>
+    <div class="card-body" style="padding:8px 20px 16px;flex:1;">
+      <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
+    </div>
+    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">Requires Attunement ${attuneText}</div>` : ''}
+    <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
+      <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.source || ''}</div>
+    </div>
+  `;
+
+  wrap.appendChild(bg);
+  wrap.appendChild(bgImg);
+  wrap.appendChild(texture);
+  wrap.appendChild(vignette);
+  wrap.appendChild(frame);
+  wrap.appendChild(content);
+  return wrap;
+}
+
+// ── SHARED: render a state to a canvas via html2canvas ──
+async function renderStateToCanvas(s) {
+  const offscreen = $('offscreenRender');
+  const node = buildCardNode(s);
+  // Must be visible in the DOM for html2canvas — opacity:0 wrapper hides it from user
+  offscreen.appendChild(node);
+
+  // Wait for all images inside the node to fully load/decode
+  const imgs = Array.from(node.querySelectorAll('img'));
+  await Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(res => {
+      img.onload  = res;
+      img.onerror = res; // resolve even on error so we don't hang
+    });
+  }));
+  // Extra frame for layout to settle
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  node.style.boxShadow = 'none';
+
+  const canvas = await html2canvas(node, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: null,
+    logging: false,
+    imageTimeout: 15000,
+    ignoreElements: el => el.classList.contains('card-vignette') || el.classList.contains('img-drag-hint') || el.classList.contains('img-upload-hint'),
+    onclone: (doc, el) => { el.style.boxShadow = 'none'; }
+  });
+  applyCardVignette(canvas);
+  offscreen.removeChild(node);
+  return canvas;
+}
+
+// ── PROGRESS HELPERS ──
+function showProgress(title) {
+  $('progressTitle').textContent = title;
+  $('progressFill').style.width = '0%';
+  $('progressLabel').textContent = 'Preparing…';
+  $('progressOverlay').classList.add('active');
+}
+function updateProgress(done, total, label) {
+  $('progressFill').style.width = Math.round((done / total) * 100) + '%';
+  $('progressLabel').textContent = label;
+}
+function hideProgress() {
+  $('progressOverlay').classList.remove('active');
+}
+
+// ── POPUP PRINT (used by both single and all) ──
+// Opens a clean popup window containing only card images, then prints it.
+// Because the popup contains nothing but <img> tags on a white page,
+// no browser CSS stripping can affect the output — colours are baked into the PNGs.
+//
+// Layout: A4 portrait, 3×3 grid, each card exactly 63mm × 88mm, no cut lines.
+// Single item print: card sits in the top-left cell; remaining 8 cells are empty.
+function printImagesInPopup(dataUrls, mode) {
+  // Pad to 9 slots (3×3). Single always has 1; all can have up to 8 (or 9 if ever expanded).
+  const slots = Array.from({ length: 9 }, (_, i) =>
+    dataUrls[i]
+      ? `<div class="card-cell"><img src="${dataUrls[i]}"></div>`
+      : `<div class="card-cell"></div>`
+  ).join('');
+
+  // A4 portrait = 210mm × 297mm
+  // 3 cols × 63mm + 2 × 1mm gap = 191mm → side margin = (210 - 191) / 2 = 9.5mm
+  // 3 rows × 88mm + 2 × 1mm gap = 266mm → top margin  = (297 - 266) / 2 = 15.5mm
+  const pageCSS = `
+    @page { size: A4 portrait; margin: 0; }
+    html, body { margin: 0; padding: 0; width: 210mm; height: 297mm;
+                 overflow: hidden; background: white; }
+    .print-header {
+      font-family: Georgia, serif;
+      font-size: 7pt;
+      color: #aaa;
+      text-align: center;
+      padding: 6mm 0 2mm;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 63mm);
+      grid-template-rows: repeat(3, 88mm);
+      gap: 1mm;
+      width: 191mm;
+      height: 266mm;
+      margin: 0 9.5mm 0;
+    }
+    .card-cell {
+      width: 63mm;
+      height: 88mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: white;
+    }
+    .card-cell img {
+      width: 63mm;
+      height: 88mm;
+      display: block;
+      object-fit: fill;
+    }
+  `;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Print Magic Items</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important; }
+  ${pageCSS}
+</style>
+</head>
+<body>
+<div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator</div>
+<div class="grid">${slots}</div>
+<script>
+  var imgs = document.querySelectorAll('img');
+  var total = imgs.length;
+  var loaded = 0;
+  function tryPrint() { loaded++; if (loaded >= total) { setTimeout(function(){ window.print(); }, 250); } }
+  if (total === 0) { setTimeout(function(){ window.print(); }, 250); }
+  else { imgs.forEach(function(img){ if (img.complete && img.naturalWidth > 0) { tryPrint(); } else { img.onload = tryPrint; img.onerror = tryPrint; } }); }
+<\/script>
+</body>
+</html>`;
+
+  const popup = window.open('', '_blank', 'width=820,height=1000');
+  if (!popup) {
+    alert('Pop-up blocked — please allow pop-ups for this page and try again.');
+    return;
+  }
+  popup.document.open();
+  popup.document.write(html);
+  popup.document.close();
+}
+
+// ── DOWNLOAD ALL PNGs ──
+$('exportAllPng').addEventListener('click', async () => {
+  const items = getHistory();
+  if (!items.length) { alert('No saved items in history yet.'); return; }
+
+  showProgress('Rendering all items…');
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    updateProgress(i, items.length, `Rendering "${item.name || 'Unnamed'}" (${i+1}/${items.length})…`);
+    try {
+      const canvas = await renderStateToCanvas(item);
+      const link = document.createElement('a');
+      const safeName = (item.name || 'item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+      link.download = `${String(i+1).padStart(2,'0')}_${safeName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      // Small delay between downloads so browser doesn't block them
+      await new Promise(r => setTimeout(r, 400));
+    } catch(e) {
+      console.error('Failed to render', item.name, e);
+    }
+  }
+  updateProgress(items.length, items.length, 'Done!');
+  await new Promise(r => setTimeout(r, 600));
+  hideProgress();
+});
+
+// ── PRINT ALL (A4 landscape, popup window) ──
+$('exportAllPrint').addEventListener('click', async () => {
+  const items = getHistory();
+  if (!items.length) { alert('No saved items in history yet.'); return; }
+
+  showProgress('Preparing print sheet…');
+  const dataUrls = [];
+
+  for (let i = 0; i < items.length; i++) {
+    updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i+1}/${items.length})…`);
+    try {
+      const canvas = await renderStateToCanvas(items[i]);
+      dataUrls.push(canvas.toDataURL('image/png'));
+    } catch(e) {
+      console.error('Failed to render', items[i].name, e);
+    }
+  }
+
+  updateProgress(items.length, items.length, 'Opening print dialog…');
+  await new Promise(r => setTimeout(r, 200));
+  hideProgress();
+  printImagesInPopup(dataUrls, 'all');
+});
+
+// ── EXPORT JSON ──
+$('exportJsonBtn').addEventListener('click', () => {
+  const saved   = getHistory();
+  const payload = { version: 1, items: saved };
+  const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  const now     = new Date();
+  const stamp   = now.toISOString().slice(0,19).replace('T','-').replace(/:/g,'-');
+  a.download    = `dnd-items-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ── IMPORT JSON ──
+$('importJsonBtn').addEventListener('click', () => {
+  $('importJsonFile').value = '';
+  $('importJsonFile').click();
+});
+
+$('importJsonFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // Accept either the { version, items } envelope or a bare array
+      const items = Array.isArray(data) ? data : (data.items || []);
+      if (!items.length) { alert('No items found in that JSON file.'); return; }
+
+      const history = getHistory();
+      let added = 0;
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        // Deduplicate by name — imported item wins (fresher)
+        const idx = history.findIndex(h => h.name === item.name);
+        if (idx >= 0) history.splice(idx, 1);
+        history.unshift(item);
+        added++;
+      }
+      // Trim to MAX_HISTORY
+      history.splice(MAX_HISTORY);
+      saveHistory(history);
+      renderHistoryBar();
+      // Load the first imported item into the form
+      applyState(items[0]);
+      alert(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
+    } catch {
+      alert('Could not read that file — make sure it is a valid D&D Item Creator JSON export.');
+    }
+  };
+  reader.readAsText(file);
+});
+
+// ── THEME TOGGLE ──
+(function () {
+  const btn = $('themeToggle');
+  function applyTheme(light) {
+    document.body.classList.toggle('light', light);
+    btn.textContent = light ? '☽ Dark' : '☀ Light';
+    localStorage.setItem('dnd_theme', light ? 'light' : 'dark');
+  }
+  btn.addEventListener('click', () => applyTheme(!document.body.classList.contains('light')));
+  applyTheme(localStorage.getItem('dnd_theme') === 'light');
+})();
+
+// ── CLEAR CARD ──
+$('clearCardBtn').addEventListener('click', () => {
+  if (!confirm('Clear the current card? All fields will be reset to blank.')) return;
+  applyState({
+    name: '', type: 'Weapon', subtype: '', rarity: 'common',
+    bonus: '', damage: '', weight: '',
+    bonusLabel: 'Bonus', damageLabel: 'Damage', weightLabel: 'Weight',
+    savingThrow: '', range: '', saveLabel: 'Save', rangeLabel: 'Range',
+    source: '', description: '',
+    attunement: '', attunementCustom: '',
+    cardColor: '#d4b87a', inkColor: '#2c1a0e',
+    rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
+    showImage: true, showStats: true, showFrame: true, squareCorners: false,
+    bgImage: null, itemImage: null,
+    imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
+    imgNaturalW: 0, imgNaturalH: 0,
+  });
+});
+
+// ── CLEAR ALL DATA ──
+$('clearAllDataBtn').addEventListener('click', () => {
+  if (!confirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
+  localStorage.clear();
+  renderHistoryBar();
+  alert('All stored data has been cleared.');
+});
+
+// ── TABS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── UPLOAD HINT (card image circle click → open file picker) ──
+$('imgUploadHint').addEventListener('click', () => {
+  $('itemImgUpload').click();
+});
+
+// ── HISTORY ──
+const HISTORY_KEY = 'dnd_item_history';
+const MAX_HISTORY = 9;
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveHistory(items) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items)); }
+  catch(e) {
+    // localStorage full (images are large) — try removing oldest and retry
+    const trimmed = items.slice(0, 3);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed)); }
+    catch { alert('Storage full — try clearing some saved items.'); }
+  }
+}
+
+function collectCurrentState() {
+  let attune = $('itemAttunement').value;
+  if (attune === 'custom') attune = $('attunementCustom').value;
+  return {
+    id: Date.now(),
+    name:        $('itemName').value,
+    type:        $('itemType').value,
+    subtype:     $('itemSubtype').value,
+    rarity:      $('itemRarity').value,
+    bonus:       $('itemBonus').value,
+    damage:      $('itemDamage').value,
+    weight:      $('itemWeight').value,
+    bonusLabel:  $('bonusLabel').value  || 'Bonus',
+    damageLabel: $('damageLabel').value || 'Damage',
+    weightLabel: $('weightLabel').value || 'Weight',
+    savingThrow: $('itemSave').value,
+    range:       $('itemRange').value,
+    saveLabel:   $('saveLabel').value   || 'Save',
+    rangeLabel:  $('rangeLabel').value  || 'Range',
+    source:      $('itemSource').value,
+    description: $('itemDescription').value,
+    attunement:  $('itemAttunement').value,
+    attunementCustom: $('attunementCustom').value,
+    cardColor:   $('cardColorHex').value,
+    inkColor:    $('inkColorHex').value,
+    rarityColor: $('rarityColorHex').value || null,
+    circleSize:  parseInt($('circleSize').value) || 110,
+    circleBorderColor: $('circleBorderColorHex').value || null,
+    bgOpacity:   parseFloat($('bgOpacity').value) ?? 1,
+    showImage:   $('showImage').checked,
+    showStats:   $('showStats').checked,
+    showFrame:   $('showFrame').checked,
+    squareCorners: $('squareCorners').checked,
+    bgImage:     $('cardBgImg').style.backgroundImage
+                   ? $('cardBgImg').style.backgroundImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '')
+                   : null,
+    itemImage:   $('cardItemImg').src && $('cardItemImg').style.display !== 'none'
+                   ? $('cardItemImg').src
+                   : null,
+    imageOffsetX: itemImgX,
+    imageOffsetY: itemImgY,
+    imageScale:   itemImgScale,
+    imgNaturalW:  itemImgNaturalW,
+    imgNaturalH:  itemImgNaturalH,
+  };
+}
+
+function applyState(s) {
+  $('itemName').value        = s.name        || '';
+  $('itemType').value        = s.type        || 'Weapon';
+  $('itemSubtype').value     = s.subtype     || '';
+  $('itemRarity').value      = s.rarity      || 'common';
+  $('itemBonus').value       = s.bonus       || '';
+  $('itemDamage').value      = s.damage      || '';
+  $('itemWeight').value      = s.weight      || '';
+  $('bonusLabel').value      = s.bonusLabel  || 'Bonus';
+  $('damageLabel').value     = s.damageLabel || 'Damage';
+  $('weightLabel').value     = s.weightLabel || 'Weight';
+  $('itemSave').value        = s.savingThrow || '';
+  $('itemRange').value       = s.range       || '';
+  $('saveLabel').value       = s.saveLabel   || 'Save';
+  $('rangeLabel').value      = s.rangeLabel  || 'Range';
+  $('itemSource').value      = s.source      || '';
+  $('itemDescription').value = s.description || '';
+  $('itemAttunement').value  = s.attunement  || '';
+  $('attunementCustom').value = s.attunementCustom || '';
+  $('attunementCustomWrap').style.display = s.attunement === 'custom' ? 'flex' : 'none';
+  $('cardColorHex').value    = s.cardColor   || '#d4b87a';
+  $('cardColor').value       = s.cardColor   || '#d4b87a';
+  $('inkColorHex').value     = s.inkColor    || '#2c1a0e';
+  $('inkColor').value        = s.inkColor    || '#2c1a0e';
+  const rc = s.rarityColor || '';
+  $('rarityColorHex').value  = rc;
+  $('rarityColor').value     = /^#[0-9a-fA-F]{6}$/.test(rc) ? rc : '#1a3e8b';
+  const cbc = s.circleBorderColor || '';
+  $('circleBorderColorHex').value = cbc;
+  $('circleBorderColor').value    = /^#[0-9a-fA-F]{6}$/.test(cbc) ? cbc : '#5a3c1e';
+  $('circleSize').value      = s.circleSize  ?? 110;
+  $('bgOpacity').value       = s.bgOpacity   ?? 1;
+  $('showImage').checked     = s.showImage    !== false;
+  $('showStats').checked     = s.showStats    !== false;
+  $('showFrame').checked     = s.showFrame    !== false;
+  $('squareCorners').checked = s.squareCorners === true;
+
+  // Background image
+  if (s.bgImage) {
+    $('cardBgImg').style.backgroundImage = `url('${s.bgImage}')`;
+    $('bgPreview').src = s.bgImage;
+    $('bgZone').classList.add('has-image');
+    $('clearBg').style.display = 'inline-block';
+    $('bgOpacityRow').style.display = 'block';
+  } else {
+    $('cardBgImg').style.backgroundImage = '';
+    $('bgPreview').src = '';
+    $('bgZone').classList.remove('has-image');
+    $('clearBg').style.display = 'none';
+    $('bgOpacityRow').style.display = 'none';
+  }
+
+  // Item image
+  const img = $('cardItemImg');
+  const ph  = $('imgPlaceholder');
+  if (s.itemImage) {
+    itemImgX        = s.imageOffsetX ?? 0;
+    itemImgY        = s.imageOffsetY ?? 0;
+    itemImgScale    = s.imageScale   ?? 1;
+    itemImgNaturalW = s.imgNaturalW  ?? 0;
+    itemImgNaturalH = s.imgNaturalH  ?? 0;
+    if ($('itemImgZoom')) $('itemImgZoom').value = itemImgScale;
+    const restoreTransform = () => {
+      if (!itemImgNaturalW) {
+        itemImgNaturalW = img.naturalWidth;
+        itemImgNaturalH = img.naturalHeight;
+      }
+      updateItemImageTransform();
+      showCropControls(true);
+    };
+    if (img.src === s.itemImage && img.complete) {
+      restoreTransform();
+    } else {
+      img.onload = restoreTransform;
+      img.src = s.itemImage;
+    }
+    img.style.display = 'block';
+    ph.style.display = 'none';
+    $('itemImgPreview').src = s.itemImage;
+    $('itemImgZone').classList.add('has-image');
+    $('clearItem').style.display = 'inline-block';
+  } else {
+    img.src = '';
+    img.style.display = 'none';
+    img.style.transform = '';
+    ph.style.display = 'block';
+    $('itemImgPreview').src = '';
+    $('itemImgZone').classList.remove('has-image');
+    $('clearItem').style.display = 'none';
+    itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+    itemImgNaturalW = 0; itemImgNaturalH = 0;
+    showCropControls(false);
+  }
+
+  syncCard();
+}
+
+function renderHistoryBar() {
+  const items      = getHistory();
+  const container  = $('historyItems');
+  const emptyMsg   = $('historyEmpty');
+  container.innerHTML = '';
+
+  if (items.length === 0) {
+    emptyMsg.style.display = 'flex';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    el.title = `Load: ${item.name || 'Unnamed Item'}`;
+
+    const rarityLabel = rarityLabels[item.rarity] || item.rarity || '';
+
+    // Thumb
+    const thumb = document.createElement('div');
+    thumb.className = 'history-thumb';
+    if (item.itemImage) {
+      const tImg = document.createElement('img');
+      tImg.src = item.itemImage;
+      tImg.alt = item.name;
+      thumb.appendChild(tImg);
+    } else {
+      thumb.textContent = '⚔';
+    }
+
+    // Meta
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
+    meta.innerHTML = `<span class="history-name">${item.name || 'Unnamed'}</span>
+                      <span class="history-rarity rarity-${item.rarity}">${rarityLabel}</span>`;
+
+    // Delete btn
+    const del = document.createElement('button');
+    del.className = 'history-delete';
+    del.title = 'Remove from history';
+    del.textContent = '✕';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      const updated = getHistory().filter(h => h.id !== item.id);
+      saveHistory(updated);
+      renderHistoryBar();
+    });
+
+    el.appendChild(thumb);
+    el.appendChild(meta);
+    el.appendChild(del);
+
+    el.addEventListener('click', () => {
+      applyState(item);
+    });
+
+    container.appendChild(el);
+  });
+
+  // Update arrow active states after DOM has updated
+  requestAnimationFrame(() => {
+    if (window._updateHistoryArrows) window._updateHistoryArrows();
+  });
+}
+
+$('historySaveBtn').addEventListener('click', () => {
+  const state   = collectCurrentState();
+  const history = getHistory().filter(h => h.name !== state.name); // dedupe by name
+  history.unshift(state);
+  saveHistory(history.slice(0, MAX_HISTORY));
+  renderHistoryBar();
+
+  // Flash feedback
+  const btn = $('historySaveBtn');
+  btn.classList.add('flash');
+  btn.textContent = '✓ Saved';
+  setTimeout(() => { btn.classList.remove('flash'); btn.textContent = '＋ Save'; }, 1500);
+});
+
+// ── HISTORY BAR ARROWS ──
+(function() {
+  const track    = $('historyTrack');
+  const btnPrev  = $('historyPrev');
+  const btnNext  = $('historyNext');
+  const STEP     = 180; // px per click
+
+  function updateArrows() {
+    const atStart = track.scrollLeft <= 2;
+    const atEnd   = track.scrollLeft >= track.scrollWidth - track.clientWidth - 2;
+    const hasScroll = track.scrollWidth > track.clientWidth + 4;
+    btnPrev.classList.toggle('active', hasScroll && !atStart);
+    btnNext.classList.toggle('active', hasScroll && !atEnd);
+  }
+
+  btnPrev.addEventListener('click', () => {
+    track.scrollBy({ left: -STEP, behavior: 'smooth' });
+  });
+  btnNext.addEventListener('click', () => {
+    track.scrollBy({ left: STEP, behavior: 'smooth' });
+  });
+
+  track.addEventListener('scroll', updateArrows, { passive: true });
+  // Also update after render (content width changes)
+  window._updateHistoryArrows = updateArrows;
+})();
+
+// ── INITIAL RENDER ──
+syncCard();
+renderHistoryBar();
+</script>
+</body>
+</html>
