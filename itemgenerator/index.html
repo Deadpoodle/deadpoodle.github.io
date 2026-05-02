@@ -1696,6 +1696,35 @@
   </div>
 </div>
 
+<!-- TRIM HISTORY MODAL -->
+<div class="confirm-modal" id="trimHistoryModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Remove Saved Cards?</div>
+    <p class="confirm-modal-msg" id="trimHistoryMsg"></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-secondary" id="trimHistoryConfirm" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);"></button>
+      <button class="btn-cancel" id="trimHistoryCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT OVERFLOW MODAL -->
+<div class="confirm-modal" id="importOverflowModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Storage Limit Reached</div>
+    <p class="confirm-modal-msg" id="importOverflowMsg"></p>
+    <div class="confirm-modal-btns" style="flex-direction:column;">
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button class="btn btn-primary" id="importOverflowExpand"></button>
+        <button class="btn btn-secondary" id="importOverflowContinue"></button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn-cancel" id="importOverflowCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- OFF-SCREEN RENDER AREA -->
 <div id="offscreenRender"></div>
 
@@ -3309,7 +3338,33 @@ $('exportJsonBtn').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+// ── TRIM HISTORY MODAL ──
+function hideTrimModal() {
+  $('trimHistoryModal').classList.remove('active');
+  $('trimHistoryConfirm').onclick = null;
+  $('trimHistoryCancel').onclick = null;
+}
+function showTrimModal(newMax, wouldTrim, onConfirm, onCancel) {
+  const s = wouldTrim !== 1 ? 's' : '';
+  $('trimHistoryMsg').innerHTML =
+    `Reducing your limit to <strong>${newMax}</strong> will permanently remove your oldest <strong>${wouldTrim} card${s}</strong>. This cannot be undone.`;
+  $('trimHistoryConfirm').textContent = `Remove ${wouldTrim} card${s}`;
+  $('trimHistoryConfirm').onclick = () => { hideTrimModal(); onConfirm(); };
+  $('trimHistoryCancel').onclick  = () => { hideTrimModal(); onCancel();  };
+  $('trimHistoryModal').classList.add('active');
+}
+// Cancel button wired via onclick inside showTrimModal — no duplicate listener needed
+
 // ── IMPORT JSON ──
+function hideImportOverflowModal() {
+  $('importOverflowModal').classList.remove('active');
+  $('importOverflowExpand').onclick = null;
+  $('importOverflowContinue').onclick = null;
+  $('importOverflowCancel').onclick = null;
+}
+
+$('importOverflowCancel').addEventListener('click', hideImportOverflowModal);
+
 $('importJsonBtn').addEventListener('click', () => {
   $('importJsonFile').value = '';
   $('importJsonFile').click();
@@ -3335,19 +3390,36 @@ $('importJsonFile').addEventListener('change', e => {
         if (!incoming.find(i => i.name === ex.name)) merged.push(ex);
       }
 
-      // Check whether existing items would be dropped
-      const wouldDrop = Math.max(0, merged.length - getMaxHistory());
-      if (wouldDrop > 0) {
-        const msg = `You have ${existing.length} saved item${existing.length !== 1 ? 's' : ''} and are importing ${incoming.length}. ` +
-                    `This would remove ${wouldDrop} of your oldest saved item${wouldDrop !== 1 ? 's' : ''}.\n\nContinue?`;
-        if (!safeConfirm(msg)) return;
+      function doImport(limit) {
+        saveHistory(merged.slice(0, limit));
+        renderHistoryBar();
+        applyState(incoming[0]);
+        alert(`Imported ${incoming.length} item${incoming.length !== 1 ? 's' : ''}.`);
       }
 
-      merged.splice(getMaxHistory());
-      saveHistory(merged);
-      renderHistoryBar();
-      applyState(incoming[0]);
-      alert(`Imported ${incoming.length} item${incoming.length !== 1 ? 's' : ''}.`);
+      const wouldDrop = Math.max(0, merged.length - getMaxHistory());
+      if (wouldDrop > 0) {
+        const currentMax = getMaxHistory();
+        const newMax = merged.length;
+        const s = n => n !== 1 ? 's' : '';
+        $('importOverflowMsg').innerHTML =
+          `You're importing <strong>${incoming.length} card${s(incoming.length)}</strong>, but your current storage limit is <strong>${currentMax}</strong>. ` +
+          `Keeping everything would need a limit of <strong>${newMax}</strong> — or continue as-is and the oldest <strong>${wouldDrop} card${s(wouldDrop)}</strong> will be removed.`;
+        $('importOverflowExpand').textContent = `↑ Increase limit to ${newMax}`;
+        $('importOverflowContinue').textContent = `Import anyway (drop ${wouldDrop})`;
+        $('importOverflowExpand').onclick = () => {
+          hideImportOverflowModal();
+          window._setMaxHistoryFromImport(newMax);
+          doImport(newMax);
+        };
+        $('importOverflowContinue').onclick = () => {
+          hideImportOverflowModal();
+          doImport(currentMax);
+        };
+        $('importOverflowModal').classList.add('active');
+      } else {
+        doImport(getMaxHistory());
+      }
     } catch {
       alert('Could not read that file — make sure it is a valid D&D Item Creator JSON export.');
     }
@@ -4076,12 +4148,25 @@ $('itemType').addEventListener('change', () => {
     }
   }
 
+  function suppressConfirms() {
+    return $('suppressConfirmToggle') && $('suppressConfirmToggle').checked;
+  }
+
   // Slider events — keep pre-unlock snapshot in sync as the user adjusts the slider
   slider.addEventListener('input', () => { label.textContent = slider.value; });
   slider.addEventListener('change', () => {
     const v = parseInt(slider.value, 10);
-    localStorage.setItem('dnd_max_history_pre_unlock', v);
-    applyMax(v);
+    const prevMax = getMaxHistory(); // capture before any async
+    const wouldTrim = Math.max(0, getHistory().length - v);
+    if (wouldTrim > 0 && !suppressConfirms()) {
+      showTrimModal(v, wouldTrim,
+        () => { localStorage.setItem('dnd_max_history_pre_unlock', v); applyMax(v); },
+        () => { slider.value = prevMax; label.textContent = prevMax; }
+      );
+    } else {
+      localStorage.setItem('dnd_max_history_pre_unlock', v);
+      applyMax(v);
+    }
   });
 
   // Unlocked text input
@@ -4089,27 +4174,72 @@ $('itemType').addEventListener('change', () => {
     let v = parseInt(unlockedInput.value, 10);
     if (isNaN(v) || v < 1) v = 1;
     unlockedInput.value = v;
-    applyMax(v);
+    const prevMax = getMaxHistory(); // capture before any async
+    const wouldTrim = Math.max(0, getHistory().length - v);
+    if (wouldTrim > 0 && !suppressConfirms()) {
+      showTrimModal(v, wouldTrim,
+        () => applyMax(v),
+        () => { unlockedInput.value = prevMax; }
+      );
+    } else {
+      applyMax(v);
+    }
   });
 
   // Toggle
   unlockToggle.addEventListener('change', () => {
     if (!unlockToggle.checked) {
       const revertTo = getPreUnlockValue();
-      if (!safeConfirm(`Reset max saved cards to ${revertTo}? Your oldest saved cards will be removed if you have more than ${revertTo}.`)) {
-        unlockToggle.checked = true;
+      const wouldTrim = Math.max(0, getHistory().length - revertTo);
+      if (wouldTrim > 0 && !suppressConfirms()) {
+        showTrimModal(revertTo, wouldTrim,
+          () => setUnlocked(false),
+          () => { unlockToggle.checked = true; }
+        );
         return;
       }
     }
     setUnlocked(unlockToggle.checked);
   });
 
-  // Init
+  // Exposed so the import handler can increase the limit and keep the Settings UI in sync
+  window._setMaxHistoryFromImport = function(v) {
+    localStorage.setItem('dnd_max_history', v);
+    if (v > LOCKED_MAX) {
+      localStorage.setItem('dnd_max_history_unlocked', 'true');
+      localStorage.setItem('dnd_max_history_pre_unlock', LOCKED_MAX);
+      unlockToggle.checked = true;
+      $('unlockMaxHistoryLabel').textContent = 'Revert max storage';
+      sliderRow.style.display = 'none';
+      unlockedRow.style.display = 'block';
+      unlockedInput.value = v;
+      note.textContent = 'No upper limit. Be careful — very large histories with big images may exceed browser storage.';
+    } else {
+      localStorage.setItem('dnd_max_history_pre_unlock', v);
+      slider.value = v;
+      label.textContent = v;
+    }
+  };
+
+  // Init — read stored max directly; do NOT call applyMax here or it would
+  // overwrite dnd_max_history with the pre-unlock snapshot if the two ever diverged.
   const wasUnlocked = localStorage.getItem('dnd_max_history_unlocked') === 'true';
-  const lockedVal = wasUnlocked ? getPreUnlockValue() : Math.min(getMaxHistory(), LOCKED_MAX);
-  slider.value = lockedVal;
-  label.textContent = lockedVal;
-  setUnlocked(wasUnlocked);
+  unlockToggle.checked = wasUnlocked;
+  $('unlockMaxHistoryLabel').textContent = wasUnlocked ? 'Revert max storage' : 'Unlock max storage';
+  if (wasUnlocked) {
+    sliderRow.style.display = 'none';
+    unlockedRow.style.display = 'block';
+    unlockedInput.value = getMaxHistory();
+    note.textContent = 'No upper limit. Be careful — very large histories with big images may exceed browser storage.';
+  } else {
+    sliderRow.style.display = 'block';
+    unlockedRow.style.display = 'none';
+    const currentMax = Math.min(getMaxHistory(), LOCKED_MAX);
+    slider.value = currentMax;
+    label.textContent = currentMax;
+    // Keep pre-unlock snapshot in sync with the actual stored max
+    localStorage.setItem('dnd_max_history_pre_unlock', currentMax);
+  }
 })();
 
 // ── INITIAL RENDER ──
