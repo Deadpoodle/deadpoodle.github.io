@@ -208,7 +208,7 @@
   .field-note-legend {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: 0.76rem;
+    font-size: 0.85rem;
     color: rgba(210,160,70,0.85);
     margin-top: 0.15rem;
   }
@@ -770,7 +770,7 @@
 
   /* Export hint */
   .export-hint {
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     color: #a07840;
     text-align: center;
     letter-spacing: 0.03em;
@@ -1165,7 +1165,7 @@
 
   .oversized-warning {
     display: none;
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     color: #8b4a00;
     background: rgba(139,74,0,0.08);
     border: 1px solid rgba(139,74,0,0.25);
@@ -1180,7 +1180,7 @@
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     color: #8a6a3a;
     cursor: pointer;
     line-height: 1.4;
@@ -1522,7 +1522,7 @@
       </div>
 
       <div>
-        <div class="section-title">Description <span style="font-size:0.65rem;opacity:0.6;font-family:'Crimson Pro';text-transform:none;letter-spacing:0;">(Markdown supported)</span></div>
+        <div class="section-title">Description <span style="font-size:0.85rem;opacity:0.6;font-family:'Crimson Pro';text-transform:none;letter-spacing:0;">(Markdown supported)</span></div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
           <textarea id="itemDescription" rows="9" placeholder="Write the item's description here…
 Markdown is supported:
@@ -1547,7 +1547,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             <span class="char-count" id="charCount">0 / 450</span>
             <label class="oversized-toggle-row">
               <input type="checkbox" id="allowOversized">
-              <span>Allow oversized text <em style="font-size:0.68rem;opacity:0.75;">(may not print correctly)</em></span>
+              <span>Allow oversized text <em style="font-size:0.85rem;opacity:0.75;">(may not print correctly)</em></span>
             </label>
           </div>
 
@@ -1619,14 +1619,14 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <div style="display:flex;flex-direction:column;gap:0.7rem;">
           <div class="row-2">
             <div class="field-group">
-              <label>Card base colour</label>
+              <label>Card base colour <button id="resetCardColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
               <div class="color-row">
                 <input type="color" id="cardColor" value="#d4b87a">
                 <input type="text" id="cardColorHex" value="#d4b87a" placeholder="#d4b87a" maxlength="7">
               </div>
             </div>
             <div class="field-group">
-              <label>Ink colour</label>
+              <label>Ink colour <button id="resetInkColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
               <div class="color-row">
                 <input type="color" id="inkColor" value="#2c1a0e">
                 <input type="text" id="inkColorHex" value="#2c1a0e" placeholder="#2c1a0e" maxlength="7">
@@ -1652,7 +1652,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             Show item image circle
           </label>
           <div class="field-group">
-            <label>Circle border colour</label>
+            <label>Circle border colour <button id="resetCircleBorderColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
             <div class="color-row">
               <input type="color" id="circleBorderColor" value="#5a3c1e">
               <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
@@ -1678,6 +1678,11 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             Square card corners
           </label>
         </div>
+      </div>
+
+      <div>
+        <div class="section-title">Reset</div>
+        <button class="btn btn-secondary" id="resetAppearanceBtn" style="width:100%;">↺ Reset Appearance</button>
       </div>
 
     </div><!-- /tab-appearance -->
@@ -2103,9 +2108,67 @@ bindColor('circleBorderColor','circleBorderColorHex');
 $('bgOpacity').addEventListener('input', syncCard);
 $('circleSize').addEventListener('input', syncCard);
 
+$('resetCardColor').addEventListener('click', () => {
+  $('cardColorHex').value = '#d4b87a';
+  $('cardColor').value = '#d4b87a';
+  syncCard();
+});
+
+$('resetInkColor').addEventListener('click', () => {
+  $('inkColorHex').value = '#2c1a0e';
+  $('inkColor').value = '#2c1a0e';
+  syncCard();
+});
+
 $('resetRarityColor').addEventListener('click', () => {
   $('rarityColorHex').value = '';
   $('rarityColor').value = '#1a3e8b';
+  syncCard();
+});
+
+$('resetCircleBorderColor').addEventListener('click', () => {
+  $('circleBorderColorHex').value = '';
+  $('circleBorderColor').value = '#5a3c1e';
+  syncCard();
+});
+
+$('resetAppearanceBtn').addEventListener('click', () => {
+  if (!confirm('Reset all appearance settings to their defaults? This will also remove any uploaded images.')) return;
+
+  // Colours
+  $('cardColor').value    = '#d4b87a'; $('cardColorHex').value    = '#d4b87a';
+  $('inkColor').value     = '#2c1a0e'; $('inkColorHex').value     = '#2c1a0e';
+  $('rarityColor').value  = '#1a3e8b'; $('rarityColorHex').value  = '';
+  $('circleBorderColor').value = '#5a3c1e'; $('circleBorderColorHex').value = '';
+
+  // Sliders & toggles
+  $('bgOpacity').value    = '1';
+  $('circleSize').value   = '110';
+  $('showImage').checked  = true;
+  $('showStats').checked  = true;
+  $('showFrame').checked  = true;
+  $('squareCorners').checked = false;
+
+  // Background image
+  $('bgUpload').value = '';
+  $('bgPreview').src  = '';
+  $('bgZone').classList.remove('has-image');
+  $('clearBg').style.display = 'none';
+  $('cardBgImg').style.backgroundImage = '';
+  $('bgOpacityRow').style.display = 'none';
+
+  // Item image
+  $('itemImgUpload').value = '';
+  $('itemImgPreview').src  = '';
+  $('itemImgZone').classList.remove('has-image');
+  $('clearItem').style.display = 'none';
+  $('itemImgCropControls').style.display = 'none';
+  const cardImg = $('cardItemImg');
+  cardImg.src = ''; cardImg.style.display = 'none'; cardImg.style.transform = '';
+  $('imgPlaceholder').style.display = 'block';
+  itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+  itemImgNaturalW = 0; itemImgNaturalH = 0;
+
   syncCard();
 });
 
