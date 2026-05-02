@@ -223,7 +223,7 @@
     color: rgba(210,160,70,0.85);
     margin-top: 0.15rem;
   }
-  body.light .field-note-legend { color: rgba(100,65,20,0.55); }
+  body.light .field-note-legend { color: #6b4010; }
 
   .section-title::after {
     content: '';
@@ -1285,13 +1285,15 @@
   }
   .confirm-modal-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 700;
     color: var(--gold-light);
     letter-spacing: 0.06em;
   }
   .confirm-modal-msg {
     font-family: 'Crimson Pro', serif;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    font-weight: 500;
     color: #c9a96e;
     line-height: 1.5;
   }
@@ -1302,7 +1304,7 @@
     flex-wrap: wrap;
   }
   .confirm-modal-btns .btn {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     padding: 0.4rem 0.85rem;
   }
   .confirm-modal-btns .btn-cancel {
@@ -1311,7 +1313,8 @@
     color: rgba(210,160,70,0.7);
     border-radius: 4px;
     font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 600;
     letter-spacing: 0.08em;
     padding: 0.4rem 0.85rem;
     cursor: pointer;
@@ -1386,6 +1389,66 @@
   }
   body.light .print-select-item:hover { background: rgba(120,80,30,0.07); }
   body.light .print-select-name { color: #2c1a0e; }
+
+  /* ── PNG QUALITY ROW (inside Download Selection modal) ── */
+  .png-quality-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.45rem 0.75rem;
+    background: rgba(180,130,60,0.07);
+    border: 1px solid rgba(180,130,60,0.18);
+    border-radius: 5px;
+  }
+  .png-quality-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    color: var(--gold-light);
+    flex-shrink: 0;
+  }
+  .png-quality-option {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #c9a96e;
+  }
+  .png-quality-option input[type="radio"] { accent-color: var(--gold); flex-shrink: 0; }
+  body.light .png-quality-row { background: rgba(120,80,30,0.06); border-color: rgba(120,80,30,0.2); }
+  body.light .png-quality-heading { color: #5a3810; }
+  body.light .png-quality-option { color: #4a2c08; }
+
+  /* ── Light mode modals ── */
+  body.light .confirm-modal-box {
+    background: rgba(244,234,207,0.99);
+    border-color: rgba(120,80,30,0.35);
+  }
+  body.light .confirm-modal-title { color: #5a3010; }
+  body.light .confirm-modal-msg   { color: #3a2008; }
+  body.light .confirm-modal-msg strong { color: #2c1a0e; }
+  body.light .confirm-modal-btns .btn-cancel {
+    border-color: rgba(120,80,30,0.35);
+    color: #6b4418;
+  }
+  body.light .confirm-modal-btns .btn-cancel:hover {
+    border-color: rgba(120,80,30,0.6);
+    color: #3a2008;
+  }
+  body.light .print-select-list {
+    border-color: rgba(120,80,30,0.2);
+  }
+  body.light .print-select-item {
+    border-bottom-color: rgba(120,80,30,0.1);
+  }
+  body.light .print-select-controls .btn-cancel {
+    border-color: rgba(120,80,30,0.3);
+    color: #6b4418;
+  }
 
   /* ── PROGRESS OVERLAY ── */
   .progress-overlay {
@@ -1557,6 +1620,8 @@
   body.light .history-item          { border-right-color: rgba(120,80,30,0.15); }
   body.light .history-item:hover    { background: rgba(120,80,30,0.08); }
   body.light .history-name          { color: #2c1a0e; }
+  body.light .history-item.history-active .history-name,
+  body.light .history-dropdown-item.history-active .history-name { color: #1a0800; font-weight: 700; }
   body.light .history-empty         { color: #7a5020; }
   body.light .history-save-btn {
     color: #6b4418;
@@ -1573,6 +1638,19 @@
   body.light .history-rarity.rarity-unique    { color: #8a7000; }
   body.light .history-delete { color: rgba(100,65,20,0.4); }
   body.light .history-delete:hover { color: #c0392b; background: rgba(192,57,43,0.1); }
+  body.light .history-dropdown {
+    background: rgba(244,234,207,0.99);
+    border-color: rgba(120,80,30,0.25);
+  }
+  body.light .history-dropdown-empty { color: #7a5020; }
+  body.light .history-dropdown-new {
+    color: #6b4418;
+    border-bottom-color: rgba(120,80,30,0.2);
+  }
+  body.light .history-dropdown-new:hover { background: rgba(120,80,30,0.08); }
+  body.light .history-dropdown-item { border-bottom-color: rgba(120,80,30,0.1); }
+  body.light .history-dropdown-item:hover { background: rgba(120,80,30,0.07); }
+  body.light .history-dropdown-item.history-active { background: rgba(120,80,30,0.12); }
   body.light .controls {
     background: rgba(244,234,207,0.98);
     border-right-color: rgba(120,80,30,0.2);
@@ -1580,6 +1658,15 @@
   body.light .tab-bar {
     background: rgba(180,140,70,0.12);
     border-bottom-color: rgba(120,80,30,0.2);
+  }
+  body.light .btn-primary {
+    background: #b8860b;
+    border-color: #8b6010;
+    color: #1a0800;
+  }
+  body.light .btn-primary:hover {
+    background: #c89a20;
+    box-shadow: 0 0 16px rgba(160,104,32,0.3);
   }
   body.light .tab-btn       { color: rgba(100,65,20,0.5); }
   body.light .tab-btn:hover { color: #3a2008; }
@@ -1605,8 +1692,9 @@
     border-color: rgba(120,80,30,0.55);
   }
   body.light label,
-  body.light .field-group label { color: #7a5020; }
-  body.light .toggle-row        { color: #7a5020; }
+  body.light .field-group label { color: #4a2c08; }
+  body.light .toggle-row        { color: #4a2c08; }
+  body.light { --label-color: #5a3810; }
   body.light .stat-label-rename { color: #7a5020; border-bottom-color: rgba(120,80,30,0.25); }
   body.light .label-rename-icon { color: rgba(120,80,30,0.4); }
   body.light .btn-secondary {
@@ -1618,15 +1706,15 @@
     color: #3a2008;
   }
   body.light .preview-area { background: #e4d0a5; }
-  body.light .scale-control { color: #7a5020; }
-  body.light .export-hint   { color: #7a5020; }
-  body.light .char-count    { color: #7a5020; }
+  body.light .scale-control { color: #5a3810; }
+  body.light .export-hint   { color: #5a3810; }
+  body.light .char-count    { color: #5a3810; }
   body.light .char-count.warn { color: #9a6e00; }
   body.light .char-count.over { color: #8b1a1a; }
   body.light .md-hint {
     background: rgba(120,80,30,0.06);
     border-color: rgba(120,80,30,0.2);
-    color: #7a5020;
+    color: #5a3810;
   }
   body.light .md-hint code {
     background: rgba(120,80,30,0.1);
@@ -1640,15 +1728,15 @@
     border-color: rgba(120,80,30,0.55);
     background: rgba(120,80,30,0.08);
   }
-  body.light .upload-placeholder { color: rgba(100,65,20,0.55); }
+  body.light .upload-placeholder { color: rgba(100,65,20,0.65); }
   body.light .oversized-warning {
     background: rgba(139,26,26,0.07);
     border-color: rgba(139,26,26,0.22);
     color: #7a1010;
   }
-  body.light .oversized-toggle-row { color: #7a5020; }
+  body.light .oversized-toggle-row { color: #4a2c08; }
   body.light .color-row input[type="color"] { border-color: rgba(120,80,30,0.3); }
-  body.light p[style*="color:rgba(180,130,60"] { color: #7a5020 !important; }
+  body.light p[style*="color:rgba(180,130,60"] { color: #5a3810 !important; }
 </style>
 </head>
 <body>
@@ -1675,6 +1763,28 @@
       <button class="btn btn-primary" id="confirmModalSave">Save &amp; Load</button>
       <button class="btn btn-secondary" id="confirmModalOk">Discard &amp; Load</button>
       <button class="btn-cancel" id="confirmModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PNG SELECTION MODAL -->
+<div class="confirm-modal" id="pngSelectModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Select Cards to Download</div>
+    <div class="png-quality-row">
+      <span class="png-quality-heading">Quality:</span>
+      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="draft"> Draft (1.5×)</label>
+      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="standard"> Standard (2×)</label>
+      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="high"> High (3×)</label>
+    </div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="pngSelectAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="pngSelectNone">Select None</button>
+    </div>
+    <div id="pngSelectList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="pngSelectConfirm">⬇ Download Selected (0)</button>
+      <button class="btn-cancel" id="pngSelectCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -2076,9 +2186,8 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
       <div>
         <div class="section-title">All Saved Items</div>
         <div class="btn-row">
-          <button class="btn btn-secondary" id="exportAllPng">⬇ Download All PNGs</button>
+          <button class="btn btn-secondary" id="pngSelectionBtn">⬇ Download Selection</button>
           <button class="btn btn-secondary" id="printSelectionBtn">🖨 Print Selection</button>
-          <button class="btn btn-secondary" id="exportAllPrint">🖨 Print All (A4)</button>
         </div>
       </div>
 
@@ -3170,74 +3279,110 @@ ${pagesHTML}
   popup.document.close();
 }
 
-// ── DOWNLOAD ALL PNGs ──
-$('exportAllPng').addEventListener('click', async () => {
-  const items = getHistory();
-  if (!items.length) { alert('No saved items in history yet.'); return; }
+// ── DOWNLOAD SELECTION ──
+(function () {
+  function updatePngSelectUI() {
+    const checked = $('pngSelectList').querySelectorAll('input[type="checkbox"]:checked').length;
+    $('pngSelectConfirm').textContent = `⬇ Download Selected (${checked})`;
+    $('pngSelectConfirm').disabled = checked === 0;
+  }
 
-  showProgress('Rendering all items…', true);
-  let exportedCount = 0;
-  for (let i = 0; i < items.length; i++) {
-    if (_exportCancelled) break;
-    const item = items[i];
-    updateProgress(i, items.length, `Rendering "${item.name || 'Unnamed'}" (${i+1}/${items.length})…`);
-    try {
-      const canvas = await renderStateToCanvas(item);
+  // Sync quality row to current localStorage value
+  function syncModalQuality() {
+    const q = localStorage.getItem('dnd_export_quality') || 'standard';
+    const radio = document.querySelector(`input[name="pngModalQuality"][value="${q}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  // When quality changes in modal → update localStorage + Settings page radios
+  document.querySelectorAll('input[name="pngModalQuality"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      localStorage.setItem('dnd_export_quality', radio.value);
+      const settingsRadio = document.querySelector(`input[name="exportQuality"][value="${radio.value}"]`);
+      if (settingsRadio) settingsRadio.checked = true;
+    });
+  });
+
+  $('pngSelectionBtn').addEventListener('click', () => {
+    const items = getHistory();
+    if (!items.length) { alert('No saved items in history yet.'); return; }
+
+    syncModalQuality();
+
+    const list = $('pngSelectList');
+    list.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('label');
+      row.className = 'print-select-item';
+      const rarityLabel = rarityLabels[item.rarity] || item.rarity;
+      row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
+        <span class="print-select-name">${item.name || 'Unnamed'}</span>
+        <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
+      row.querySelector('input').addEventListener('change', updatePngSelectUI);
+      list.appendChild(row);
+    });
+
+    updatePngSelectUI();
+    $('pngSelectModal').classList.add('active');
+  });
+
+  $('pngSelectAll').addEventListener('click', () => {
+    $('pngSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    updatePngSelectUI();
+  });
+
+  $('pngSelectNone').addEventListener('click', () => {
+    $('pngSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updatePngSelectUI();
+  });
+
+  $('pngSelectCancel').addEventListener('click', () => {
+    $('pngSelectModal').classList.remove('active');
+  });
+
+  $('pngSelectConfirm').addEventListener('click', async () => {
+    $('pngSelectModal').classList.remove('active');
+
+    const selectedIds = new Set(
+      [...$('pngSelectList').querySelectorAll('input[type="checkbox"]:checked')]
+        .map(cb => parseInt(cb.value, 10))
+    );
+    const items = getHistory().filter(h => selectedIds.has(h.id));
+    if (!items.length) return;
+
+    showProgress('Rendering items…', true);
+    let exportedCount = 0;
+    for (let i = 0; i < items.length; i++) {
       if (_exportCancelled) break;
-      const link = document.createElement('a');
-      const safeName = (item.name || 'item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
-      link.download = `${String(i+1).padStart(2,'0')}_${safeName}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      exportedCount++;
-      // Small delay between downloads so browser doesn't block them
-      await new Promise(r => setTimeout(r, 400));
-    } catch(e) {
-      console.error('Failed to render', item.name, e);
+      const item = items[i];
+      updateProgress(i, items.length, `Rendering "${item.name || 'Unnamed'}" (${i + 1}/${items.length})…`);
+      try {
+        const canvas = await renderStateToCanvas(item);
+        if (_exportCancelled) break;
+        const link = document.createElement('a');
+        const safeName = (item.name || 'item').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `${String(i + 1).padStart(2, '0')}_${safeName}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        exportedCount++;
+        await new Promise(r => setTimeout(r, 400));
+      } catch (e) {
+        console.error('Failed to render', item.name, e);
+      }
     }
-  }
-  if (_exportCancelled) {
-    updateProgress(exportedCount, items.length, `Cancelled — ${exportedCount} of ${items.length} downloaded.`);
-    await new Promise(r => setTimeout(r, 1200));
-  } else {
-    updateProgress(items.length, items.length, 'Done!');
-    await new Promise(r => setTimeout(r, 600));
-  }
-  hideProgress();
-});
+    if (_exportCancelled) {
+      updateProgress(exportedCount, items.length, `Cancelled — ${exportedCount} of ${items.length} downloaded.`);
+      await new Promise(r => setTimeout(r, 1200));
+    } else {
+      updateProgress(items.length, items.length, 'Done!');
+      await new Promise(r => setTimeout(r, 600));
+    }
+    hideProgress();
+  });
+})();
 
 // ── PRINT ALL (A4 landscape, popup window) ──
-$('exportAllPrint').addEventListener('click', async () => {
-  const items = getHistory();
-  if (!items.length) { alert('No saved items in history yet.'); return; }
-
-  showProgress('Preparing print sheet…', true);
-  const dataUrls = [];
-
-  for (let i = 0; i < items.length; i++) {
-    if (_exportCancelled) break;
-    updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i+1}/${items.length})…`);
-    try {
-      const canvas = await renderStateToCanvas(items[i]);
-      if (_exportCancelled) break;
-      dataUrls.push(canvas.toDataURL('image/png'));
-    } catch(e) {
-      console.error('Failed to render', items[i].name, e);
-    }
-  }
-
-  if (_exportCancelled) {
-    updateProgress(dataUrls.length, items.length, `Cancelled — ${dataUrls.length} of ${items.length} rendered.`);
-    await new Promise(r => setTimeout(r, 1200));
-    hideProgress();
-  } else {
-    updateProgress(items.length, items.length, 'Opening print dialog…');
-    await new Promise(r => setTimeout(r, 200));
-    hideProgress();
-    printImagesInPopup(dataUrls, 'all');
-  }
-});
-
 // ── PRINT SELECTION ──
 (function () {
   function updatePrintSelectUI() {
