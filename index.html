@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>D&D Magic Item Creator</title>
+<title>Artifex Arcanum</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
@@ -55,7 +55,7 @@
     position: relative;
     z-index: 1;
     text-align: center;
-    padding: 2.5rem 1rem 1.5rem;
+    padding: 1rem 1rem 0.75rem;
     border-bottom: 1px solid rgba(180,130,60,0.25);
   }
 
@@ -1265,7 +1265,7 @@
 <body>
 
 <header>
-  <h1><span class="ornament">✦</span> Arcane Codex <span class="ornament">✦</span></h1>
+  <h1><span class="ornament">✦</span> Artifex Arcanum <span class="ornament">✦</span></h1>
   <p>Homebrew Magic Item Creator</p>
 </header>
 
@@ -2333,8 +2333,15 @@ function printImagesInPopup(dataUrls, mode) {
   // 3 rows × 88mm + 2 × 1mm gap = 266mm → top margin  = (297 - 266) / 2 = 15.5mm
   const pageCSS = `
     @page { size: A4 portrait; margin: 0; }
-    body { margin: 0; padding: 0; background: white;
-           width: 210mm; height: 297mm; overflow: hidden; }
+    html, body { margin: 0; padding: 0; width: 210mm; height: 297mm;
+                 overflow: hidden; background: white; }
+    .print-header {
+      font-family: Georgia, serif;
+      font-size: 7pt;
+      color: #aaa;
+      text-align: center;
+      padding: 6mm 0 2mm;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 63mm);
@@ -2342,7 +2349,7 @@ function printImagesInPopup(dataUrls, mode) {
       gap: 1mm;
       width: 191mm;
       height: 266mm;
-      margin: 15.5mm auto 0;
+      margin: 0 9.5mm 0;
     }
     .card-cell {
       width: 63mm;
@@ -2374,6 +2381,7 @@ function printImagesInPopup(dataUrls, mode) {
 </style>
 </head>
 <body>
+<div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator</div>
 <div class="grid">${slots}</div>
 <script>
   var imgs = document.querySelectorAll('img');
