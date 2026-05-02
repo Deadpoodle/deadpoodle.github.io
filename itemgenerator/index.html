@@ -1098,6 +1098,106 @@
     background: rgba(180,130,60,0.15);
   }
 
+  .dirty-indicator {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.82rem;
+    color: rgba(210,160,70,0.85);
+    margin-top: 0.4rem;
+  }
+  .dirty-indicator.visible { display: flex; }
+  .dirty-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--gold-light);
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+
+  /* Asterisk mark on active dirty item in bar/dropdown */
+  .item-dirty-mark {
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+
+  /* Mobile unsaved message in history bar */
+  .mobile-dirty-msg {
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 0.82rem;
+    color: rgba(210,160,70,0.9);
+    padding: 0 0.75rem;
+    flex: 1;
+    white-space: nowrap;
+    display: none;
+  }
+  @media (min-width: 861px) { .mobile-dirty-msg { display: none !important; } }
+
+  /* Confirm modal */
+  .confirm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,5,2,0.88);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-modal.active { display: flex; }
+  .confirm-modal-box {
+    background: rgba(26,15,7,0.98);
+    border: 1px solid rgba(180,130,60,0.35);
+    border-radius: 8px;
+    padding: 1.5rem 1.75rem;
+    max-width: 380px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .confirm-modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    letter-spacing: 0.06em;
+  }
+  .confirm-modal-msg {
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    color: #c9a96e;
+    line-height: 1.5;
+  }
+  .confirm-modal-btns {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .confirm-modal-btns .btn {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.85rem;
+  }
+  .confirm-modal-btns .btn-cancel {
+    background: transparent;
+    border: 1px solid rgba(180,130,60,0.3);
+    color: rgba(210,160,70,0.7);
+    border-radius: 4px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .confirm-modal-btns .btn-cancel:hover { border-color: rgba(180,130,60,0.6); color: var(--gold-light); }
+
   /* ── PROGRESS OVERLAY ── */
   .progress-overlay {
     position: fixed;
@@ -1371,6 +1471,19 @@
   <div class="progress-label" id="progressLabel">Preparing…</div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Unsaved Changes</div>
+    <p class="confirm-modal-msg">You have unsaved changes. What would you like to do?</p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="confirmModalSave">Save &amp; Load</button>
+      <button class="btn btn-secondary" id="confirmModalOk">Discard &amp; Load</button>
+      <button class="btn-cancel" id="confirmModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- OFF-SCREEN RENDER AREA -->
 <div id="offscreenRender"></div>
 
@@ -1379,10 +1492,12 @@
   <div class="history-label-wrap">
     <button class="history-label" id="historyDropdownBtn"><span>📜</span> Recent <span class="dropdown-caret">▼</span></button>
     <div class="history-dropdown" id="historyDropdown">
+
       <div class="history-dropdown-empty" id="historyDropdownEmpty">No saved items yet</div>
       <div id="historyDropdownItems"></div>
     </div>
   </div>
+  <div class="mobile-dirty-msg" id="mobileDirtyMsg"><span class="dirty-dot"></span> Unsaved changes</div>
   <button class="history-arrow" id="historyPrev" title="Scroll left" aria-label="Scroll items left">&#171;</button>
   <div class="history-track" id="historyTrack">
     <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
@@ -1580,6 +1695,9 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <button class="history-save-btn" id="historySaveBtn" style="border:1px solid rgba(180,130,60,0.4);border-radius:4px;padding:0.45rem 1.2rem;" title="Save current item to history">＋ Save to History</button>
         <button class="btn btn-primary" id="exportPngInline" style="padding:0.45rem 0.8rem;font-size:0.62rem;white-space:nowrap;" title="Export current card as PNG">⬇ Export PNG</button>
         <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.45rem;white-space:nowrap;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear</button>
+      </div>
+      <div class="dirty-indicator" id="dirtyIndicator">
+        <span class="dirty-dot"></span> unsaved changes
       </div>
 
     </div><!-- /tab-identity -->
@@ -1947,6 +2065,7 @@ $('resetImgCrop').addEventListener('click', resetImageCrop);
 
 // ── LIVE SYNC ──
 function syncCard() {
+  if (!_applyingState) setDirty(true);
   const name    = $('itemName').value || 'Unnamed Item';
   const type    = $('itemType').value;
   const subtype = $('itemSubtype').value;
@@ -2721,6 +2840,8 @@ $('clearCardBtn').addEventListener('click', () => {
     imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
     imgNaturalW: 0, imgNaturalH: 0,
   });
+  activeHistoryId = null;
+  updateHistoryActiveClass();
 });
 
 // ── CLEAR ALL DATA ──
@@ -2813,8 +2934,44 @@ function collectCurrentState() {
 }
 
 let activeHistoryId = null;
+let isDirty = false;
+let _applyingState = false;
+
+function setDirty(val) {
+  isDirty = val;
+  $('dirtyIndicator').classList.toggle('visible', val);
+  const mob = $('mobileDirtyMsg');
+  if (mob) mob.style.display = val ? 'flex' : 'none';
+  updateHistoryActiveClass();
+}
+
+function hideConfirmModal() {
+  $('confirmModal').classList.remove('active');
+  $('confirmModalOk').onclick = null;
+  $('confirmModalSave').onclick = null;
+  $('confirmModalCancel').onclick = null;
+}
+
+function tryLoadItem(item) {
+  if (!isDirty || activeHistoryId === item.id) { applyState(item); return; }
+
+  $('confirmModal').classList.add('active');
+  $('confirmModalOk').onclick = () => { hideConfirmModal(); applyState(item); };
+  $('confirmModalSave').onclick = () => {
+    hideConfirmModal();
+    const state = collectCurrentState();
+    const hist = getHistory().filter(h => h.name !== state.name);
+    hist.unshift(state);
+    saveHistory(hist.slice(0, MAX_HISTORY));
+    renderHistoryBar();
+    setDirty(false);
+    applyState(item);
+  };
+  $('confirmModalCancel').onclick = () => hideConfirmModal();
+}
 
 function applyState(s) {
+  _applyingState = true;
   $('itemName').value        = s.name        || '';
   $('itemType').value        = s.type        || 'Weapon';
   $('itemSubtype').value     = s.subtype     || '';
@@ -2908,16 +3065,21 @@ function applyState(s) {
     showCropControls(false);
   }
 
+  _applyingState = false;
   if (s.id) {
     activeHistoryId = s.id;
     updateHistoryActiveClass();
   }
   syncCard();
+  setDirty(false);
 }
 
 function updateHistoryActiveClass() {
   document.querySelectorAll('.history-item, .history-dropdown-item').forEach(el => {
-    el.classList.toggle('history-active', el.dataset.historyId === String(activeHistoryId));
+    const isActive = el.dataset.historyId === String(activeHistoryId);
+    el.classList.toggle('history-active', isActive);
+    const mark = el.querySelector('.item-dirty-mark');
+    if (mark) mark.style.display = isActive && isDirty ? 'inline' : 'none';
   });
 }
 
@@ -2977,10 +3139,16 @@ function renderHistoryBar() {
       renderHistoryBar();
     });
 
+    const barMark = document.createElement('span');
+    barMark.className = 'item-dirty-mark';
+    barMark.textContent = '*';
+    barMark.style.display = 'none';
+
     el.appendChild(makeHistoryThumb(item));
     el.appendChild(meta);
+    el.appendChild(barMark);
     el.appendChild(del);
-    el.addEventListener('click', () => applyState(item));
+    el.addEventListener('click', () => tryLoadItem(item));
     container.appendChild(el);
 
     // ── Dropdown item ──
@@ -3004,11 +3172,17 @@ function renderHistoryBar() {
       renderHistoryBar();
     });
 
+    const ddMark = document.createElement('span');
+    ddMark.className = 'item-dirty-mark';
+    ddMark.textContent = '*';
+    ddMark.style.display = 'none';
+
     ddEl.appendChild(makeHistoryThumb(item));
     ddEl.appendChild(ddMeta);
+    ddEl.appendChild(ddMark);
     ddEl.appendChild(ddDel);
     ddEl.addEventListener('click', () => {
-      applyState(item);
+      tryLoadItem(item);
       $('historyDropdown').classList.remove('open');
     });
     ddContainer.appendChild(ddEl);
@@ -3036,6 +3210,7 @@ $('historySaveBtn').addEventListener('click', () => {
   history.unshift(state);
   saveHistory(history.slice(0, MAX_HISTORY));
   renderHistoryBar();
+  setDirty(false);
 
   // Flash feedback
   const btn = $('historySaveBtn');
