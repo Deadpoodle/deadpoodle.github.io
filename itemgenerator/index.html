@@ -2128,7 +2128,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           <a href="https://github.com/Gwillewyn/dnd-item-icons-by-gwill/" target="_blank" rel="noopener" style="color:var(--gold-light);">dnd-item-icons-by-gwill</a>
           by Gwillewyn. If you enjoy using this tool, consider supporting my slop with a coffee below!
         </p>
-        <a href="https://www.buymeacoffee.com/Deadpoodle" target="_blank" rel="noopener"
+        <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener"
           style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:0.85rem;padding:0.45rem 1rem;background:#FFDD00;border-radius:6px;text-decoration:none;font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;color:#000;letter-spacing:0.04em;transition:opacity 0.15s;">
           ☕ Buy Me a Coffee
         </a>
@@ -2461,6 +2461,7 @@ function syncCard() {
     cardContent.style.overflow  = 'hidden';
     $('itemCard').style.minHeight = '';
   }
+  applyCardScale($('scaleSlider').value);
 
   // Stat labels
   $('previewBonusLabel').textContent  = $('bonusLabel').value  || 'Bonus';
@@ -2678,7 +2679,8 @@ function applyCardScale(val) {
   $('scaleLabel').textContent = val + '%';
   $('itemCard').style.transform = `scale(${val/100})`;
   $('itemCard').style.transformOrigin = 'top center';
-  $('cardScaleWrap').style.height = (580 * val / 100) + 'px';
+  const oversized = $('allowOversized') && $('allowOversized').checked;
+  $('cardScaleWrap').style.height = oversized ? 'auto' : (580 * val / 100) + 'px';
 }
 $('scaleSlider').addEventListener('input', () => applyCardScale($('scaleSlider').value));
 // Reset to 100% on every load so slider and card are always in sync
