@@ -391,11 +391,18 @@
     flex-shrink: 0;
   }
 
-  /* Background layer */
+  /* Background layer — solid colour only */
   .card-bg {
     position: absolute;
     inset: 0;
     background: #d4b87a;
+    z-index: 0;
+  }
+
+  /* Background image layer — separate so opacity can be controlled independently */
+  .card-bg-img {
+    position: absolute;
+    inset: 0;
     background-size: cover;
     background-position: center;
     z-index: 0;
@@ -497,15 +504,12 @@
   }
 
   .card-divider::before {
-    content: '—◆—';
+    content: '◆';
     position: absolute;
-    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    left: 50%; transform: translate(-50%,-50%);
     font-size: 10px;
+    line-height: 1;
     color: rgba(90,60,30,0.6);
-    background: transparent;
-    padding: 0 4px;
-    letter-spacing: 2px;
-    white-space: nowrap;
   }
 
   /* Item image area */
@@ -679,7 +683,7 @@
   .card-description {
     font-family: 'Crimson Pro', Georgia, serif;
     font-size: 0.87rem;
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--ink);
   }
 
@@ -1538,10 +1542,38 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
               </div>
             </div>
           </div>
+          <div class="field-group" id="bgOpacityRow" style="display:none;">
+            <label>Background image opacity</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <span id="bgOpacityLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Rarity colour <button id="resetRarityColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="rarityColor" value="#1a3e8b">
+              <input type="text" id="rarityColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
           <label class="toggle-row">
             <input type="checkbox" id="showImage" checked>
             Show item image circle
           </label>
+          <div class="field-group">
+            <label>Circle border colour</label>
+            <div class="color-row">
+              <input type="color" id="circleBorderColor" value="#5a3c1e">
+              <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Circle size</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="circleSize" min="70" max="160" step="5" value="110" style="flex:1;accent-color:var(--gold);">
+              <span id="circleSizeLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">110px</span>
+            </div>
+          </div>
           <label class="toggle-row">
             <input type="checkbox" id="showStats" checked>
             Show stats strip (damage / weight / bonus)
@@ -1600,6 +1632,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
     <div id="cardScaleWrap" style="width:100%;display:flex;justify-content:center;align-items:flex-start;height:580px;">
     <div id="itemCard" class="item-card">
       <div class="card-bg" id="cardBg"></div>
+      <div class="card-bg-img" id="cardBgImg"></div>
       <div class="card-texture"></div>
       <div class="card-vignette"></div>
       <div class="card-frame" id="cardFrame">
@@ -1824,6 +1857,14 @@ function syncCard() {
   rarityEl.className = `card-rarity rarity-${rarity}`;
   const icon = rarityIcons[rarity] || '◆';
   rarityEl.textContent = `${icon} ${rarityLabels[rarity]} ${icon}`;
+  const rarityHex = $('rarityColorHex').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(rarityHex)) {
+    rarityEl.style.color = rarityHex;
+    rarityEl.style.borderColor = rarityHex;
+  } else {
+    rarityEl.style.color = '';
+    rarityEl.style.borderColor = '';
+  }
 
   // Attunement
   const attuneEl = $('previewAttunement');
@@ -1888,6 +1929,21 @@ function syncCard() {
   $('statsStrip').style.display    = $('showStats').checked ? 'flex' : 'none';
   $('cardFrame').style.display     = $('showFrame').checked ? 'block' : 'none';
 
+  // Background image opacity
+  const bgOpacityVal = parseFloat($('bgOpacity').value) || 1;
+  $('bgOpacityLabel').textContent = Math.round(bgOpacityVal * 100) + '%';
+  $('cardBgImg').style.opacity = bgOpacityVal;
+
+  // Circle size + border colour
+  const circleSize = parseInt($('circleSize').value) || 110;
+  $('circleSizeLabel').textContent = circleSize + 'px';
+  const circleContainer = $('cardImgContainer');
+  circleContainer.style.width  = circleSize + 'px';
+  circleContainer.style.height = circleSize + 'px';
+  const circleBorderHex = $('circleBorderColorHex').value;
+  circleContainer.style.borderColor = /^#[0-9a-fA-F]{6}$/.test(circleBorderHex)
+    ? circleBorderHex : 'rgba(90,60,30,0.45)';
+
   // Colors
   const cardCol = $('cardColorHex').value;
   const inkCol  = $('inkColorHex').value;
@@ -1939,6 +1995,17 @@ function bindColor(pickerId, hexId) {
 }
 bindColor('cardColor','cardColorHex');
 bindColor('inkColor','inkColorHex');
+bindColor('rarityColor','rarityColorHex');
+bindColor('circleBorderColor','circleBorderColorHex');
+
+$('bgOpacity').addEventListener('input', syncCard);
+$('circleSize').addEventListener('input', syncCard);
+
+$('resetRarityColor').addEventListener('click', () => {
+  $('rarityColorHex').value = '';
+  $('rarityColor').value = '#1a3e8b';
+  syncCard();
+});
 
 // ── IMAGE UPLOADS ──
 function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad) {
@@ -1965,7 +2032,8 @@ function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad) {
 }
 
 bindUpload('bgUpload','bgPreview','bgZone','clearBg', src => {
-  $('cardBg').style.backgroundImage = src ? `url('${src}')` : '';
+  $('cardBgImg').style.backgroundImage = src ? `url('${src}')` : '';
+  $('bgOpacityRow').style.display = src ? 'block' : 'none';
 });
 
 bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
@@ -2064,13 +2132,18 @@ function buildCardNode(s) {
   wrap.className = 'item-card';
   wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:8px;overflow:hidden;flex-shrink:0;`;
 
-  // bg
+  // bg colour layer
   const bg = document.createElement('div');
   bg.className = 'card-bg';
   bg.style.backgroundColor = s.cardColor || '#d4b87a';
-  if (s.bgImage) bg.style.backgroundImage = `url('${s.bgImage}')`;
-  bg.style.backgroundSize = 'cover';
-  bg.style.backgroundPosition = 'center';
+
+  // bg image layer (separate so opacity is independent of colour)
+  const bgImg = document.createElement('div');
+  bgImg.className = 'card-bg-img';
+  if (s.bgImage) {
+    bgImg.style.backgroundImage = `url('${s.bgImage}')`;
+    bgImg.style.opacity = s.bgOpacity ?? 1;
+  }
 
   const texture = document.createElement('div');
   texture.className = 'card-texture';
@@ -2101,7 +2174,11 @@ function buildCardNode(s) {
   const saveLbl   = s.saveLabel   || 'Save';
   const rangeLbl  = s.rangeLabel  || 'Range';
 
-  const C = 110;
+  const C = s.circleSize || 110;
+  const circleBorder = s.circleBorderColor && /^#[0-9a-fA-F]{6}$/.test(s.circleBorderColor)
+    ? s.circleBorderColor : 'rgba(90,60,30,0.45)';
+  const rarityColorStyle = s.rarityColor && /^#[0-9a-fA-F]{6}$/.test(s.rarityColor)
+    ? `color:${s.rarityColor};border-color:${s.rarityColor};` : '';
   let itemImgHtml;
   if (s.itemImage) {
     const nw = s.imgNaturalW || C;
@@ -2142,12 +2219,12 @@ function buildCardNode(s) {
     <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
       <div class="card-item-name" style="font-family:Cinzel,serif;font-size:1.15rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
       <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
-      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
+      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
     <div class="card-divider"></div>
     <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
       ${saveHtml}
-      <div class="card-image-container" style="width:110px;height:110px;border-radius:50%;border:2px solid rgba(90,60,30,0.45);overflow:hidden;background:rgba(90,60,30,0.12);display:${imageDisplay};align-items:center;justify-content:center;grid-column:2;">
+      <div class="card-image-container" style="width:${C}px;height:${C}px;border-radius:50%;border:2px solid ${circleBorder};overflow:hidden;background:rgba(90,60,30,0.12);display:${imageDisplay};align-items:center;justify-content:center;grid-column:2;">
         ${itemImgHtml}
       </div>
       ${rangeHtml}
@@ -2166,17 +2243,18 @@ function buildCardNode(s) {
         <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${weight}</span>
       </div>
     </div>
-    <div class="card-divider" style="margin-top:4px;"></div>
+    <div class="card-divider"></div>
     <div class="card-body" style="padding:8px 20px 16px;flex:1;">
-      <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.6;color:${inkCol};">${descHtml}</div>
+      <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
     </div>
-    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:14px;border-top:1px solid rgba(90,60,30,0.2);">Requires Attunement ${attuneText}</div>` : ''}
+    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">Requires Attunement ${attuneText}</div>` : ''}
     <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
       <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.source || ''}</div>
     </div>
   `;
 
   wrap.appendChild(bg);
+  wrap.appendChild(bgImg);
   wrap.appendChild(texture);
   wrap.appendChild(vignette);
   wrap.appendChild(frame);
@@ -2206,7 +2284,7 @@ async function renderStateToCanvas(s) {
   node.style.boxShadow = 'none';
 
   const canvas = await html2canvas(node, {
-    scale: 3,
+    scale: 2,
     useCORS: true,
     allowTaint: true,
     backgroundColor: null,
@@ -2451,6 +2529,7 @@ $('clearCardBtn').addEventListener('click', () => {
     source: '', description: '',
     attunement: '', attunementCustom: '',
     cardColor: '#d4b87a', inkColor: '#2c1a0e',
+    rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
     showImage: true, showStats: true, showFrame: true,
     bgImage: null, itemImage: null,
     imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
@@ -2517,11 +2596,15 @@ function collectCurrentState() {
     attunementCustom: $('attunementCustom').value,
     cardColor:   $('cardColorHex').value,
     inkColor:    $('inkColorHex').value,
+    rarityColor: $('rarityColorHex').value || null,
+    circleSize:  parseInt($('circleSize').value) || 110,
+    circleBorderColor: $('circleBorderColorHex').value || null,
+    bgOpacity:   parseFloat($('bgOpacity').value) ?? 1,
     showImage:   $('showImage').checked,
     showStats:   $('showStats').checked,
     showFrame:   $('showFrame').checked,
-    bgImage:     $('cardBg').style.backgroundImage
-                   ? $('cardBg').style.backgroundImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '')
+    bgImage:     $('cardBgImg').style.backgroundImage
+                   ? $('cardBgImg').style.backgroundImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '')
                    : null,
     itemImage:   $('cardItemImg').src && $('cardItemImg').style.display !== 'none'
                    ? $('cardItemImg').src
@@ -2558,21 +2641,31 @@ function applyState(s) {
   $('cardColor').value       = s.cardColor   || '#d4b87a';
   $('inkColorHex').value     = s.inkColor    || '#2c1a0e';
   $('inkColor').value        = s.inkColor    || '#2c1a0e';
+  const rc = s.rarityColor || '';
+  $('rarityColorHex').value  = rc;
+  $('rarityColor').value     = /^#[0-9a-fA-F]{6}$/.test(rc) ? rc : '#1a3e8b';
+  const cbc = s.circleBorderColor || '';
+  $('circleBorderColorHex').value = cbc;
+  $('circleBorderColor').value    = /^#[0-9a-fA-F]{6}$/.test(cbc) ? cbc : '#5a3c1e';
+  $('circleSize').value      = s.circleSize  ?? 110;
+  $('bgOpacity').value       = s.bgOpacity   ?? 1;
   $('showImage').checked     = s.showImage   !== false;
   $('showStats').checked     = s.showStats   !== false;
   $('showFrame').checked     = s.showFrame   !== false;
 
   // Background image
   if (s.bgImage) {
-    $('cardBg').style.backgroundImage = `url('${s.bgImage}')`;
+    $('cardBgImg').style.backgroundImage = `url('${s.bgImage}')`;
     $('bgPreview').src = s.bgImage;
     $('bgZone').classList.add('has-image');
     $('clearBg').style.display = 'inline-block';
+    $('bgOpacityRow').style.display = 'block';
   } else {
-    $('cardBg').style.backgroundImage = '';
+    $('cardBgImg').style.backgroundImage = '';
     $('bgPreview').src = '';
     $('bgZone').classList.remove('has-image');
     $('clearBg').style.display = 'none';
+    $('bgOpacityRow').style.display = 'none';
   }
 
   // Item image
