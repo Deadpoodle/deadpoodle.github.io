@@ -153,6 +153,16 @@
   .tab-panel::-webkit-scrollbar-track { background: transparent; }
   .tab-panel::-webkit-scrollbar-thumb { background: rgba(180,130,60,0.3); border-radius: 3px; }
 
+  textarea::-webkit-scrollbar { width: 5px; }
+  textarea::-webkit-scrollbar-track { background: transparent; }
+  textarea::-webkit-scrollbar-thumb { background: rgba(180,130,60,0.3); border-radius: 3px; }
+  textarea::-webkit-scrollbar-thumb:hover { background: rgba(180,130,60,0.55); }
+  textarea { scrollbar-width: thin; scrollbar-color: rgba(180,130,60,0.3) transparent; }
+
+  body.light textarea::-webkit-scrollbar-thumb { background: rgba(120,80,30,0.3); }
+  body.light textarea::-webkit-scrollbar-thumb:hover { background: rgba(120,80,30,0.55); }
+  body.light textarea { scrollbar-color: rgba(120,80,30,0.3) transparent; }
+
   /* ── UPLOAD HINT (card image circle, no image loaded) ── */
   .img-upload-hint {
     position: absolute;
@@ -1901,9 +1911,6 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <button class="btn btn-primary" id="exportPngInline" style="padding:0.45rem 0.8rem;font-size:0.62rem;white-space:nowrap;" title="Export current card as PNG">⬇ Export PNG</button>
         <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.45rem;white-space:nowrap;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear</button>
       </div>
-      <div class="dirty-indicator" id="dirtyIndicator">
-        <span class="dirty-dot"></span> unsaved changes
-      </div>
 
     </div><!-- /tab-identity -->
 
@@ -2119,7 +2126,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           Hosted on <a href="https://github.com/Deadpoodle" target="_blank" rel="noopener" style="color:var(--gold-light);">GitHub Pages</a>.
           Item type icons sourced from
           <a href="https://github.com/Gwillewyn/dnd-item-icons-by-gwill/" target="_blank" rel="noopener" style="color:var(--gold-light);">dnd-item-icons-by-gwill</a>
-          by Gwillewyn.
+          by Gwillewyn. If you enjoy using this tool, consider supporting my slop with a coffee below!
         </p>
         <a href="https://www.buymeacoffee.com/Deadpoodle" target="_blank" rel="noopener"
           style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:0.85rem;padding:0.45rem 1rem;background:#FFDD00;border-radius:6px;text-decoration:none;font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;color:#000;letter-spacing:0.04em;transition:opacity 0.15s;">
@@ -3519,7 +3526,6 @@ function registerNewCard() {
 function setDirty(val) {
   isDirty = val;
   if (val && activeHistoryId === null) registerNewCard();
-  $('dirtyIndicator').classList.toggle('visible', val);
   const mob = $('mobileDirtyMsg');
   if (mob) mob.style.display = val ? 'flex' : 'none';
   updateHistoryActiveClass();
