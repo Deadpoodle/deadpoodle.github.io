@@ -134,6 +134,7 @@
     margin-bottom: -1px;
   }
   .tab-btn:hover { color: var(--gold-light); }
+  .tab-btn-icon { flex: none; padding: 0.7rem 0.9rem; font-size: 0.9rem; }
   .tab-btn.active {
     color: var(--gold);
     border-bottom-color: var(--gold);
@@ -788,7 +789,63 @@
 
   .scale-control input[type="range"] {
     width: 100px;
-    accent-color: var(--gold);
+  }
+
+  /* ── Range slider theme ── */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(180,130,60,0.25);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px solid var(--gold-light);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    background: var(--gold-light);
+    transform: scale(1.15);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px solid var(--gold-light);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(180,130,60,0.25);
+  }
+
+  body.light input[type="range"] {
+    background: rgba(120,80,30,0.2);
+  }
+  body.light input[type="range"]::-webkit-slider-thumb {
+    background: #8a5c18;
+    border-color: #b07830;
+  }
+  body.light input[type="range"]::-webkit-slider-thumb:hover {
+    background: #b07830;
+  }
+  body.light input[type="range"]::-moz-range-thumb {
+    background: #8a5c18;
+    border-color: #b07830;
+  }
+  body.light input[type="range"]::-moz-range-track {
+    background: rgba(120,80,30,0.2);
   }
 
   /* Markdown helper */
@@ -821,10 +878,46 @@
     cursor: pointer;
   }
 
-  .toggle-row input[type="checkbox"] {
-    width: 15px; height: 15px;
-    accent-color: var(--gold);
+  .toggle-wrap {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .toggle-wrap input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+  .toggle-knob {
+    position: absolute;
+    inset: 0;
+    background: rgba(180,130,60,0.15);
+    border: 1px solid rgba(180,130,60,0.3);
+    border-radius: 9px;
+    transition: background 0.2s, border-color 0.2s;
     cursor: pointer;
+  }
+  .toggle-knob::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(180,130,60,0.5);
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .toggle-wrap input:checked + .toggle-knob {
+    background: rgba(180,130,60,0.35);
+    border-color: rgba(180,130,60,0.7);
+  }
+  .toggle-wrap input:checked + .toggle-knob::before {
+    transform: translateX(16px);
+    background: var(--gold-light);
   }
 
   /* ── HISTORY BAR ── */
@@ -1047,6 +1140,22 @@
     border-bottom: 1px solid rgba(180,130,60,0.08);
     transition: background 0.12s;
   }
+
+  .history-dropdown-new {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid rgba(180,130,60,0.15);
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    transition: background 0.12s;
+  }
+  .history-dropdown-new:hover { background: rgba(180,130,60,0.1); }
 
   .history-dropdown-item:last-child { border-bottom: none; }
   .history-dropdown-item:hover { background: rgba(180,130,60,0.1); }
@@ -1290,9 +1399,14 @@
     cursor: pointer;
     line-height: 1.4;
   }
-  .oversized-toggle-row input[type="checkbox"] {
-    width: 15px; height: 15px; margin-top: 2px;
-    accent-color: #8b1a1a;
+  .oversized-toggle-row .toggle-wrap input:checked + .toggle-knob {
+    background: rgba(139,26,26,0.3);
+    border-color: rgba(139,26,26,0.6);
+  }
+  .oversized-toggle-row .toggle-wrap input:checked + .toggle-knob::before {
+    background: #c0392b;
+  }
+  .oversized-toggle-row-UNUSED {
     cursor: pointer;
     flex-shrink: 0;
   }
@@ -1493,6 +1607,7 @@
     <button class="history-label" id="historyDropdownBtn"><span>📜</span> Recent <span class="dropdown-caret">▼</span></button>
     <div class="history-dropdown" id="historyDropdown">
 
+      <div class="history-dropdown-new" id="historyDropdownNew">＋ New Card</div>
       <div class="history-dropdown-empty" id="historyDropdownEmpty">No saved items yet</div>
       <div id="historyDropdownItems"></div>
     </div>
@@ -1504,6 +1619,7 @@
     <div id="historyItems"></div>
   </div>
   <button class="history-arrow" id="historyNext" title="Scroll right" aria-label="Scroll items right">&#187;</button>
+  <button id="newCardBtn" class="history-save-btn" title="Save current &amp; start new card" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">＋ New</button>
   <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">☀ Light</button>
 </div>
 
@@ -1515,6 +1631,7 @@
       <button class="tab-btn active" data-tab="identity">Details</button>
       <button class="tab-btn" data-tab="appearance">Appearance</button>
       <button class="tab-btn" data-tab="export">Export</button>
+      <button class="tab-btn tab-btn-icon" data-tab="settings" title="Settings">⚙</button>
     </div>
 
     <!-- TAB 1: IDENTITY -->
@@ -1671,7 +1788,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           <div class="char-counter-row">
             <span class="char-count" id="charCount">0 / 450</span>
             <label class="oversized-toggle-row">
-              <input type="checkbox" id="allowOversized">
+              <span class="toggle-wrap"><input type="checkbox" id="allowOversized"><span class="toggle-knob"></span></span>
               <span>Allow oversized text <em style="font-size:0.85rem;opacity:0.75;">(may not print correctly)</em></span>
             </label>
           </div>
@@ -1776,7 +1893,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             </div>
           </div>
           <label class="toggle-row">
-            <input type="checkbox" id="showImage" checked>
+            <span class="toggle-wrap"><input type="checkbox" id="showImage" checked><span class="toggle-knob"></span></span>
             Show item image circle
           </label>
           <div class="field-group">
@@ -1794,15 +1911,15 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             </div>
           </div>
           <label class="toggle-row">
-            <input type="checkbox" id="showStats" checked>
+            <span class="toggle-wrap"><input type="checkbox" id="showStats" checked><span class="toggle-knob"></span></span>
             Show stats strip (damage / weight / bonus)
           </label>
           <label class="toggle-row">
-            <input type="checkbox" id="showFrame" checked>
+            <span class="toggle-wrap"><input type="checkbox" id="showFrame" checked><span class="toggle-knob"></span></span>
             Show ornate border frame
           </label>
           <label class="toggle-row">
-            <input type="checkbox" id="squareCorners">
+            <span class="toggle-wrap"><input type="checkbox" id="squareCorners"><span class="toggle-knob"></span></span>
             Square card corners
           </label>
         </div>
@@ -1844,13 +1961,46 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         </div>
       </div>
 
+    </div><!-- /tab-export -->
+
+    <!-- TAB 4: SETTINGS -->
+    <div class="tab-panel" id="tab-settings">
+
       <div>
-        <div class="section-title">Cleanup</div>
-        <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Remove all data this app has stored in your browser, including saved item history and preferences.</p>
-        <button class="btn btn-secondary" id="clearAllDataBtn" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
+        <div class="section-title">Editing</div>
+        <label class="toggle-row">
+          <span class="toggle-wrap"><input type="checkbox" id="autoSave"><span class="toggle-knob"></span></span>
+          Auto-save changes
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Automatically saves edits to the current item a moment after you stop typing. Has no effect if no item is loaded from history.</p>
       </div>
 
-    </div><!-- /tab-export -->
+      <div>
+        <div class="section-title">Theme</div>
+        <label class="toggle-row" style="cursor:pointer;" id="themeSettingsRow">
+          <span class="toggle-wrap"><input type="checkbox" id="themeSettingsCheck"><span class="toggle-knob"></span></span>
+          <span id="themeSettingsLabel">Light mode</span>
+        </label>
+      </div>
+
+      <div>
+        <div class="section-title">History</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+          <label class="field-label" for="maxHistorySetting" style="margin-bottom:0;">Max saved cards</label>
+          <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold-light);min-width:1.5rem;text-align:right;">9</span>
+        </div>
+        <input type="range" id="maxHistorySetting" min="1" max="50" step="1"
+          style="width:100%;" title="Maximum number of cards to keep in history (1–50)">
+        <p class="field-note-legend" style="margin-top:0.4rem;">Max 50. Cards with large images use more browser storage — if storage fills up, the oldest cards are dropped automatically.</p>
+      </div>
+
+      <div>
+        <div class="section-title">Data</div>
+        <p class="field-note-legend" style="margin-bottom:0.6rem;">Remove all data this app has stored in your browser, including saved item history and preferences.</p>
+        <button class="btn btn-secondary" id="clearAllDataBtnSettings" style="width:100%;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
+      </div>
+
+    </div><!-- /tab-settings -->
 
   </div>
 
@@ -2067,6 +2217,16 @@ $('resetImgCrop').addEventListener('click', resetImageCrop);
 function syncCard() {
   if (!_applyingState) setDirty(true);
   const name    = $('itemName').value || 'Unnamed Item';
+
+  // Keep history bar/dropdown name in sync as the user types
+  if (activeHistoryId) {
+    document.querySelectorAll('.history-item, .history-dropdown-item').forEach(el => {
+      if (el.dataset.historyId === String(activeHistoryId)) {
+        const span = el.querySelector('.history-name');
+        if (span) span.textContent = $('itemName').value || 'Unnamed Item';
+      }
+    });
+  }
   const type    = $('itemType').value;
   const subtype = $('itemSubtype').value;
   const rarity  = $('itemRarity').value;
@@ -2792,14 +2952,14 @@ $('importJsonFile').addEventListener('change', e => {
       }
 
       // Check whether existing items would be dropped
-      const wouldDrop = Math.max(0, merged.length - MAX_HISTORY);
+      const wouldDrop = Math.max(0, merged.length - getMaxHistory());
       if (wouldDrop > 0) {
         const msg = `You have ${existing.length} saved item${existing.length !== 1 ? 's' : ''} and are importing ${incoming.length}. ` +
                     `This would remove ${wouldDrop} of your oldest saved item${wouldDrop !== 1 ? 's' : ''}.\n\nContinue?`;
         if (!confirm(msg)) return;
       }
 
-      merged.splice(MAX_HISTORY);
+      merged.splice(getMaxHistory());
       saveHistory(merged);
       renderHistoryBar();
       applyState(incoming[0]);
@@ -2812,49 +2972,95 @@ $('importJsonFile').addEventListener('change', e => {
 });
 
 // ── THEME TOGGLE ──
-(function () {
-  const btn = $('themeToggle');
-  function applyTheme(light) {
-    document.body.classList.toggle('light', light);
-    btn.textContent = light ? '☽ Dark' : '☀ Light';
-    localStorage.setItem('dnd_theme', light ? 'light' : 'dark');
-  }
-  btn.addEventListener('click', () => applyTheme(!document.body.classList.contains('light')));
-  applyTheme(localStorage.getItem('dnd_theme') === 'light');
-})();
+function applyTheme(light) {
+  document.body.classList.toggle('light', light);
+  $('themeToggle').textContent = light ? '☽ Dark' : '☀ Light';
+  $('themeSettingsCheck').checked = light;
+  $('themeSettingsLabel').textContent = light ? 'Dark mode' : 'Light mode';
+  localStorage.setItem('dnd_theme', light ? 'light' : 'dark');
+}
+$('themeToggle').addEventListener('click', () => applyTheme(!document.body.classList.contains('light')));
+$('themeSettingsCheck').addEventListener('change', e => applyTheme(e.target.checked));
+applyTheme(localStorage.getItem('dnd_theme') === 'light');
 
 // ── CLEAR CARD ──
+const BLANK_STATE = {
+  name: '', type: 'Weapon', subtype: '', rarity: 'common',
+  bonus: '', damage: '', weight: '',
+  bonusLabel: 'Bonus', damageLabel: 'Damage', weightLabel: 'Weight',
+  savingThrow: '', range: '', saveLabel: 'Save', rangeLabel: 'Range',
+  source: '', description: '',
+  attunement: '', attunementCustom: '',
+  cardColor: '#d4b87a', inkColor: '#2c1a0e',
+  rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
+  showImage: true, showStats: true, showFrame: true, squareCorners: false,
+  bgImage: null, itemImage: null,
+  imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
+  imgNaturalW: 0, imgNaturalH: 0,
+};
+
+function openNewCard() {
+  // Save current card to history only if it is already tracked (has an id in history)
+  if (activeHistoryId) {
+    const current = collectCurrentState();
+    current.id = activeHistoryId;
+    const hist = getHistory();
+    const idx = hist.findIndex(h => h.id === activeHistoryId);
+    if (idx >= 0) {
+      hist[idx] = current;
+      saveHistory(hist);
+    }
+  }
+  applyState({ ...BLANK_STATE });
+  activeHistoryId = null;
+  registerNewCard();
+}
+
 $('clearCardBtn').addEventListener('click', () => {
   if (!confirm('Clear the current card? All fields will be reset to blank.')) return;
-  applyState({
-    name: '', type: 'Weapon', subtype: '', rarity: 'common',
-    bonus: '', damage: '', weight: '',
-    bonusLabel: 'Bonus', damageLabel: 'Damage', weightLabel: 'Weight',
-    savingThrow: '', range: '', saveLabel: 'Save', rangeLabel: 'Range',
-    source: '', description: '',
-    attunement: '', attunementCustom: '',
-    cardColor: '#d4b87a', inkColor: '#2c1a0e',
-    rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
-    showImage: true, showStats: true, showFrame: true, squareCorners: false,
-    bgImage: null, itemImage: null,
-    imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
-    imgNaturalW: 0, imgNaturalH: 0,
-  });
+  applyState({ ...BLANK_STATE });
   activeHistoryId = null;
   updateHistoryActiveClass();
 });
 
 // ── CLEAR ALL DATA ──
-$('clearAllDataBtn').addEventListener('click', () => {
+function doClearAllData() {
   if (!confirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
   localStorage.clear();
   renderHistoryBar();
+  setDirty(false);
+  activeHistoryId = null;
   alert('All stored data has been cleared.');
-});
+}
+$('clearAllDataBtnSettings').addEventListener('click', doClearAllData);
+
+// ── AUTO-SAVE ──
+let autoSaveTimer = null;
+
+function doAutoSave() {
+  if (!isDirty || !activeHistoryId) return;
+  clearTimeout(autoSaveTimer);
+  const state = collectCurrentState();
+  state.id = activeHistoryId;
+  const hist = getHistory();
+  const idx = hist.findIndex(h => h.id === activeHistoryId);
+  if (idx >= 0) hist[idx] = state;
+  else hist.unshift(state);
+  saveHistory(hist);
+  renderHistoryBar();
+  setDirty(false);
+}
+
+function scheduleAutoSave() {
+  if (!$('autoSave').checked || !activeHistoryId) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(doAutoSave, 1500);
+}
 
 // ── TABS ──
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    if ($('autoSave').checked) doAutoSave();
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
@@ -2869,7 +3075,12 @@ $('imgUploadHint').addEventListener('click', () => {
 
 // ── HISTORY ──
 const HISTORY_KEY = 'dnd_item_history';
-const MAX_HISTORY = 9;
+const MAX_HISTORY_DEFAULT = 9;
+const MAX_HISTORY_CAP = 50;
+function getMaxHistory() {
+  const v = parseInt(localStorage.getItem('dnd_max_history'), 10);
+  return (isNaN(v) || v < 1) ? MAX_HISTORY_DEFAULT : Math.min(v, MAX_HISTORY_CAP);
+}
 
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -2937,12 +3148,25 @@ let activeHistoryId = null;
 let isDirty = false;
 let _applyingState = false;
 
+function registerNewCard() {
+  if (activeHistoryId !== null) return;
+  activeHistoryId = Date.now();
+  const state = collectCurrentState();
+  state.id = activeHistoryId;
+  const hist = getHistory();
+  hist.unshift(state);
+  saveHistory(hist.slice(0, getMaxHistory()));
+  renderHistoryBar();
+}
+
 function setDirty(val) {
   isDirty = val;
+  if (val && activeHistoryId === null) registerNewCard();
   $('dirtyIndicator').classList.toggle('visible', val);
   const mob = $('mobileDirtyMsg');
   if (mob) mob.style.display = val ? 'flex' : 'none';
   updateHistoryActiveClass();
+  if (val) scheduleAutoSave();
 }
 
 function hideConfirmModal() {
@@ -2955,14 +3179,17 @@ function hideConfirmModal() {
 function tryLoadItem(item) {
   if (!isDirty || activeHistoryId === item.id) { applyState(item); return; }
 
+  if ($('autoSave').checked) { doAutoSave(); applyState(item); return; }
+
   $('confirmModal').classList.add('active');
   $('confirmModalOk').onclick = () => { hideConfirmModal(); applyState(item); };
   $('confirmModalSave').onclick = () => {
     hideConfirmModal();
     const state = collectCurrentState();
-    const hist = getHistory().filter(h => h.name !== state.name);
+    if (activeHistoryId) state.id = activeHistoryId;
+    const hist = getHistory().filter(h => h.id !== state.id && h.name !== state.name);
     hist.unshift(state);
-    saveHistory(hist.slice(0, MAX_HISTORY));
+    saveHistory(hist.slice(0, getMaxHistory()));
     renderHistoryBar();
     setDirty(false);
     applyState(item);
@@ -3136,6 +3363,7 @@ function renderHistoryBar() {
       e.stopPropagation();
       const updated = getHistory().filter(h => h.id !== item.id);
       saveHistory(updated);
+      if (activeHistoryId === item.id) activeHistoryId = null;
       renderHistoryBar();
     });
 
@@ -3169,6 +3397,7 @@ function renderHistoryBar() {
       e.stopPropagation();
       const updated = getHistory().filter(h => h.id !== item.id);
       saveHistory(updated);
+      if (activeHistoryId === item.id) activeHistoryId = null;
       renderHistoryBar();
     });
 
@@ -3200,15 +3429,23 @@ $('historyDropdownBtn').addEventListener('click', e => {
   e.stopPropagation();
   $('historyDropdown').classList.toggle('open');
 });
+
+$('historyDropdownNew').addEventListener('click', () => {
+  $('historyDropdown').classList.remove('open');
+  openNewCard();
+});
+
+$('newCardBtn').addEventListener('click', openNewCard);
 document.addEventListener('click', () => {
   $('historyDropdown').classList.remove('open');
 });
 
 $('historySaveBtn').addEventListener('click', () => {
   const state   = collectCurrentState();
-  const history = getHistory().filter(h => h.name !== state.name); // dedupe by name
+  if (activeHistoryId) state.id = activeHistoryId;
+  const history = getHistory().filter(h => h.id !== state.id && h.name !== state.name);
   history.unshift(state);
-  saveHistory(history.slice(0, MAX_HISTORY));
+  saveHistory(history.slice(0, getMaxHistory()));
   renderHistoryBar();
   setDirty(false);
 
@@ -3244,6 +3481,30 @@ $('historySaveBtn').addEventListener('click', () => {
   track.addEventListener('scroll', updateArrows, { passive: true });
   // Also update after render (content width changes)
   window._updateHistoryArrows = updateArrows;
+})();
+
+// ── AUTO-SAVE PERSISTENCE ──
+$('autoSave').checked = localStorage.getItem('dnd_autosave') === 'true';
+$('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave', e.target.checked));
+
+// ── MAX HISTORY SETTING ──
+(function() {
+  const slider = $('maxHistorySetting');
+  const label  = $('maxHistoryValue');
+  slider.value = getMaxHistory();
+  label.textContent = slider.value;
+  slider.addEventListener('input', () => {
+    label.textContent = slider.value;
+  });
+  slider.addEventListener('change', () => {
+    const v = parseInt(slider.value, 10);
+    localStorage.setItem('dnd_max_history', v);
+    const hist = getHistory();
+    if (hist.length > v) {
+      saveHistory(hist.slice(0, v));
+      renderHistoryBar();
+    }
+  });
 })();
 
 // ── INITIAL RENDER ──
