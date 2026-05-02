@@ -674,6 +674,7 @@
     text-align: center;
     font-family: 'Cinzel', serif;
     font-size: 0.6rem;
+    line-height: 1;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     padding: 2px 0;
@@ -2385,7 +2386,7 @@ function buildCardNode(s) {
     <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
       <div class="card-item-name" style="font-family:Cinzel,serif;font-size:1.15rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
       <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
-      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
+      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;line-height:1;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
     <div class="card-divider"></div>
     <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
