@@ -4411,6 +4411,7 @@ function renderHistoryBar() {
     ddEl.addEventListener('click', () => {
       tryLoadItem(item);
       $('historyDropdown').classList.remove('open');
+      requestAnimationFrame(scrollHistoryActiveToCenter);
     });
     ddContainer.appendChild(ddEl);
   });
