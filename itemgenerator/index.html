@@ -4391,8 +4391,15 @@ async function connectDropbox() {
       const poll = setInterval(() => {
         if (!done && popup.closed) {
           clearInterval(poll);
-          window.removeEventListener('message', onMsg);
-          reject(new Error('closed'));
+          // Grace period: oauth.html sends postMessage then immediately calls
+          // window.close(). The message event may still be queued when the
+          // interval fires. Wait 800ms before giving up so it can arrive.
+          setTimeout(() => {
+            if (!done) {
+              window.removeEventListener('message', onMsg);
+              reject(new Error('closed'));
+            }
+          }, 800);
         }
       }, 500);
     });

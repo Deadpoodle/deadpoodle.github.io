@@ -22,19 +22,15 @@
 <p>Connecting… this window will close automatically.</p>
 <script>
 (function () {
-  // Parse both the query string and hash fragment (providers use both)
-  function parseParams(str) {
+  // Parse both the query string and hash fragment (providers use both).
+  // Use URLSearchParams so values containing '=' or '+' are handled correctly.
+  function fromSearch(str) {
     var result = {};
-    str.replace(/^\?|^#/, '').split('&').forEach(function (pair) {
-      var parts = pair.split('=');
-      if (parts[0]) result[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1] || '');
-    });
+    try { new URLSearchParams(str).forEach(function(v,k){ result[k]=v; }); } catch(e){}
     return result;
   }
 
-  var qp = parseParams(window.location.search);
-  var hp = parseParams(window.location.hash);
-  var params = Object.assign({}, qp, hp);
+  var params = Object.assign({}, fromSearch(window.location.search), fromSearch(window.location.hash.replace(/^#/,'?')));
 
   var payload = {
     code:         params.code         || null,
