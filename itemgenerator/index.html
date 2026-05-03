@@ -2178,6 +2178,13 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
               <input type="text" id="rarityColorHex" value="" placeholder="auto" maxlength="7">
             </div>
           </div>
+          <div class="field-group">
+            <label>Circle border colour <button id="resetCircleBorderColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="circleBorderColor" value="#5a3c1e">
+              <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2188,13 +2195,6 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
             <span class="toggle-wrap"><input type="checkbox" id="showImage" checked><span class="toggle-knob"></span></span>
             Show item image circle
           </label>
-          <div class="field-group">
-            <label>Circle border colour <button id="resetCircleBorderColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
-            <div class="color-row">
-              <input type="color" id="circleBorderColor" value="#5a3c1e">
-              <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
-            </div>
-          </div>
           <div class="field-group">
             <label>Circle size</label>
             <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -2909,11 +2909,32 @@ $('resetInkColor').addEventListener('click', () => {
   syncCard();
 });
 
+const RARITY_COLORS = {
+  common:    '#555555',
+  uncommon:  '#1a6e1a',
+  rare:      '#1a3e8b',
+  'very-rare': '#5a1a8b',
+  legendary: '#8b4a00',
+  artifact:  '#8b1a1a',
+  unique:    '#2e6b6b',
+};
+function getRarityDefaultColor() {
+  return RARITY_COLORS[$('itemRarity').value] || '#1a3e8b';
+}
+function syncRarityPickerToRarity() {
+  // Only update the picker when the user hasn't set a custom colour (hex field is blank)
+  if (!$('rarityColorHex').value) {
+    $('rarityColor').value = getRarityDefaultColor();
+  }
+}
+
 $('resetRarityColor').addEventListener('click', () => {
   $('rarityColorHex').value = '';
-  $('rarityColor').value = '#1a3e8b';
+  $('rarityColor').value = getRarityDefaultColor();
   syncCard();
 });
+
+$('itemRarity').addEventListener('change', syncRarityPickerToRarity);
 
 $('resetCircleBorderColor').addEventListener('click', () => {
   $('circleBorderColorHex').value = '';
@@ -2927,7 +2948,7 @@ $('resetAppearanceBtn').addEventListener('click', async () => {
   // Colours
   $('cardColor').value    = '#d4b87a'; $('cardColorHex').value    = '#d4b87a';
   $('inkColor').value     = '#2c1a0e'; $('inkColorHex').value     = '#2c1a0e';
-  $('rarityColor').value  = '#1a3e8b'; $('rarityColorHex').value  = '';
+  $('rarityColorHex').value  = ''; $('rarityColor').value  = getRarityDefaultColor();
   $('circleBorderColor').value = '#5a3c1e'; $('circleBorderColorHex').value = '';
 
   // Sliders & toggles
@@ -4142,7 +4163,7 @@ function applyState(s) {
   $('inkColor').value        = s.inkColor    || '#2c1a0e';
   const rc = s.rarityColor || '';
   $('rarityColorHex').value  = rc;
-  $('rarityColor').value     = /^#[0-9a-fA-F]{6}$/.test(rc) ? rc : '#1a3e8b';
+  $('rarityColor').value     = /^#[0-9a-fA-F]{6}$/.test(rc) ? rc : getRarityDefaultColor();
   const cbc = s.circleBorderColor || '';
   $('circleBorderColorHex').value = cbc;
   $('circleBorderColor').value    = /^#[0-9a-fA-F]{6}$/.test(cbc) ? cbc : '#5a3c1e';
