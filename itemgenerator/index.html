@@ -3994,6 +3994,8 @@ $('copyShareLinkBtn').addEventListener('click', async () => {
   } catch (err) {
     if (err.message === 'reconnect_needed') {
       feedback.innerHTML = 'Dropbox needs to be reconnected. Go to <strong>Settings → Share Provider</strong>, click <em>Disconnect</em>, then reconnect.';
+    } else if (err.message === 'network_error') {
+      feedback.textContent = 'Could not reach Dropbox — check your connection and try again. A hard refresh (Ctrl+Shift+R) may also help.';
     } else {
       feedback.textContent = 'Failed to copy link — please try again.';
     }
@@ -4437,15 +4439,19 @@ async function shareCurrentCard() {
   const filename = `artifex-arcanum-${slug}-${Date.now()}.json`;
   const path     = `${DROPBOX_FOLDER}/${filename}`;
 
-  // 1 — Upload file
-  const upResp = await _dbx('https://content.dropboxapi.com/2/files/upload', {
+  // 1 — Upload file.
+  // Pass API args as an `arg` query parameter rather than the Dropbox-API-Arg custom header.
+  // Both forms are supported by Dropbox; using a query param avoids adding a custom header to
+  // the CORS preflight, which can be blocked by some browser security policies.
+  const uploadArg = encodeURIComponent(JSON.stringify({ path, mode: 'overwrite', autorename: false, mute: true }));
+  const upResp = await _dbx(`https://content.dropboxapi.com/2/files/upload?arg=${uploadArg}`, {
     method:  'POST',
-    headers: {
-      'Content-Type':    'application/octet-stream',
-      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false, mute: true }),
-    },
+    headers: { 'Content-Type': 'application/octet-stream' },
     body: json,
-  }).catch(() => { throw new Error('reconnect_needed'); });
+  }).catch(err => {
+    console.error('[share] upload fetch error:', err);
+    throw new Error('network_error');
+  });
   if (!upResp.ok) {
     const err = await upResp.json().catch(() => ({}));
     throw new Error('upload_failed: ' + (err.error_summary || upResp.status));
@@ -4487,7 +4493,10 @@ async function shareCurrentCard() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ path }),
-      }).catch(() => { throw new Error('reconnect_needed'); });
+      }).catch(err => {
+        console.error('[share] temporary link fetch error:', err);
+        throw new Error('reconnect_needed');
+      });
 
       if (!tmpResp.ok) throw new Error('reconnect_needed');
       const tmpBody = await tmpResp.json();
