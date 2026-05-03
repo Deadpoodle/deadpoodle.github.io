@@ -4480,9 +4480,19 @@ async function shareCurrentCard() {
     sharedUrl = (await linkResp.json()).url;
   }
 
-  // 3 — Convert to direct download URL
-  const directUrl = sharedUrl.replace(/[?&]dl=0/, '').replace(/\?$/, '') +
-                    (sharedUrl.includes('?') ? '&dl=1' : '?dl=1');
+  // 3 — Convert to a CORS-friendly direct download URL.
+  // Dropbox's new /scl/fi/ links are served from www.dropbox.com which returns a 302
+  // redirect without CORS headers. Swapping the host to dl.dropboxusercontent.com skips
+  // the redirect and serves the raw file with Access-Control-Allow-Origin: *.
+  // The rlkey parameter (if present) must be preserved — it authenticates the link.
+  // Remove any dl=0 param (redundant on the content domain) but do not add dl=1
+  // since dl.dropboxusercontent.com always serves raw content.
+  const directUrl = sharedUrl
+    .replace('www.dropbox.com', 'dl.dropboxusercontent.com')
+    .replace(/[?&]dl=0/, '')
+    .replace(/[?&]dl=1/, '')
+    .replace(/\?$/, '')
+    .replace(/&$/, '');
 
   // 4 — Build and return full share URL
   return `${location.origin}${location.pathname}#share=dropbox:${encodeURIComponent(directUrl)}`;
