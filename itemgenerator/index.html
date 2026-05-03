@@ -2447,7 +2447,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
     </div>
 
     <!-- THE CARD -->
-    <div id="cardScaleWrap" style="width:100%;display:flex;justify-content:center;align-items:flex-start;height:580px;">
+    <div id="cardScaleWrap" style="width:100%;display:flex;justify-content:center;align-items:flex-start;">
     <div id="itemCard" class="item-card">
       <div class="card-bg" id="cardBg"></div>
       <div class="card-bg-img" id="cardBgImg"></div>
@@ -3125,12 +3125,21 @@ function applyCardScale(val) {
   $('scaleLabel').textContent = val + '%';
   $('itemCard').style.transform = `scale(${val/100})`;
   $('itemCard').style.transformOrigin = 'top center';
-  const oversized = $('allowOversized') && $('allowOversized').checked;
-  $('cardScaleWrap').style.height = oversized ? 'auto' : (580 * val / 100) + 'px';
+  // Use the card's actual rendered height so oversized text is always accounted for.
+  // transform: scale() doesn't affect layout flow, so we must set the wrapper height
+  // explicitly to (cardHeight × scale) to keep content below the card in position.
+  const cardH = $('itemCard').offsetHeight || 380;
+  $('cardScaleWrap').style.height = Math.round(cardH * val / 100 + 20) + 'px';
   const persistEl = $('persistScaleToggle');
   if (persistEl && persistEl.checked) localStorage.setItem('dnd_card_scale', val);
 }
 $('scaleSlider').addEventListener('input', () => applyCardScale($('scaleSlider').value));
+
+// Keep the wrapper height in sync whenever the card's content changes height
+// (e.g. oversized text toggle causes the card to grow/shrink).
+new ResizeObserver(() => applyCardScale($('scaleSlider').value))
+  .observe($('itemCard'));
+
 // Reset to 100% on every load so slider and card are always in sync
 $('scaleSlider').value = 100;
 applyCardScale(100);
@@ -4115,13 +4124,26 @@ function hideConfirmModal() {
   $('confirmModalCancel').onclick = null;
 }
 
-function tryLoadItem(item) {
-  if (!isDirty || activeHistoryId === item.id) { applyState(item); return; }
+function switchToDetailsTab() {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const detailsBtn = document.querySelector('.tab-btn[data-tab="identity"]');
+  if (detailsBtn) detailsBtn.classList.add('active');
+  $('tab-identity').classList.add('active');
+}
 
-  if ($('autoSave').checked) { doAutoSave(); applyState(item); return; }
+function tryLoadItem(item) {
+  const isDifferentItem = activeHistoryId !== item.id;
+  if (!isDirty || !isDifferentItem) {
+    if (isDifferentItem) switchToDetailsTab();
+    applyState(item);
+    return;
+  }
+
+  if ($('autoSave').checked) { doAutoSave(); switchToDetailsTab(); applyState(item); return; }
 
   $('confirmModal').classList.add('active');
-  $('confirmModalOk').onclick = () => { hideConfirmModal(); applyState(item); };
+  $('confirmModalOk').onclick = () => { hideConfirmModal(); switchToDetailsTab(); applyState(item); };
   $('confirmModalSave').onclick = () => {
     hideConfirmModal();
     const state = collectCurrentState();
@@ -4131,6 +4153,7 @@ function tryLoadItem(item) {
     saveHistory(hist.slice(0, getMaxHistory()));
     renderHistoryBar();
     setDirty(false);
+    switchToDetailsTab();
     applyState(item);
   };
   $('confirmModalCancel').onclick = () => hideConfirmModal();
