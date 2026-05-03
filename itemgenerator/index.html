@@ -1818,6 +1818,58 @@
   </div>
 </div>
 
+<!-- GENERIC INFO MODAL -->
+<div class="confirm-modal" id="infoModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title" id="infoModalTitle"></div>
+    <p class="confirm-modal-msg" id="infoModalMsg"></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="infoModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC CONFIRM MODAL -->
+<div class="confirm-modal" id="genericConfirmModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title" id="genericConfirmTitle"></div>
+    <p class="confirm-modal-msg" id="genericConfirmMsg"></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="genericConfirmOk"></button>
+      <button class="btn-cancel" id="genericConfirmCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR ALL DATA MODAL -->
+<div class="confirm-modal" id="clearAllDataModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Clear All Stored Data</div>
+    <p class="confirm-modal-msg">This will permanently delete all saved items, history, and preferences stored by this app in your browser. <strong>This cannot be undone.</strong></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-secondary" id="clearAllDataConfirm" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Delete Everything</button>
+      <button class="btn-cancel" id="clearAllDataCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LARGE IMAGE WARNING MODAL -->
+<div class="confirm-modal" id="largeImageModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Large Image</div>
+    <p class="confirm-modal-msg" id="largeImageMsg"></p>
+    <div class="confirm-modal-btns" style="flex-direction:column;">
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button class="btn btn-primary" id="largeImageEnable"></button>
+        <button class="btn btn-secondary" id="largeImageRaw">Upload Anyway</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn-cancel" id="largeImageCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORT OVERFLOW MODAL -->
 <div class="confirm-modal" id="importOverflowModal">
   <div class="confirm-modal-box">
@@ -2227,6 +2279,37 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           Remember card scale
         </label>
         <p class="field-note-legend" style="margin-top:0.4rem;">Restores your preferred card preview scale the next time you open the app.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="compressImagesToggle"><span class="toggle-knob"></span></span>
+          Compress uploaded images
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Scales and converts images to JPEG before saving, reducing storage usage significantly. Recommended when uploading photos. Note: PNGs with transparent backgrounds will lose transparency.</p>
+        <div id="compressLevelRow" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem;padding:0.45rem 0.75rem;background:rgba(180,130,60,0.07);border:1px solid rgba(180,130,60,0.18);border-radius:5px;">
+          <div style="display:flex;flex-direction:column;gap:0.3rem;">
+            <span class="png-quality-heading" style="margin-bottom:0.15rem;">Background</span>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressBgLevel" value="mild" id="compressBgMild" style="accent-color:var(--gold);"> Mild — 1600px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressBgLevel" value="standard" id="compressBgStandard" checked style="accent-color:var(--gold);"> Standard — 1000px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressBgLevel" value="aggressive" id="compressBgAggressive" style="accent-color:var(--gold);"> Aggressive — 700px
+            </label>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.3rem;">
+            <span class="png-quality-heading" style="margin-bottom:0.15rem;">Item Image</span>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressItemLevel" value="mild" id="compressItemMild" style="accent-color:var(--gold);"> Mild — 800px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressItemLevel" value="standard" id="compressItemStandard" checked style="accent-color:var(--gold);"> Standard — 500px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressItemLevel" value="aggressive" id="compressItemAggressive" style="accent-color:var(--gold);"> Aggressive — 300px
+            </label>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -2246,10 +2329,10 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           <input type="number" id="maxHistoryUnlockedInput" min="1" step="1"
             style="width:100%;padding:0.35rem 0.5rem;" title="Maximum number of cards to keep in history">
         </div>
-        <p class="field-note-legend" style="margin-top:0.4rem;" id="maxHistoryNote">Max 50. Cards with large images use more browser storage — if storage fills up, the oldest cards are dropped automatically.</p>
+        <p class="field-note-legend" style="margin-top:0.4rem;" id="maxHistoryNote">Max 50. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.</p>
         <label class="toggle-row" style="margin-top:0.6rem;cursor:pointer;" title="Go beyond, Plus Ultra!">
           <span class="toggle-wrap"><input type="checkbox" id="unlockMaxHistory"><span class="toggle-knob"></span></span>
-          <span id="unlockMaxHistoryLabel">Unlock max storage</span>
+          <span id="unlockMaxHistoryLabel">Unlock card history</span>
         </label>
       </div>
 
@@ -2449,6 +2532,27 @@ function safeConfirm(msg) {
   return confirm(msg);
 }
 
+function showInfoModal(title, msgHtml) {
+  $('infoModalTitle').textContent = title;
+  $('infoModalMsg').innerHTML = msgHtml;
+  $('infoModal').classList.add('active');
+  return new Promise(resolve => {
+    $('infoModalOk').onclick = () => { $('infoModal').classList.remove('active'); resolve(); };
+  });
+}
+
+function showGenericConfirm(title, msgHtml, confirmText = 'Confirm') {
+  if ($('suppressConfirmToggle') && $('suppressConfirmToggle').checked) return Promise.resolve(true);
+  $('genericConfirmTitle').textContent = title;
+  $('genericConfirmMsg').innerHTML = msgHtml;
+  $('genericConfirmOk').textContent = confirmText;
+  $('genericConfirmModal').classList.add('active');
+  return new Promise(resolve => {
+    $('genericConfirmOk').onclick    = () => { $('genericConfirmModal').classList.remove('active'); resolve(true);  };
+    $('genericConfirmCancel').onclick = () => { $('genericConfirmModal').classList.remove('active'); resolve(false); };
+  });
+}
+
 function getExportScale() {
   const q = localStorage.getItem('dnd_export_quality') || 'standard';
   return { draft: 1.5, standard: 2, high: 3 }[q] || 2;
@@ -2534,8 +2638,8 @@ function showCropControls(visible) {
     return Math.sqrt(dx * dx + dy * dy) > rect.width / 2;
   }
 
-  function confirmRemoveImage() {
-    if (safeConfirm('Remove the item image?')) {
+  async function confirmRemoveImage() {
+    if (await showGenericConfirm('Remove Image', 'Remove the item image?', 'Remove')) {
       $('clearItem').click();
     } else {
       resetImageCrop();
@@ -2800,8 +2904,8 @@ $('resetCircleBorderColor').addEventListener('click', () => {
   syncCard();
 });
 
-$('resetAppearanceBtn').addEventListener('click', () => {
-  if (!safeConfirm('Reset all appearance settings to their defaults? This will also remove any uploaded images.')) return;
+$('resetAppearanceBtn').addEventListener('click', async () => {
+  if (!await showGenericConfirm('Reset Appearance', 'Reset all appearance settings to their defaults? This will also remove any uploaded images.', 'Reset')) return;
 
   // Colours
   $('cardColor').value    = '#d4b87a'; $('cardColorHex').value    = '#d4b87a';
@@ -2840,18 +2944,103 @@ $('resetAppearanceBtn').addEventListener('click', () => {
   syncCard();
 });
 
+// ── IMAGE COMPRESSION ──
+// TODO: Consider migrating image storage from localStorage to IndexedDB in future.
+// localStorage is limited to ~5MB in Firefox, and a single base64-encoded image can
+// easily be 1–2MB, meaning only 2–3 image cards can be stored before hitting the limit.
+// IndexedDB has no practical size limit and stores binary data natively (no base64 overhead),
+// making it far better suited for image-heavy use. Card metadata could remain in localStorage
+// while images are keyed by card ID in an IndexedDB object store. JSON export/import would
+// need updating to embed/extract images separately from the state object.
+// Mild: 800px / 0.85  — noticeable reduction, best quality
+// Standard: 500px / 0.75 — balanced (default)
+// Aggressive: 300px / 0.65 — maximum storage savings
+// Background: larger dimensions needed — card renders up to 1140×1740px at 3× export
+// Item image: shown in a circle max 160px — much smaller targets are fine
+const COMPRESS_LEVELS = {
+  bg: {
+    mild:       { maxDim: 1600, quality: 0.85 },
+    standard:   { maxDim: 1000, quality: 0.80 },
+    aggressive: { maxDim:  700, quality: 0.75 },
+  },
+  item: {
+    mild:       { maxDim: 800, quality: 0.85 },
+    standard:   { maxDim: 500, quality: 0.75 },
+    aggressive: { maxDim: 300, quality: 0.65 },
+  },
+};
+// type: 'bg' or 'item'
+function getCompressLevel(type) {
+  const key   = type === 'bg' ? 'dnd_compress_bg_level' : 'dnd_compress_item_level';
+  const level = localStorage.getItem(key) || 'standard';
+  return (COMPRESS_LEVELS[type] || COMPRESS_LEVELS.item)[level]
+      || (COMPRESS_LEVELS[type] || COMPRESS_LEVELS.item).standard;
+}
+function compressImage(dataUrl, type) {
+  const { maxDim, quality } = getCompressLevel(type);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onerror = () => resolve(dataUrl);
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      if (scale >= 1) { resolve(dataUrl); return; }
+      const w = Math.round(img.width  * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function showLargeImageModal(sizeKb) {
+  return new Promise(resolve => {
+    const mb = (sizeKb / 1024).toFixed(1);
+    const close = val => { $('largeImageModal').classList.remove('active'); resolve(val); };
+    $('largeImageMsg').innerHTML =
+      `This image is <strong>${mb} MB</strong>. Large images can fill up your browser\'s storage quickly — a few cards at this size may hit the limit.<br><br>` +
+      `<strong>Enable & Upload</strong> will turn on image compression, scale this image down to 500px, and convert it to JPEG. Note: transparent backgrounds in PNGs will be lost.`;
+    $('largeImageEnable').textContent = 'Enable & Upload';
+    $('largeImageEnable').onclick = () => close('compress');
+    $('largeImageRaw').onclick    = () => close('raw');
+    $('largeImageCancel').onclick = () => close(false);
+    $('largeImageModal').classList.add('active');
+  });
+}
+
 // ── IMAGE UPLOADS ──
-function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad) {
+function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad, options = {}) {
+  const { warnKb = 0, imageType = 'item' } = options;
   const input = $(inputId), preview = $(previewId), zone = $(zoneId), clearBtn = $(clearBtnId);
-  input.addEventListener('change', e => {
+  input.addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
-      preview.src = ev.target.result;
+    reader.onload = async ev => {
+      let src = ev.target.result;
+      const fileSizeKb = file.size / 1024;
+      const compressOn = !!($('compressImagesToggle') && $('compressImagesToggle').checked);
+
+      let shouldCompress = compressOn;
+      if (warnKb && fileSizeKb >= warnKb && !compressOn) {
+        const result = await showLargeImageModal(fileSizeKb);
+        if (!result) { input.value = ''; return; }
+        if (result === 'compress') {
+          shouldCompress = true;
+          // User chose "Enable & Upload" — turn the setting on for future uploads too
+          $('compressImagesToggle').checked = true;
+          localStorage.setItem('dnd_compress_images', 'true');
+        }
+      }
+
+      if (shouldCompress) src = await compressImage(src, imageType);
+
+      preview.src = src;
       zone.classList.add('has-image');
       clearBtn.style.display = 'inline-block';
-      if (onLoad) onLoad(ev.target.result);
+      if (onLoad) onLoad(src);
     };
     reader.readAsDataURL(file);
   });
@@ -2867,7 +3056,7 @@ function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad) {
 bindUpload('bgUpload','bgPreview','bgZone','clearBg', src => {
   $('cardBgImg').style.backgroundImage = src ? `url('${src}')` : '';
   $('bgOpacityRow').style.display = src ? 'block' : 'none';
-});
+}, { warnKb: 2000, imageType: 'bg' });
 
 bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
   const img = $('cardItemImg');
@@ -2891,7 +3080,7 @@ bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
     itemImgNaturalW = 0; itemImgNaturalH = 0;
     showCropControls(false);
   }
-});
+}, { warnKb: 2000 });
 
 // ── SCALE SLIDER ──
 function applyCardScale(val) {
@@ -2939,12 +3128,12 @@ async function exportCurrentPng() {
 
 $('exportPng').addEventListener('click', async () => {
   try { await exportCurrentPng(); }
-  catch(e) { alert('Export failed. If you used external images, try uploading them directly.'); }
+  catch(e) { showInfoModal('Export Failed', 'Export failed. If you used external images, try uploading them directly.'); }
 });
 
 $('exportPngInline').addEventListener('click', async () => {
   try { await exportCurrentPng(); }
-  catch(e) { alert('Export failed. If you used external images, try uploading them directly.'); }
+  catch(e) { showInfoModal('Export Failed', 'Export failed. If you used external images, try uploading them directly.'); }
 });
 
 // ── PRINT (single current item) ──
@@ -2961,7 +3150,7 @@ $('exportPrint').addEventListener('click', async () => {
     printImagesInPopup([dataUrl], 'single');
   } catch(e) {
     hideProgress();
-    alert('Print failed: ' + e.message);
+    showInfoModal('Print Failed', 'Print failed: ' + e.message);
   }
 });
 
@@ -3266,7 +3455,7 @@ ${pagesHTML}
 
   const popup = window.open('', '_blank', 'width=820,height=1000');
   if (!popup) {
-    alert('Pop-up blocked — please allow pop-ups for this page and try again.');
+    showInfoModal('Pop-up Blocked', 'Pop-ups are blocked — please allow pop-ups for this page and try again.');
     return;
   }
   popup.document.open();
@@ -3301,7 +3490,7 @@ ${pagesHTML}
 
   $('pngSelectionBtn').addEventListener('click', () => {
     const items = getHistory();
-    if (!items.length) { alert('No saved items in history yet.'); return; }
+    if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
 
     syncModalQuality();
 
@@ -3392,7 +3581,7 @@ ${pagesHTML}
 
   $('printSelectionBtn').addEventListener('click', () => {
     const items = getHistory();
-    if (!items.length) { alert('No saved items in history yet.'); return; }
+    if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
 
     const list = $('printSelectList');
     list.innerHTML = '';
@@ -3520,7 +3709,7 @@ $('importJsonFile').addEventListener('change', e => {
       // Accept either the { version, items } envelope or a bare array
       const incoming = (Array.isArray(data) ? data : (data.items || []))
                          .filter(item => item && typeof item === 'object');
-      if (!incoming.length) { alert('No items found in that JSON file.'); return; }
+      if (!incoming.length) { showInfoModal('Nothing to Import', 'No items found in that JSON file.'); return; }
 
       const existing = getHistory();
 
@@ -3534,7 +3723,7 @@ $('importJsonFile').addEventListener('change', e => {
         saveHistory(merged.slice(0, limit));
         renderHistoryBar();
         applyState(incoming[0]);
-        alert(`Imported ${incoming.length} item${incoming.length !== 1 ? 's' : ''}.`);
+        showInfoModal('Import Complete', `Imported ${incoming.length} item${incoming.length !== 1 ? 's' : ''}.`);
       }
 
       const wouldDrop = Math.max(0, merged.length - getMaxHistory());
@@ -3561,7 +3750,7 @@ $('importJsonFile').addEventListener('change', e => {
         doImport(getMaxHistory());
       }
     } catch {
-      alert('Could not read that file — make sure it is a valid D&D Item Creator JSON export.');
+      showInfoModal('Import Failed', 'Could not read that file — make sure it is a valid Artifex Arcanum JSON export.');
     }
   };
   reader.readAsText(file);
@@ -3624,8 +3813,8 @@ function openNewCard() {
   applyState(getNewCardState());
 }
 
-$('clearCardBtn').addEventListener('click', () => {
-  if (!safeConfirm('Clear the current card? All fields will be reset to blank.')) return;
+$('clearCardBtn').addEventListener('click', async () => {
+  if (!await showGenericConfirm('Clear Card', 'Clear the current card? All fields will be reset to blank.', 'Clear')) return;
   applyState(getNewCardState());
   activeHistoryId = null;
   updateHistoryActiveClass();
@@ -3700,16 +3889,55 @@ function updateDefaultTypeImage() {
 
 // ── CLEAR ALL DATA ──
 function doClearAllData() {
-  if (!safeConfirm('This will permanently delete all saved items, history, and preferences stored by this app in your browser. This cannot be undone.\n\nContinue?')) return;
+  $('clearAllDataModal').classList.add('active');
+}
+$('clearAllDataConfirm').addEventListener('click', () => {
+  $('clearAllDataModal').classList.remove('active');
   localStorage.clear();
-  // Use a sentinel so applyState's internal syncCard→setDirty→registerNewCard chain
-  // doesn't write a ghost card back into the just-cleared storage.
+
+  // Reset card preview — sentinel prevents ghost card registration
   activeHistoryId = -1;
   applyState({ ...DEFAULT_STATE });
   activeHistoryId = null;
   renderHistoryBar();
-  alert('All stored data has been cleared.');
-}
+
+  // Reset all Settings UI controls to their defaults
+  // Theme → dark
+  applyTheme(false);
+
+  // Preferences
+  $('autoSave').checked = false;
+  $('suppressConfirmToggle').checked = false;
+  $('persistScaleToggle').checked = false;
+  $('compressImagesToggle').checked = false;
+  const levelRow = $('compressLevelRow');
+  levelRow.style.setProperty('--compress-opt-opacity', '0.4');
+  levelRow.style.setProperty('--compress-opt-events', 'none');
+  const bgStd = document.querySelector('input[name="compressBgLevel"][value="standard"]');
+  if (bgStd) bgStd.checked = true;
+  const itemStd = document.querySelector('input[name="compressItemLevel"][value="standard"]');
+  if (itemStd) itemStd.checked = true;
+
+  // Card scale → 100%
+  $('scaleSlider').value = 100;
+  applyCardScale(100);
+
+  // Max history slider → 9, locked
+  window._resetMaxHistory();
+
+  // Defaults
+  $('defaultTypeImgToggle').checked = false;
+  $('defaultType').value = '';
+  $('defaultRarity').value = '';
+  $('defaultSource').value = '';
+
+  // Export quality → standard
+  const qualStd = document.querySelector('input[name="exportQuality"][value="standard"]');
+  if (qualStd) qualStd.checked = true;
+});
+$('clearAllDataCancel').addEventListener('click', () => {
+  $('clearAllDataModal').classList.remove('active');
+});
 $('clearAllDataBtnSettings').addEventListener('click', doClearAllData);
 
 // ── AUTO-SAVE ──
@@ -3767,10 +3995,16 @@ function getHistory() {
 function saveHistory(items) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items)); }
   catch(e) {
-    // localStorage full (images are large) — try removing oldest and retry
-    const trimmed = items.slice(0, 3);
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed)); }
-    catch { alert('Storage full — try clearing some saved items.'); }
+    // Browser localStorage limit hit (typically ~5–10 MB per site).
+    // Cards with uploaded images are large when base64-encoded.
+    // Do NOT silently trim — that causes data loss without warning.
+    showInfoModal('Storage Full',
+      'Your browser\'s storage limit has been reached.<br><br>' +
+      'Cards with uploaded images use a lot of space. To free up room:<br>' +
+      '&bull; Export your items as JSON first (Share tab) to back them up<br>' +
+      '&bull; Then delete some cards from history, or clear their images<br><br>' +
+      'This save was not completed — your previous history is unchanged.'
+    );
   }
 }
 
@@ -4188,6 +4422,40 @@ $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave
 $('suppressConfirmToggle').checked = localStorage.getItem('dnd_no_confirm') === 'true';
 $('suppressConfirmToggle').addEventListener('change', e => localStorage.setItem('dnd_no_confirm', e.target.checked));
 
+// ── COMPRESS IMAGES ──
+(function () {
+  const toggle = $('compressImagesToggle');
+  const levelRow = $('compressLevelRow');
+
+  function applyCompressEnabled(enabled) {
+    levelRow.style.setProperty('--compress-opt-opacity', enabled ? '1' : '0.4');
+    levelRow.style.setProperty('--compress-opt-events',  enabled ? 'auto' : 'none');
+  }
+
+  toggle.checked = localStorage.getItem('dnd_compress_images') === 'true';
+  applyCompressEnabled(toggle.checked);
+  toggle.addEventListener('change', e => {
+    localStorage.setItem('dnd_compress_images', e.target.checked);
+    applyCompressEnabled(e.target.checked);
+  });
+
+  // Compression level radios — background
+  const savedBg = localStorage.getItem('dnd_compress_bg_level') || 'standard';
+  const savedBgRadio = document.querySelector(`input[name="compressBgLevel"][value="${savedBg}"]`);
+  if (savedBgRadio) savedBgRadio.checked = true;
+  document.querySelectorAll('input[name="compressBgLevel"]').forEach(r => {
+    r.addEventListener('change', () => { if (r.checked) localStorage.setItem('dnd_compress_bg_level', r.value); });
+  });
+
+  // Compression level radios — item image
+  const savedItem = localStorage.getItem('dnd_compress_item_level') || 'standard';
+  const savedItemRadio = document.querySelector(`input[name="compressItemLevel"][value="${savedItem}"]`);
+  if (savedItemRadio) savedItemRadio.checked = true;
+  document.querySelectorAll('input[name="compressItemLevel"]').forEach(r => {
+    r.addEventListener('change', () => { if (r.checked) localStorage.setItem('dnd_compress_item_level', r.value); });
+  });
+})();
+
 // ── PERSIST CARD SCALE ──
 $('persistScaleToggle').checked = localStorage.getItem('dnd_persist_scale') === 'true';
 $('persistScaleToggle').addEventListener('change', e => {
@@ -4260,7 +4528,7 @@ if ($('persistScaleToggle').checked) {
 
   function setUnlocked(on) {
     unlockToggle.checked = on;
-    $('unlockMaxHistoryLabel').textContent = on ? 'Revert max storage' : 'Unlock max storage';
+    $('unlockMaxHistoryLabel').textContent = on ? 'Revert card history' : 'Unlock card history';
     localStorage.setItem('dnd_max_history_unlocked', on ? 'true' : 'false');
     if (on) {
       // Save the current slider value so we can restore it on revert
@@ -4272,7 +4540,7 @@ if ($('persistScaleToggle').checked) {
     } else {
       sliderRow.style.display = 'block';
       unlockedRow.style.display = 'none';
-      note.textContent = 'Max 50. Cards with large images use more browser storage — if storage fills up, the oldest cards are dropped automatically.';
+      note.textContent = 'Max 50. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.';
       const revertTo = getPreUnlockValue();
       slider.value = revertTo;
       label.textContent = revertTo;
@@ -4334,6 +4602,18 @@ if ($('persistScaleToggle').checked) {
     setUnlocked(unlockToggle.checked);
   });
 
+  // Exposed so Clear All Data can reset the history UI without calling applyMax
+  // (localStorage is already cleared at that point — no need to write back)
+  window._resetMaxHistory = function() {
+    unlockToggle.checked = false;
+    $('unlockMaxHistoryLabel').textContent = 'Unlock card history';
+    sliderRow.style.display = 'block';
+    unlockedRow.style.display = 'none';
+    slider.value = 9;
+    label.textContent = '9';
+    note.textContent = 'Max 50. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.';
+  };
+
   // Exposed so the import handler can increase the limit and keep the Settings UI in sync
   window._setMaxHistoryFromImport = function(v) {
     localStorage.setItem('dnd_max_history', v);
@@ -4341,7 +4621,7 @@ if ($('persistScaleToggle').checked) {
       localStorage.setItem('dnd_max_history_unlocked', 'true');
       localStorage.setItem('dnd_max_history_pre_unlock', LOCKED_MAX);
       unlockToggle.checked = true;
-      $('unlockMaxHistoryLabel').textContent = 'Revert max storage';
+      $('unlockMaxHistoryLabel').textContent = 'Revert card history';
       sliderRow.style.display = 'none';
       unlockedRow.style.display = 'block';
       unlockedInput.value = v;
@@ -4357,7 +4637,7 @@ if ($('persistScaleToggle').checked) {
   // overwrite dnd_max_history with the pre-unlock snapshot if the two ever diverged.
   const wasUnlocked = localStorage.getItem('dnd_max_history_unlocked') === 'true';
   unlockToggle.checked = wasUnlocked;
-  $('unlockMaxHistoryLabel').textContent = wasUnlocked ? 'Revert max storage' : 'Unlock max storage';
+  $('unlockMaxHistoryLabel').textContent = wasUnlocked ? 'Revert card history' : 'Unlock card history';
   if (wasUnlocked) {
     sliderRow.style.display = 'none';
     unlockedRow.style.display = 'block';
