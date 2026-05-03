@@ -3992,7 +3992,11 @@ $('copyShareLinkBtn').addEventListener('click', async () => {
       feedback.style.color = 'rgba(100,200,100,0.9)';
     }
   } catch (err) {
-    feedback.textContent = 'Failed to copy link — please try again.';
+    if (err.message === 'reconnect_needed') {
+      feedback.innerHTML = 'Dropbox needs to be reconnected. Go to <strong>Settings → Share Provider</strong>, click <em>Disconnect</em>, then reconnect.';
+    } else {
+      feedback.textContent = 'Failed to copy link — please try again.';
+    }
     feedback.style.color = 'rgba(220,80,80,0.9)';
     console.error('[share] copyShareLinkBtn error:', err);
   } finally {
@@ -4441,36 +4445,59 @@ async function shareCurrentCard() {
       'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false, mute: true }),
     },
     body: json,
-  });
+  }).catch(() => { throw new Error('reconnect_needed'); });
   if (!upResp.ok) {
     const err = await upResp.json().catch(() => ({}));
     throw new Error('upload_failed: ' + (err.error_summary || upResp.status));
   }
 
-  // 2 — Create shared link (handle "already exists" gracefully)
-  const linkResp = await _dbx('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ path, settings: { requested_visibility: 'public' } }),
-  });
+  // 2 — Create shared link (handle "already exists" gracefully).
+  // Omit `settings` so Dropbox uses its default visibility (public) — this avoids
+  // triggering a sharing.write scope check that older tokens may not satisfy.
+  let sharedUrl = null;
+  try {
+    const linkResp = await _dbx('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ path }),
+    });
 
-  let sharedUrl;
-  if (linkResp.status === 409) {
-    const body = await linkResp.json();
-    // Dropbox returns the existing link metadata in the error payload
-    if (body.error && body.error['.tag'] === 'shared_link_already_exists') {
-      sharedUrl = body.error.metadata.url;
+    if (linkResp.status === 409) {
+      const body = await linkResp.json();
+      // Dropbox returns the existing link metadata in the error payload
+      if (body.error && body.error['.tag'] === 'shared_link_already_exists') {
+        sharedUrl = body.error.metadata.url;
+      } else {
+        throw new Error('share_link_error: ' + JSON.stringify(body));
+      }
+    } else if (linkResp.ok) {
+      const body = await linkResp.json();
+      sharedUrl  = body.url;
     } else {
-      throw new Error('share_link_error: ' + JSON.stringify(body));
+      throw new Error('share_link_failed: ' + linkResp.status);
     }
-  } else if (!linkResp.ok) {
-    throw new Error('share_link_failed: ' + linkResp.status);
-  } else {
-    const body = await linkResp.json();
-    sharedUrl  = body.url;
+  } catch (sharingErr) {
+    // A TypeError here means the browser blocked the request (no CORS headers on the
+    // error response), which happens when the token lacks the sharing.write scope —
+    // typically because the token was obtained before that permission was added to the app.
+    // Fall back to files/get_temporary_link which only needs files.content.read.
+    if (sharingErr instanceof TypeError || sharingErr.message === 'reconnect_needed') {
+      console.warn('[share] create_shared_link blocked — falling back to temporary link:', sharingErr.message);
+      const tmpResp = await _dbx('https://api.dropboxapi.com/2/files/get_temporary_link', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ path }),
+      }).catch(() => { throw new Error('reconnect_needed'); });
+
+      if (!tmpResp.ok) throw new Error('reconnect_needed');
+      const tmpBody = await tmpResp.json();
+      // Temporary links are already direct download URLs — no ?dl= conversion needed
+      return `${location.origin}${location.pathname}#share=dropbox:${encodeURIComponent(tmpBody.link)}`;
+    }
+    throw sharingErr;
   }
 
-  // 3 — Convert to direct download URL
+  // 3 — Convert Dropbox viewer URL to direct download URL
   const directUrl = sharedUrl.replace(/[?&]dl=0/, '').replace(/\?$/, '') +
                     (sharedUrl.includes('?') ? '&dl=1' : '?dl=1');
 
