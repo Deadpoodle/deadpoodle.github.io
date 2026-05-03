@@ -2260,11 +2260,6 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           Use default type image
         </label>
         <p class="field-note-legend" style="margin-top:0.4rem;">Shows a default image in the item circle based on the selected item type, when no image has been uploaded.</p>
-        <label class="toggle-row" style="margin-top:0.6rem;">
-          <span class="toggle-wrap"><input type="checkbox" id="rememberTypeToggle"><span class="toggle-knob"></span></span>
-          Remember last used type
-        </label>
-        <p class="field-note-legend" style="margin-top:0.4rem;">New cards start with the last item type you selected, overriding the default type below.</p>
         <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.45rem;">
           <p class="field-note-legend" style="margin-bottom:0.1rem;">Pre-fill new cards with these values:</p>
           <div class="field-group" style="margin:0;">
@@ -2653,7 +2648,7 @@ function syncCard() {
   }
 
   // Description (markdown)
-  $('previewDesc').innerHTML = marked.parse(desc);
+  $('previewDesc').innerHTML = marked.parse(desc, { breaks: true });
 
   // ── CHAR COUNTER + OVERFLOW CONTROL ──
   const CHAR_LIMIT = 450;
@@ -3063,7 +3058,7 @@ function buildCardNode(s) {
     ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${rangeLbl}</span><span style="${sideStatValueStyle}">${s.range}</span></div>`
     : `<div></div>`;
 
-  const descHtml = typeof marked !== 'undefined' ? marked.parse(s.description || '') : (s.description || '');
+  const descHtml = typeof marked !== 'undefined' ? marked.parse(s.description || '', { breaks: true }) : (s.description || '');
 
   const content = document.createElement('div');
   content.className = 'card-content';
@@ -3608,11 +3603,6 @@ function getNewCardState() {
   if (defType)   state.type   = defType;
   if (defRarity) state.rarity = defRarity;
   if (defSource) state.source = defSource;
-  const rememberEl = $('rememberTypeToggle');
-  if (rememberEl && rememberEl.checked) {
-    const lastType = localStorage.getItem('dnd_last_type');
-    if (lastType) state.type = lastType;
-  }
   return state;
 }
 
@@ -3954,6 +3944,8 @@ function applyState(s) {
       updateItemImageTransform();
       showCropControls(true);
     };
+    img.onload = null;
+    img.onerror = null;
     if (img.src === s.itemImage && img.complete) {
       restoreTransform();
     } else {
@@ -3966,6 +3958,8 @@ function applyState(s) {
     $('itemImgZone').classList.add('has-image');
     $('clearItem').style.display = 'inline-block';
   } else {
+    img.onload = null;
+    img.onerror = null;
     img.src = '';
     img.style.display = 'none';
     img.style.transform = '';
@@ -4214,13 +4208,6 @@ if ($('persistScaleToggle').checked) {
     r.addEventListener('change', e => localStorage.setItem('dnd_export_quality', e.target.value))
   );
 })();
-
-// ── REMEMBER LAST TYPE ──
-$('rememberTypeToggle').checked = localStorage.getItem('dnd_remember_type') === 'true';
-$('rememberTypeToggle').addEventListener('change', e => localStorage.setItem('dnd_remember_type', e.target.checked));
-$('itemType').addEventListener('change', () => {
-  if ($('rememberTypeToggle').checked) localStorage.setItem('dnd_last_type', $('itemType').value);
-});
 
 // ── DEFAULT CARD VALUES ──
 (function() {
