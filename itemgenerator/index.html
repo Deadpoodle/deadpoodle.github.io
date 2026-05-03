@@ -706,6 +706,8 @@
     font-size: 0.87rem;
     line-height: 1.5;
     color: var(--ink);
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* Markdown styles inside card */
@@ -2075,7 +2077,7 @@ Markdown is supported:
 The staff regains **1d6+4 charges** at dawn.</textarea>
 
           <div class="char-counter-row">
-            <span class="char-count" id="charCount">0 / 450</span>
+            <span class="char-count" id="charCount">0 / 560</span>
             <label class="oversized-toggle-row">
               <span class="toggle-wrap"><input type="checkbox" id="allowOversized"><span class="toggle-knob"></span></span>
               <span>Allow oversized text <em style="font-size:0.85rem;opacity:0.75;">(may not print correctly)</em></span>
@@ -2772,23 +2774,17 @@ function syncCard() {
   $('previewDesc').innerHTML = marked.parse(desc, { breaks: true });
 
   // ── CHAR COUNTER + OVERFLOW CONTROL ──
-  const CHAR_LIMIT = 450;
+  // CHAR_LIMIT is used only for the counter display and the "warn" colour.
+  // Calculated: card 580px − header/divider/image-wrap/stats/footer ≈ 275px available,
+  // at 0.87rem Crimson Pro (line-height 1.5 ≈ 20.9px) ≈ 13 lines × ~43 chars ≈ 560 chars.
+  const CHAR_LIMIT = 560;
   const len = desc.length;
   const oversized = $('allowOversized').checked;
   const countEl   = $('charCount');
   const warnEl    = $('oversizedWarning');
   const bodyEl    = $('previewDesc').closest('.card-body') || $('previewDesc').parentElement;
 
-  countEl.textContent = `${len} / ${CHAR_LIMIT}`;
-  countEl.className   = 'char-count' + (len > CHAR_LIMIT ? ' over' : len > CHAR_LIMIT * 0.85 ? ' warn' : '');
-
-  if (len > CHAR_LIMIT && !oversized) {
-    warnEl.classList.add('visible');
-  } else {
-    warnEl.classList.remove('visible');
-  }
-
-  // Clamp or unclamp card body overflow
+  // Clamp or unclamp card body overflow first, so DOM layout is correct before we measure.
   const cardContent = $('itemCard').querySelector('.card-content');
   if (oversized) {
     cardContent.style.height    = 'auto';
@@ -2801,6 +2797,21 @@ function syncCard() {
     cardContent.style.overflow  = 'hidden';
     $('itemCard').style.minHeight = '';
   }
+
+  // Detect actual clipping by measuring whether the description content exceeds the
+  // available body height. This is accurate regardless of other card settings
+  // (attunement, circle size, title length etc.).
+  const isClipped = !oversized && bodyEl.scrollHeight > bodyEl.clientHeight;
+
+  countEl.textContent = `${len} / ${CHAR_LIMIT}`;
+  countEl.className   = 'char-count' + (isClipped || len > CHAR_LIMIT ? ' over' : len > CHAR_LIMIT * 0.85 ? ' warn' : '');
+
+  if (isClipped) {
+    warnEl.classList.add('visible');
+  } else {
+    warnEl.classList.remove('visible');
+  }
+
   applyCardScale($('scaleSlider').value);
 
   // Stat labels
