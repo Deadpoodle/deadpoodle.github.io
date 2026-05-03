@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="icon" href="favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="icon" href="favicon-32x32.png" sizes="32x32" type="image/png">
@@ -40,7 +40,8 @@
     background: var(--bg-dark);
     color: #ead898;
     font-family: 'Crimson Pro', Georgia, serif;
-    height: 100vh;
+    height: 100vh;        /* fallback for older browsers */
+    height: 100dvh;       /* dynamic viewport — excludes OS nav bar + browser chrome */
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1667,6 +1668,9 @@
       flex: 1;
       min-height: 0;
       overflow: hidden;
+      /* Push content above iOS home indicator / Android nav bar when
+         viewport-fit=cover extends the page to screen edges */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
   }
 
@@ -4887,7 +4891,9 @@ if ($('persistScaleToggle').checked) {
   function moveDrag(clientY) {
     if (!dragging) return;
     const delta  = clientY - dragStartY;
-    const newH   = Math.max(80, Math.min(window.innerHeight - 120, dragStartH + delta));
+    // Clamp within the workspace itself: preview + drag handle + min tab area must all fit
+    const maxH   = workspace.offsetHeight - handle.offsetHeight - 60;
+    const newH   = Math.max(80, Math.min(maxH, dragStartH + delta));
     workspace.style.setProperty('--mobile-preview-h', newH + 'px');
   }
 
