@@ -153,6 +153,29 @@
   .tab-panel::-webkit-scrollbar-track { background: transparent; }
   .tab-panel::-webkit-scrollbar-thumb { background: rgba(180,130,60,0.3); border-radius: 3px; }
 
+  /* ── DETAILS TAB ACTION ROW (Save / Export PNG / Clear) ── */
+  .details-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .details-action-row button {
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+  #historySaveBtn {
+    border: 1px solid rgba(180,130,60,0.4);
+    border-radius: 4px;
+    padding: 0.45rem 1.2rem;
+  }
+  #exportPngInline { padding: 0.45rem 0.8rem; }
+  #clearCardBtn {
+    padding: 0.35rem 0.45rem;
+    border-color: rgba(139,26,26,0.45);
+    color: rgba(200,90,90,0.85);
+  }
+
   textarea::-webkit-scrollbar { width: 5px; }
   textarea::-webkit-scrollbar-track { background: transparent; }
   textarea::-webkit-scrollbar-thumb { background: rgba(180,130,60,0.3); border-radius: 3px; }
@@ -1579,15 +1602,72 @@
     .progress-overlay, #offscreenRender, #printSheet { display: none !important; }
   }
 
+  /* ── MOBILE DRAG HANDLE (desktop: hidden) ── */
+  .mobile-drag-handle { display: none; }
+
   @media (max-width: 860px) {
     .history-track,
     .history-arrow { display: none !important; }
     .history-label-wrap { border-right: none; }
     #themeToggle { margin-left: auto; }
 
-    .workspace { grid-template-columns: 1fr; }
-    .controls { order: 2; }
-    .preview-area { order: 1; padding: 1.5rem 1rem; }
+    /* Switch workspace to flex column so children can have explicit heights */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Card preview — top section, height is user-draggable */
+    .preview-area {
+      order: 1;
+      flex-shrink: 0;
+      height: var(--mobile-preview-h, 42vh);
+      min-height: 80px;
+      padding: 0.75rem 1rem 0.5rem;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* Drag handle — sits between preview and tabs */
+    .mobile-drag-handle {
+      display: flex;
+      order: 2;
+      flex-shrink: 0;
+      height: 22px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: rgba(20,10,2,0.98);
+      border-top: 1px solid rgba(180,130,60,0.25);
+      border-bottom: 1px solid rgba(180,130,60,0.25);
+      cursor: ns-resize;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .mobile-drag-handle:active { background: rgba(180,130,60,0.1); }
+    .mobile-drag-pill {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(180,130,60,0.45);
+      flex-shrink: 0;
+    }
+    .mobile-drag-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(180,130,60,0.35);
+    }
+
+    /* Tab panel — fills remaining space, scrolls internally */
+    .controls {
+      order: 3;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
   }
 
   /* ── THEME TOGGLE BUTTON ── */
@@ -2112,10 +2192,10 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:stretch;gap:1rem;">
-        <button class="history-save-btn" id="historySaveBtn" style="border:1px solid rgba(180,130,60,0.4);border-radius:4px;padding:0.45rem 1.2rem;" title="Save current item to history">＋ Save to History</button>
-        <button class="btn btn-primary" id="exportPngInline" style="padding:0.45rem 0.8rem;font-size:0.62rem;white-space:nowrap;" title="Export current card as PNG">⬇ Export PNG</button>
-        <button class="btn btn-secondary" id="clearCardBtn" style="font-size:0.62rem;padding:0.35rem 0.45rem;white-space:nowrap;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);" title="Reset all fields to blank">✕ Clear</button>
+      <div class="details-action-row">
+        <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
+        <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
+        <button class="btn btn-secondary" id="clearCardBtn" title="Reset all fields to blank">✕ Clear</button>
       </div>
 
     </div><!-- /tab-identity -->
@@ -2451,6 +2531,12 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
 
     </div><!-- /tab-settings -->
 
+  </div>
+
+  <!-- MOBILE DRAG HANDLE (hidden on desktop) -->
+  <div class="mobile-drag-handle" id="mobileDragHandle" role="separator" aria-label="Drag to resize preview">
+    <div class="mobile-drag-pill"></div>
+    <span class="mobile-drag-label">drag to resize</span>
   </div>
 
   <!-- RIGHT: PREVIEW -->
@@ -4771,6 +4857,66 @@ if ($('persistScaleToggle').checked) {
     // Keep pre-unlock snapshot in sync with the actual stored max
     localStorage.setItem('dnd_max_history_pre_unlock', currentMax);
   }
+})();
+
+// ── MOBILE DRAG HANDLE ──
+(function() {
+  const handle = $('mobileDragHandle');
+  if (!handle) return;
+
+  const workspace  = document.querySelector('.workspace');
+  const previewEl  = document.querySelector('.preview-area');
+  const STORAGE_KEY = 'dnd_mobile_preview_h';
+
+  // Restore saved split position
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) workspace.style.setProperty('--mobile-preview-h', saved + 'px');
+
+  let dragStartY = 0;
+  let dragStartH = 0;
+  let dragging   = false;
+
+  function startDrag(clientY) {
+    dragging   = true;
+    dragStartY = clientY;
+    dragStartH = previewEl.offsetHeight;
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+  }
+
+  function moveDrag(clientY) {
+    if (!dragging) return;
+    const delta  = clientY - dragStartY;
+    const newH   = Math.max(80, Math.min(window.innerHeight - 120, dragStartH + delta));
+    workspace.style.setProperty('--mobile-preview-h', newH + 'px');
+  }
+
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
+    localStorage.setItem(STORAGE_KEY, previewEl.offsetHeight);
+  }
+
+  // Touch events
+  handle.addEventListener('touchstart', e => {
+    startDrag(e.touches[0].clientY);
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    e.preventDefault();
+    moveDrag(e.touches[0].clientY);
+  }, { passive: false });
+  document.addEventListener('touchend', endDrag);
+
+  // Mouse events (for desktop testing of mobile layout)
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startDrag(e.clientY);
+  });
+  document.addEventListener('mousemove', e => { if (dragging) moveDrag(e.clientY); });
+  document.addEventListener('mouseup', endDrag);
 })();
 
 // ── INITIAL RENDER ──
