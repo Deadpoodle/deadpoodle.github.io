@@ -2387,7 +2387,6 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
         <div id="shareHasProviderUI" style="display:none;">
           <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads your selected cards to Dropbox and copies a single share link to your clipboard. Anyone with the link can import them.</p>
           <button class="btn btn-primary" id="copyShareLinkBtn" style="gap:0.4rem;">🔗 Share Dropbox Link to Selection</button>
-          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.5rem;min-height:1.2rem;"></div>
           <input type="text" id="shareLinkUrlBox" readonly
             title="Click to copy link"
             style="display:none;width:100%;margin-top:0.5rem;padding:0.4rem 0.6rem;box-sizing:border-box;
@@ -2395,6 +2394,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
                    color:#d4a84b;font-family:'Crimson Pro',serif;font-size:0.78rem;
                    cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
             placeholder="Share link will appear here…" />
+          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.4rem;height:1.2em;"></div>
         </div>
       </div>
 
@@ -4055,8 +4055,7 @@ $('shareSelectConfirm').addEventListener('click', async () => {
   const urlBox   = $('shareLinkUrlBox');
   btn.disabled = true;
   btn.textContent = '⏳ Uploading…';
-  feedback.textContent = '';
-  feedback.style.color = '';
+  setShareFeedback('', '');
 
   try {
     const url = await shareCurrentCard(items);
@@ -4067,18 +4066,16 @@ $('shareSelectConfirm').addEventListener('click', async () => {
       // Auto-copy to clipboard
       await navigator.clipboard.writeText(url);
       const n = items.length;
-      feedback.textContent = `✓ Link copied! (${n} card${n !== 1 ? 's' : ''})`;
-      feedback.style.color = 'rgba(100,200,100,0.9)';
+      setShareFeedback(`✓ Link copied! (${n} card${n !== 1 ? 's' : ''})`, 'rgba(100,200,100,0.9)');
     }
   } catch (err) {
     if (err.message === 'reconnect_needed') {
-      feedback.innerHTML = 'Dropbox needs to be reconnected. Go to <strong>Settings → Share Provider</strong>, click <em>Disconnect</em>, then reconnect.';
+      setShareFeedback('Dropbox needs to be reconnected — disconnect and reconnect in Settings.', 'rgba(220,80,80,0.9)');
     } else if (err.message === 'network_error') {
-      feedback.textContent = 'Could not reach Dropbox — check your connection and try again.';
+      setShareFeedback('Could not reach Dropbox — check your connection and try again.', 'rgba(220,80,80,0.9)');
     } else {
-      feedback.textContent = 'Failed to copy link — please try again.';
+      setShareFeedback('Failed to copy link — please try again.', 'rgba(220,80,80,0.9)');
     }
-    feedback.style.color = 'rgba(220,80,80,0.9)';
     console.error('[share] shareSelectConfirm error:', err);
   } finally {
     btn.disabled = false;
@@ -4088,18 +4085,31 @@ $('shareSelectConfirm').addEventListener('click', async () => {
 
 // Click the URL box to copy its contents
 $('shareLinkUrlBox').addEventListener('click', async () => {
-  const urlBox   = $('shareLinkUrlBox');
-  const feedback = $('shareLinkFeedback');
+  const urlBox = $('shareLinkUrlBox');
   if (!urlBox.value) return;
   try {
     await navigator.clipboard.writeText(urlBox.value);
     urlBox.select();
-    feedback.textContent = '✓ Link copied!';
-    feedback.style.color = 'rgba(100,200,100,0.9)';
+    setShareFeedback('✓ Link copied!', 'rgba(100,200,100,0.9)');
   } catch {
     urlBox.select();
   }
 });
+
+// Helper — sets share feedback text and auto-clears after 3 s
+let _shareFeedbackTimer = null;
+function setShareFeedback(msg, color) {
+  const feedback = $('shareLinkFeedback');
+  feedback.textContent = msg;
+  feedback.style.color = color || '';
+  clearTimeout(_shareFeedbackTimer);
+  if (msg) {
+    _shareFeedbackTimer = setTimeout(() => {
+      feedback.textContent = '';
+      feedback.style.color = '';
+    }, 3000);
+  }
+}
 
 // Share import modal buttons (Step 6)
 $('shareImportDismiss').addEventListener('click', () => {
