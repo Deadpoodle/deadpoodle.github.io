@@ -1905,6 +1905,22 @@
   </div>
 </div>
 
+<!-- SHARE SELECTION MODAL -->
+<div class="confirm-modal" id="shareSelectModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Share Cards to Dropbox</div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="shareSelectAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="shareSelectNone">Select None</button>
+    </div>
+    <div id="shareSelectList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="shareSelectConfirm">🔗 Share Selected (0)</button>
+      <button class="btn-cancel" id="shareSelectCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- TRIM HISTORY MODAL -->
 <div class="confirm-modal" id="trimHistoryModal">
   <div class="confirm-modal-box">
@@ -2369,9 +2385,8 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           Connect a cloud provider in <strong style="color:rgba(180,130,60,0.8);">Settings</strong> to share cards via link.
         </div>
         <div id="shareHasProviderUI" style="display:none;">
-          <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads the current card to your connected cloud storage and copies a share link to your clipboard. Anyone with the link can import it.</p>
-          <div id="shareLinkCardName" style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--gold-light);letter-spacing:0.06em;margin-bottom:0.5rem;opacity:0.8;"></div>
-          <button class="btn btn-primary" id="copyShareLinkBtn" style="gap:0.4rem;">🔗 Copy Share Link</button>
+          <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads your selected cards to Dropbox and copies a single share link to your clipboard. Anyone with the link can import them.</p>
+          <button class="btn btn-primary" id="copyShareLinkBtn" style="gap:0.4rem;">🔗 Share Dropbox Link to Selection</button>
           <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.5rem;min-height:1.2rem;"></div>
         </div>
       </div>
@@ -3976,43 +3991,86 @@ $('disconnectShareBtn').addEventListener('click', () => {
   clearShareConnection();
 });
 
-// Copy Share Link button (Share tab)
-$('copyShareLinkBtn').addEventListener('click', async () => {
-  const btn = $('copyShareLinkBtn');
+// ── Share selection modal ──
+
+function updateShareSelectUI() {
+  const checked = $('shareSelectList').querySelectorAll('input[type="checkbox"]:checked').length;
+  $('shareSelectConfirm').textContent = `🔗 Share Selected (${checked})`;
+  $('shareSelectConfirm').disabled = checked === 0;
+}
+
+// "Share Dropbox Link to Selection" button — opens the selection modal
+$('copyShareLinkBtn').addEventListener('click', () => {
+  const items = getHistory();
+  if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
+
+  const list = $('shareSelectList');
+  list.innerHTML = '';
+  items.forEach(item => {
+    const row = document.createElement('label');
+    row.className = 'print-select-item';
+    row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
+      <span class="print-select-name">${item.name || 'Unnamed Item'}</span>
+      <span class="print-select-rarity rarity-${item.rarity}">${rarityLabels[item.rarity] || item.rarity}</span>`;
+    row.querySelector('input').addEventListener('change', updateShareSelectUI);
+    list.appendChild(row);
+  });
+
+  updateShareSelectUI();
+  $('shareSelectModal').classList.add('active');
+});
+
+$('shareSelectAll').addEventListener('click', () => {
+  $('shareSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+  updateShareSelectUI();
+});
+$('shareSelectNone').addEventListener('click', () => {
+  $('shareSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+  updateShareSelectUI();
+});
+$('shareSelectCancel').addEventListener('click', () => {
+  $('shareSelectModal').classList.remove('active');
+});
+
+// Confirm — upload selected cards to Dropbox and copy the share link
+$('shareSelectConfirm').addEventListener('click', async () => {
+  $('shareSelectModal').classList.remove('active');
+
+  const selectedIds = new Set(
+    [...$('shareSelectList').querySelectorAll('input[type="checkbox"]:checked')]
+      .map(cb => parseInt(cb.value, 10))
+  );
+  const items = getHistory().filter(h => selectedIds.has(h.id));
+  if (!items.length) return;
+
+  const btn      = $('copyShareLinkBtn');
   const feedback = $('shareLinkFeedback');
   btn.disabled = true;
   btn.textContent = '⏳ Uploading…';
   feedback.textContent = '';
   feedback.style.color = '';
+
   try {
-    const url = await shareCurrentCard();
+    const url = await shareCurrentCard(items);
     if (url) {
       await navigator.clipboard.writeText(url);
-      feedback.textContent = '✓ Link copied to clipboard!';
+      const n = items.length;
+      feedback.textContent = `✓ Link copied! (${n} card${n !== 1 ? 's' : ''})`;
       feedback.style.color = 'rgba(100,200,100,0.9)';
     }
   } catch (err) {
     if (err.message === 'reconnect_needed') {
       feedback.innerHTML = 'Dropbox needs to be reconnected. Go to <strong>Settings → Share Provider</strong>, click <em>Disconnect</em>, then reconnect.';
     } else if (err.message === 'network_error') {
-      feedback.textContent = 'Could not reach Dropbox — check your connection and try again. A hard refresh (Ctrl+Shift+R) may also help.';
+      feedback.textContent = 'Could not reach Dropbox — check your connection and try again.';
     } else {
       feedback.textContent = 'Failed to copy link — please try again.';
     }
     feedback.style.color = 'rgba(220,80,80,0.9)';
-    console.error('[share] copyShareLinkBtn error:', err);
+    console.error('[share] shareSelectConfirm error:', err);
   } finally {
     btn.disabled = false;
-    btn.textContent = '🔗 Copy Share Link';
-  }
-});
-
-// Keep card name in Share tab in sync
-$('itemName') && $('itemName').addEventListener('input', () => {
-  const nameEl = $('shareLinkCardName');
-  if (nameEl && $('shareHasProviderUI').style.display !== 'none') {
-    const n = $('itemName').value;
-    nameEl.textContent = n ? 'Sharing: ' + n : '';
+    btn.textContent = '🔗 Share Dropbox Link to Selection';
   }
 });
 
@@ -4321,12 +4379,6 @@ function updateShareUI() {
     noProviderEl.style.display = 'block';
     hasProviderEl.style.display= 'none';
   }
-  // Update card name preview in Share tab
-  const nameEl = $('shareLinkCardName');
-  if (nameEl) {
-    const n = $('itemName') && $('itemName').value;
-    nameEl.textContent = n ? 'Sharing: ' + n : '';
-  }
 }
 
 // ── SHARE: collectShareState (Step 3) ──
@@ -4426,17 +4478,24 @@ async function _dbx(url, options) {
 }
 
 // ── shareCurrentCard — upload + create share link (Step 9) ──
-async function shareCurrentCard() {
+// states: array of card state objects (from history). Each will have sharedAt / appVersion
+// added. Always uploaded as a JSON array so the recipient handles single or multi uniformly.
+async function shareCurrentCard(states) {
   const provider = getShareProvider();
   if (provider !== 'dropbox') {
     showInfoModal('Not Connected', 'Connect Dropbox in Settings → Share Provider first.');
     return null;
   }
 
-  const state    = collectShareState();
-  const json     = JSON.stringify(state);
-  const slug     = (state.name || 'card').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-  const filename = `artifex-arcanum-${slug}-${Date.now()}.json`;
+  const now = new Date().toISOString();
+  const payload = states.map(s => ({ ...s, sharedAt: now, appVersion: '1.0' }));
+  const json  = JSON.stringify(payload);
+
+  // Build a descriptive filename
+  const slugBase = states.length === 1
+    ? (states[0].name || 'card').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)
+    : `selection-${states.length}-cards`;
+  const filename = `artifex-arcanum-${slugBase}-${Date.now()}.json`;
   const path     = `${DROPBOX_FOLDER}/${filename}`;
 
   // 1 — Upload file
@@ -5311,21 +5370,36 @@ updateShareUI();
 
     if (!cardState) return; // provider not yet implemented
 
-    const cardName = cardState.name || 'Unnamed Card';
-    $('shareImportMsg').innerHTML =
-      `<strong>${cardName}</strong> was shared with you — would you like to import it?`;
+    // Normalise: the JSON may be a single card object (legacy) or an array of cards
+    const cards = Array.isArray(cardState) ? cardState : [cardState];
+    const count = cards.length;
+
+    if (count === 1) {
+      const name = cards[0].name || 'Unnamed Card';
+      $('shareImportMsg').innerHTML =
+        `<strong>${name}</strong> was shared with you — would you like to import it?`;
+    } else {
+      $('shareImportMsg').innerHTML =
+        `<strong>${count} cards</strong> were shared with you — would you like to import them all?`;
+    }
     $('shareImportModal').classList.add('active');
 
     $('shareImportOk').onclick = () => {
       $('shareImportModal').classList.remove('active');
-      // Reuse existing import path: insert as single-item array
-      const incoming = [{ ...cardState, id: Date.now() }];
+      const now      = Date.now();
+      const incoming = cards.map((c, i) => ({ ...c, id: now + i }));
       const existing = getHistory();
-      const merged   = [...incoming, ...existing.filter(e => e.name !== cardState.name)];
+      // Merge: incoming cards replace any with the same name
+      const incomingNames = new Set(incoming.map(c => c.name));
+      const merged = [...incoming, ...existing.filter(e => !incomingNames.has(e.name))];
       saveHistory(merged.slice(0, getMaxHistory()));
       renderHistoryBar();
       applyState(incoming[0]);
-      showInfoModal('Imported', `"${cardName}" has been added to your history.`);
+      if (count === 1) {
+        showInfoModal('Imported', `"${incoming[0].name || 'Card'}" has been added to your history.`);
+      } else {
+        showInfoModal('Imported', `${count} cards have been added to your history.`);
+      }
     };
   });
 })();
