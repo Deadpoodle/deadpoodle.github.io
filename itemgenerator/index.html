@@ -2394,7 +2394,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
                    color:#d4a84b;font-family:'Crimson Pro',serif;font-size:0.78rem;
                    cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
             placeholder="Share link will appear here…" />
-          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.4rem;height:1.2em;"></div>
+          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.4rem;height:1.2em;transition:opacity 0.6s ease;"></div>
         </div>
       </div>
 
@@ -3941,26 +3941,38 @@ $('importJsonFile').addEventListener('change', e => {
 
       const existing = getHistory();
 
-      // Build merged list: incoming first (newest), then existing items not duplicated by name
-      const merged = [...incoming];
-      for (const ex of existing) {
-        if (!incoming.find(i => i.name === ex.name)) merged.push(ex);
+      // Deduplicate: skip cards whose content already exists in the collection
+      const { newCards, skipCount } = _deduplicateCards(incoming, existing);
+
+      if (!newCards.length) {
+        const s = incoming.length !== 1 ? 's' : '';
+        showInfoModal('Nothing New to Import',
+          `All ${incoming.length} card${s} in this file are already in your collection.`);
+        return;
       }
+
+      // Merge: new/updated cards first, then existing cards not superseded by name
+      const newNames = new Set(newCards.map(c => c.name));
+      const merged = [...newCards, ...existing.filter(e => !newNames.has(e.name))];
+
+      const s  = n => n !== 1 ? 's' : '';
+      const skipNote = skipCount > 0
+        ? ` (${skipCount} duplicate${s(skipCount)} skipped)` : '';
 
       function doImport(limit) {
         saveHistory(merged.slice(0, limit));
         renderHistoryBar();
-        applyState(incoming[0]);
-        showInfoModal('Import Complete', `Imported ${incoming.length} item${incoming.length !== 1 ? 's' : ''}.`);
+        applyState(newCards[0]);
+        showInfoModal('Import Complete',
+          `Imported ${newCards.length} card${s(newCards.length)}${skipNote}.`);
       }
 
       const wouldDrop = Math.max(0, merged.length - getMaxHistory());
       if (wouldDrop > 0) {
         const currentMax = getMaxHistory();
         const newMax = merged.length;
-        const s = n => n !== 1 ? 's' : '';
         $('importOverflowMsg').innerHTML =
-          `You're importing <strong>${incoming.length} card${s(incoming.length)}</strong>, but your current storage limit is <strong>${currentMax}</strong>. ` +
+          `You're importing <strong>${newCards.length} card${s(newCards.length)}</strong>${skipNote}, but your current storage limit is <strong>${currentMax}</strong>. ` +
           `Keeping everything would need a limit of <strong>${newMax}</strong> — or continue as-is and the oldest <strong>${wouldDrop} card${s(wouldDrop)}</strong> will be removed.`;
         $('importOverflowExpand').textContent = `↑ Increase limit to ${newMax}`;
         $('importOverflowContinue').textContent = `Import anyway (drop ${wouldDrop})`;
@@ -4070,11 +4082,11 @@ $('shareSelectConfirm').addEventListener('click', async () => {
     }
   } catch (err) {
     if (err.message === 'reconnect_needed') {
-      setShareFeedback('Dropbox needs to be reconnected — disconnect and reconnect in Settings.', 'rgba(220,80,80,0.9)');
+      setShareFeedback('Dropbox needs to be reconnected — disconnect and reconnect in Settings.', 'rgba(220,80,80,0.9)', true);
     } else if (err.message === 'network_error') {
-      setShareFeedback('Could not reach Dropbox — check your connection and try again.', 'rgba(220,80,80,0.9)');
+      setShareFeedback('Could not reach Dropbox — check your connection and try again.', 'rgba(220,80,80,0.9)', true);
     } else {
-      setShareFeedback('Failed to copy link — please try again.', 'rgba(220,80,80,0.9)');
+      setShareFeedback('Failed to copy link — please try again.', 'rgba(220,80,80,0.9)', true);
     }
     console.error('[share] shareSelectConfirm error:', err);
   } finally {
@@ -4096,17 +4108,24 @@ $('shareLinkUrlBox').addEventListener('click', async () => {
   }
 });
 
-// Helper — sets share feedback text and auto-clears after 3 s
+// Helper — sets share feedback text.
+// isError=true: message stays permanently so the user can read it.
+// isError=false (default): fades out after 3 s.
 let _shareFeedbackTimer = null;
-function setShareFeedback(msg, color) {
+function setShareFeedback(msg, color, isError) {
   const feedback = $('shareLinkFeedback');
+  clearTimeout(_shareFeedbackTimer);
+  // Snap opacity back to visible before changing text
+  feedback.style.transition = 'none';
+  feedback.style.opacity = '1';
   feedback.textContent = msg;
   feedback.style.color = color || '';
-  clearTimeout(_shareFeedbackTimer);
-  if (msg) {
+  if (msg && !isError) {
     _shareFeedbackTimer = setTimeout(() => {
-      feedback.textContent = '';
-      feedback.style.color = '';
+      feedback.style.transition = 'opacity 0.6s ease';
+      feedback.style.opacity = '0';
+      // Clear text after the fade so the space stays reserved
+      setTimeout(() => { feedback.textContent = ''; feedback.style.color = ''; }, 650);
     }, 3000);
   }
 }
@@ -4519,6 +4538,71 @@ async function _dbx(url, options) {
 }
 
 // ── shareCurrentCard — upload + create share link (Step 9) ──
+// ── Share deduplication cache (localStorage) ──────────────────────────────────
+// Maps a content hash → share URL so unchanged selections skip re-uploading.
+const SHARE_CACHE_KEY = 'artifex_share_cache';
+
+function _getShareCache() {
+  try { return JSON.parse(localStorage.getItem(SHARE_CACHE_KEY) || '{}'); } catch { return {}; }
+}
+function _setShareCache(hash, url) {
+  const cache = _getShareCache();
+  cache[hash] = url;
+  // Keep at most 100 entries (trim oldest keys if exceeded)
+  const keys = Object.keys(cache);
+  if (keys.length > 100) keys.slice(0, keys.length - 100).forEach(k => delete cache[k]);
+  try { localStorage.setItem(SHARE_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+// Stable JSON stringify (sorted keys) so key insertion order doesn't affect the hash
+function _stableStringify(obj) {
+  if (Array.isArray(obj)) return '[' + obj.map(_stableStringify).join(',') + ']';
+  if (obj !== null && typeof obj === 'object') {
+    return '{' + Object.keys(obj).sort().map(k => JSON.stringify(k) + ':' + _stableStringify(obj[k])).join(',') + '}';
+  }
+  return JSON.stringify(obj);
+}
+
+// Synchronous content fingerprint for a single card — strips volatile fields so two
+// cards with identical content but different IDs / timestamps compare as equal.
+function _cardFingerprint(card) {
+  const { id, sharedAt, appVersion, ...rest } = card;
+  return _stableStringify(rest);
+}
+
+// Deduplicate an array of incoming cards against the user's existing collection.
+// Returns { newCards, skipCount }.
+// - Cards whose content fingerprint already exists are skipped (skipCount++).
+// - Cards within the same incoming batch that are identical to each other are also skipped.
+// - All kept cards receive a fresh ID to prevent timestamp clashes, whether or not their
+//   original ID matched an existing card.
+function _deduplicateCards(incoming, existing) {
+  const seenFPs = new Set(existing.map(_cardFingerprint));
+  const existingIds = new Set(existing.map(c => c.id));
+  const newCards = [];
+  let skipCount = 0;
+
+  for (const card of incoming) {
+    const fp = _cardFingerprint(card);
+    if (seenFPs.has(fp)) { skipCount++; continue; }
+    seenFPs.add(fp); // prevent intra-batch duplicates
+    // Always assign a fresh ID — avoids clashes and satisfies the rule that same-ID
+    // but different-content imports don't collide with existing entries.
+    newCards.push({ ...card, id: Date.now() + newCards.length });
+  }
+
+  return { newCards, skipCount };
+}
+
+// SHA-256 of card content, ignoring volatile fields that change on every share
+async function _shareContentHash(states) {
+  const stable = states.map(({ id, sharedAt, appVersion, ...rest }) => rest);
+  const str    = _stableStringify(stable);
+  const buf    = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+// ── shareCurrentCard ───────────────────────────────────────────────────────────
 // states: array of card state objects (from history). Each will have sharedAt / appVersion
 // added. Always uploaded as a JSON array so the recipient handles single or multi uniformly.
 async function shareCurrentCard(states) {
@@ -4526,6 +4610,16 @@ async function shareCurrentCard(states) {
   if (provider !== 'dropbox') {
     showInfoModal('Not Connected', 'Connect Dropbox in Settings → Share Provider first.');
     return null;
+  }
+
+  // ── Deduplication check ──
+  // Hash the content before adding volatile fields. If we've already uploaded this
+  // exact selection, return the cached URL without touching Dropbox at all.
+  const hash   = await _shareContentHash(states);
+  const cached = _getShareCache()[hash];
+  if (cached) {
+    console.log('[share] cache hit — skipping upload');
+    return cached;
   }
 
   const now = new Date().toISOString();
@@ -4594,8 +4688,10 @@ async function shareCurrentCard(states) {
     .replace(/\?$/, '')
     .replace(/&$/, '');
 
-  // 4 — Build and return full share URL
-  return `${location.origin}${location.pathname}#share=dropbox:${encodeURIComponent(directUrl)}`;
+  // 4 — Build and return full share URL, caching it against the content hash
+  const shareUrl = `${location.origin}${location.pathname}#share=dropbox:${encodeURIComponent(directUrl)}`;
+  _setShareCache(hash, shareUrl);
+  return shareUrl;
 }
 
 // ── fetchSharedCard — recipient download (Step 10) ──
@@ -5419,34 +5515,52 @@ updateShareUI();
     if (!cardState) return; // provider not yet implemented
 
     // Normalise: the JSON may be a single card object (legacy) or an array of cards
-    const cards = Array.isArray(cardState) ? cardState : [cardState];
-    const count = cards.length;
+    const cards   = Array.isArray(cardState) ? cardState : [cardState];
+    const existing = getHistory();
 
-    if (count === 1) {
-      const name = cards[0].name || 'Unnamed Card';
-      $('shareImportMsg').innerHTML =
-        `<strong>${name}</strong> was shared with you — would you like to import it?`;
+    // Deduplicate against the user's existing collection before showing the modal
+    const { newCards, skipCount } = _deduplicateCards(cards, existing);
+    const totalCount = cards.length;
+    const s = n => n !== 1 ? 's' : '';
+
+    if (!newCards.length) {
+      // Everything is already in the collection — skip the import modal entirely
+      showInfoModal('Already in Your Collection',
+        `${totalCount === 1
+          ? `"${cards[0].name || 'This card'}" is`
+          : `All ${totalCount} cards are`} already in your collection.`);
+      return;
+    }
+
+    // Build the modal message
+    if (skipCount === 0) {
+      if (totalCount === 1) {
+        $('shareImportMsg').innerHTML =
+          `<strong>${cards[0].name || 'Unnamed Card'}</strong> was shared with you — would you like to import it?`;
+      } else {
+        $('shareImportMsg').innerHTML =
+          `<strong>${totalCount} cards</strong> were shared with you — would you like to import them all?`;
+      }
     } else {
       $('shareImportMsg').innerHTML =
-        `<strong>${count} cards</strong> were shared with you — would you like to import them all?`;
+        `<strong>${totalCount} card${s(totalCount)}</strong> were shared with you. ` +
+        `${skipCount} ${skipCount === 1 ? 'is' : 'are'} already in your collection — ` +
+        `import the <strong>${newCards.length} new card${s(newCards.length)}</strong>?`;
     }
     $('shareImportModal').classList.add('active');
 
     $('shareImportOk').onclick = () => {
       $('shareImportModal').classList.remove('active');
-      const now      = Date.now();
-      const incoming = cards.map((c, i) => ({ ...c, id: now + i }));
-      const existing = getHistory();
-      // Merge: incoming cards replace any with the same name
-      const incomingNames = new Set(incoming.map(c => c.name));
-      const merged = [...incoming, ...existing.filter(e => !incomingNames.has(e.name))];
+      // Merge: new cards first, existing cards not superseded by name
+      const newNames = new Set(newCards.map(c => c.name));
+      const merged   = [...newCards, ...existing.filter(e => !newNames.has(e.name))];
       saveHistory(merged.slice(0, getMaxHistory()));
       renderHistoryBar();
-      applyState(incoming[0]);
-      if (count === 1) {
-        showInfoModal('Imported', `"${incoming[0].name || 'Card'}" has been added to your history.`);
+      applyState(newCards[0]);
+      if (newCards.length === 1) {
+        showInfoModal('Imported', `"${newCards[0].name || 'Card'}" has been added to your history.`);
       } else {
-        showInfoModal('Imported', `${count} cards have been added to your history.`);
+        showInfoModal('Imported', `${newCards.length} cards have been added to your history.`);
       }
     };
   });
