@@ -1986,6 +1986,18 @@
   </div>
 </div>
 
+<!-- SHARE IMPORT MODAL -->
+<div class="confirm-modal" id="shareImportModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Card Shared With You</div>
+    <p class="confirm-modal-msg" id="shareImportMsg">Someone shared a card with you. Would you like to import it?</p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="shareImportOk">Import Card</button>
+      <button class="btn-cancel" id="shareImportDismiss">Dismiss</button>
+    </div>
+  </div>
+</div>
+
 <!-- OFF-SCREEN RENDER AREA -->
 <div id="offscreenRender"></div>
 
@@ -2352,7 +2364,20 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
       </div>
 
       <div>
-        <div class="section-title">Share</div>
+        <div class="section-title">Share Link</div>
+        <div id="shareNoProviderMsg" style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.55);line-height:1.5;margin-bottom:0.4rem;">
+          Connect a cloud provider in <strong style="color:rgba(180,130,60,0.8);">Settings</strong> to share cards via link.
+        </div>
+        <div id="shareHasProviderUI" style="display:none;">
+          <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads the current card to your connected cloud storage and copies a share link to your clipboard. Anyone with the link can import it.</p>
+          <div id="shareLinkCardName" style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--gold-light);letter-spacing:0.06em;margin-bottom:0.5rem;opacity:0.8;"></div>
+          <button class="btn btn-primary" id="copyShareLinkBtn" style="gap:0.4rem;">🔗 Copy Share Link</button>
+          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.5rem;min-height:1.2rem;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">JSON</div>
         <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Export all items (including images) as a single JSON file. Share it with others — they can import it to load and edit your items.</p>
         <div class="btn-row">
           <button class="btn btn-secondary" id="exportJsonBtn">⬇ Export JSON</button>
@@ -2508,6 +2533,24 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
             <input type="radio" name="exportQuality" value="high" id="qualityHigh" style="accent-color:var(--gold);"> High (3×) — sharper for print
           </label>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Share Provider</div>
+        <p class="field-note-legend" style="margin-bottom:0.7rem;">Connect a cloud storage account to share cards via link. Your files are stored in your own account — only you can delete them.</p>
+        <div id="shareProviderConnected" style="display:none;margin-bottom:0.6rem;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <span id="shareProviderIcon" style="font-size:1.1rem;"></span>
+            <span id="shareProviderName" style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold-light);letter-spacing:0.06em;"></span>
+            <span style="font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(100,200,100,0.8);letter-spacing:0.06em;">✓ Connected</span>
+          </div>
+          <button class="btn btn-secondary" id="disconnectShareBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;">Disconnect</button>
+        </div>
+        <div id="shareProviderBtns" style="display:flex;flex-direction:column;gap:0.4rem;">
+          <button class="btn btn-secondary" id="connectDropboxBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>📦</span> Connect Dropbox</button>
+          <button class="btn btn-secondary" id="connectGdriveBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>📂</span> Connect Google Drive</button>
+          <button class="btn btn-secondary" id="connectOnedriveBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>☁</span> Connect OneDrive</button>
         </div>
       </div>
 
@@ -3919,6 +3962,63 @@ $('importJsonFile').addEventListener('change', e => {
   reader.readAsText(file);
 });
 
+// ── SHARE PROVIDER UI EVENTS ──
+$('connectDropboxBtn').addEventListener('click', () => {
+  // Placeholder — real PKCE flow added in Phase 2 (Step 8)
+  console.log('[share] connectDropbox() — not yet implemented');
+  showInfoModal('Coming Soon', 'Dropbox connection will be available in the next update.');
+});
+$('connectGdriveBtn').addEventListener('click', () => {
+  console.log('[share] connectGoogleDrive() — not yet implemented');
+  showInfoModal('Coming Soon', 'Google Drive connection will be available in a future update.');
+});
+$('connectOnedriveBtn').addEventListener('click', () => {
+  console.log('[share] connectOneDrive() — not yet implemented');
+  showInfoModal('Coming Soon', 'OneDrive connection will be available in a future update.');
+});
+$('disconnectShareBtn').addEventListener('click', () => {
+  clearShareConnection();
+});
+
+// Copy Share Link button (Share tab)
+$('copyShareLinkBtn').addEventListener('click', async () => {
+  const btn = $('copyShareLinkBtn');
+  const feedback = $('shareLinkFeedback');
+  btn.disabled = true;
+  btn.textContent = '⏳ Uploading…';
+  feedback.textContent = '';
+  feedback.style.color = '';
+  try {
+    const url = await shareCurrentCard();
+    if (url) {
+      await navigator.clipboard.writeText(url);
+      feedback.textContent = '✓ Link copied to clipboard!';
+      feedback.style.color = 'rgba(100,200,100,0.9)';
+    }
+  } catch (err) {
+    feedback.textContent = 'Failed to copy link — please try again.';
+    feedback.style.color = 'rgba(220,80,80,0.9)';
+    console.error('[share] copyShareLinkBtn error:', err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔗 Copy Share Link';
+  }
+});
+
+// Keep card name in Share tab in sync
+$('itemName') && $('itemName').addEventListener('input', () => {
+  const nameEl = $('shareLinkCardName');
+  if (nameEl && $('shareHasProviderUI').style.display !== 'none') {
+    const n = $('itemName').value;
+    nameEl.textContent = n ? 'Sharing: ' + n : '';
+  }
+});
+
+// Share import modal buttons (Step 6)
+$('shareImportDismiss').addEventListener('click', () => {
+  $('shareImportModal').classList.remove('active');
+});
+
 // ── THEME TOGGLE ──
 function applyTheme(light) {
   document.body.classList.toggle('light', light);
@@ -4096,6 +4196,9 @@ $('clearAllDataConfirm').addEventListener('click', () => {
 
   // Export quality → standard (all groups)
   syncAllQualityUI('standard');
+
+  // Share provider → disconnect
+  clearShareConnection();
 });
 $('clearAllDataCancel').addEventListener('click', () => {
   $('clearAllDataModal').classList.remove('active');
@@ -4168,6 +4271,83 @@ function saveHistory(items) {
       'This save was not completed — your previous history is unchanged.'
     );
   }
+}
+
+// ── SHARE: TOKEN STORAGE HELPERS (Step 2) ──
+function getShareProvider()  { return localStorage.getItem('dnd_share_provider'); }
+function getShareToken()     { return localStorage.getItem('dnd_share_token'); }
+function setShareConnection(provider, token, refreshToken) {
+  localStorage.setItem('dnd_share_provider', provider);
+  localStorage.setItem('dnd_share_token', token);
+  if (refreshToken) localStorage.setItem('dnd_share_refresh_token', refreshToken);
+  else localStorage.removeItem('dnd_share_refresh_token');
+  updateShareUI();
+}
+function clearShareConnection() {
+  localStorage.removeItem('dnd_share_provider');
+  localStorage.removeItem('dnd_share_token');
+  localStorage.removeItem('dnd_share_refresh_token');
+  updateShareUI();
+}
+
+// ── SHARE: UI SYNC ──
+const SHARE_PROVIDER_LABELS = {
+  dropbox:  { name: 'Dropbox',      icon: '📦' },
+  gdrive:   { name: 'Google Drive', icon: '📂' },
+  onedrive: { name: 'OneDrive',     icon: '☁'  },
+};
+function updateShareUI() {
+  const provider = getShareProvider();
+  const connected = !!provider && !!getShareToken();
+  const connectedEl  = $('shareProviderConnected');
+  const btnsEl       = $('shareProviderBtns');
+  const noProviderEl = $('shareNoProviderMsg');
+  const hasProviderEl= $('shareHasProviderUI');
+  if (!connectedEl) return;
+
+  if (connected) {
+    const info = SHARE_PROVIDER_LABELS[provider] || { name: provider, icon: '☁' };
+    $('shareProviderIcon').textContent = info.icon;
+    $('shareProviderName').textContent = info.name;
+    connectedEl.style.display  = 'block';
+    btnsEl.style.display       = 'none';
+    noProviderEl.style.display = 'none';
+    hasProviderEl.style.display= 'block';
+  } else {
+    connectedEl.style.display  = 'none';
+    btnsEl.style.display       = 'flex';
+    noProviderEl.style.display = 'block';
+    hasProviderEl.style.display= 'none';
+  }
+  // Update card name preview in Share tab
+  const nameEl = $('shareLinkCardName');
+  if (nameEl) {
+    const n = $('itemName') && $('itemName').value;
+    nameEl.textContent = n ? 'Sharing: ' + n : '';
+  }
+}
+
+// ── SHARE: collectShareState (Step 3) ──
+function collectShareState() {
+  const state = collectCurrentState();
+  state.sharedAt   = new Date().toISOString();
+  state.appVersion = '1.0';
+  return state;
+}
+
+// ── SHARE: placeholder upload (replaced in Phase 2) ──
+async function shareCurrentCard() {
+  const provider = getShareProvider();
+  if (!provider) { showInfoModal('No Provider', 'Connect a cloud provider in Settings first.'); return null; }
+  // Stub — real implementation added per provider in later phases
+  console.log('[share] shareCurrentCard() called — provider:', provider, '— stub, no upload yet');
+  return null;
+}
+
+// ── SHARE: placeholder fetch (replaced in Phase 2) ──
+async function fetchSharedCard(provider, id) {
+  console.log('[share] fetchSharedCard() called — provider:', provider, 'id:', id, '— stub');
+  return null;
 }
 
 function collectCurrentState() {
@@ -4935,6 +5115,57 @@ if (_initialHistory.length > 0) {
 } else {
   syncCard();
 }
+
+// ── SHARE PROVIDER UI — initial sync ──
+updateShareUI();
+
+// ── SHARE: URL hash detection (Step 6) ──
+(function () {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#share=')) return;
+
+  // Strip hash immediately so a page refresh doesn't re-trigger the import
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+
+  const shareValue = hash.slice('#share='.length);        // e.g. "dropbox:https%3A%2F..."
+  const colonIdx   = shareValue.indexOf(':');
+  if (colonIdx === -1) return;
+  const provider = shareValue.slice(0, colonIdx);
+  const id       = shareValue.slice(colonIdx + 1);
+
+  // Fetch and show import modal after init is fully done
+  requestAnimationFrame(async () => {
+    let cardState = null;
+    try {
+      cardState = await fetchSharedCard(provider, id);
+    } catch (err) {
+      showInfoModal('Share Error', 'Could not load the shared card. The link may have expired or the file may have been deleted.');
+      return;
+    }
+
+    if (!cardState) {
+      // fetchSharedCard stub returns null — silently skip for now
+      return;
+    }
+
+    const cardName = cardState.name || 'Unnamed Card';
+    $('shareImportMsg').innerHTML =
+      `<strong>${cardName}</strong> was shared with you — would you like to import it?`;
+    $('shareImportModal').classList.add('active');
+
+    $('shareImportOk').onclick = () => {
+      $('shareImportModal').classList.remove('active');
+      // Reuse existing import path: insert as single-item array
+      const incoming = [{ ...cardState, id: Date.now() }];
+      const existing = getHistory();
+      const merged   = [...incoming, ...existing.filter(e => e.name !== cardState.name)];
+      saveHistory(merged.slice(0, getMaxHistory()));
+      renderHistoryBar();
+      applyState(incoming[0]);
+      showInfoModal('Imported', `"${cardName}" has been added to your history.`);
+    };
+  });
+})();
 </script>
 </body>
 </html>

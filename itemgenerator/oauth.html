@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Connecting…</title>
+<style>
+  body {
+    margin: 0; padding: 2rem;
+    font-family: Georgia, serif;
+    background: #1a0e04;
+    color: #d4a84b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+  }
+  p { font-size: 1rem; opacity: 0.8; }
+</style>
+</head>
+<body>
+<p>Connecting… this window will close automatically.</p>
+<script>
+(function () {
+  // Parse both the query string and hash fragment (providers use both)
+  function parseParams(str) {
+    var result = {};
+    str.replace(/^\?|^#/, '').split('&').forEach(function (pair) {
+      var parts = pair.split('=');
+      if (parts[0]) result[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1] || '');
+    });
+    return result;
+  }
+
+  var qp = parseParams(window.location.search);
+  var hp = parseParams(window.location.hash);
+  var params = Object.assign({}, qp, hp);
+
+  var payload = {
+    code:         params.code         || null,
+    access_token: params.access_token || null,
+    error:        params.error        || null,
+    state:        params.state        || null
+  };
+
+  if (window.opener) {
+    window.opener.postMessage({ type: 'oauth_callback', payload: payload }, window.location.origin);
+  }
+
+  window.close();
+})();
+</script>
+</body>
+</html>
