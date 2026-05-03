@@ -3963,11 +3963,7 @@ $('importJsonFile').addEventListener('change', e => {
 });
 
 // ── SHARE PROVIDER UI EVENTS ──
-$('connectDropboxBtn').addEventListener('click', () => {
-  // Placeholder — real PKCE flow added in Phase 2 (Step 8)
-  console.log('[share] connectDropbox() — not yet implemented');
-  showInfoModal('Coming Soon', 'Dropbox connection will be available in the next update.');
-});
+$('connectDropboxBtn').addEventListener('click', () => connectDropbox());
 $('connectGdriveBtn').addEventListener('click', () => {
   console.log('[share] connectGoogleDrive() — not yet implemented');
   showInfoModal('Coming Soon', 'Google Drive connection will be available in a future update.');
@@ -4335,18 +4331,203 @@ function collectShareState() {
   return state;
 }
 
-// ── SHARE: placeholder upload (replaced in Phase 2) ──
-async function shareCurrentCard() {
-  const provider = getShareProvider();
-  if (!provider) { showInfoModal('No Provider', 'Connect a cloud provider in Settings first.'); return null; }
-  // Stub — real implementation added per provider in later phases
-  console.log('[share] shareCurrentCard() called — provider:', provider, '— stub, no upload yet');
-  return null;
+// ══════════════════════════════════════════════════════
+// PHASE 2 — DROPBOX
+// ══════════════════════════════════════════════════════
+
+const DROPBOX_APP_KEY    = 'wkyp9ljfobrkt85';
+const DROPBOX_REDIRECT   = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
+const DROPBOX_FOLDER     = '/Artifex Arcanum Cards';
+
+// ── PKCE helpers ──
+function _pkceVerifier() {
+  const arr = new Uint8Array(48);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+async function _pkceChallenge(verifier) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-// ── SHARE: placeholder fetch (replaced in Phase 2) ──
+// ── Dropbox OAuth PKCE (Step 8) ──
+async function connectDropbox() {
+  const verifier   = _pkceVerifier();
+  const challenge  = await _pkceChallenge(verifier);
+  sessionStorage.setItem('dnd_oauth_verifier', verifier);
+
+  const params = new URLSearchParams({
+    client_id:             DROPBOX_APP_KEY,
+    redirect_uri:          DROPBOX_REDIRECT,
+    response_type:         'code',
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
+    token_access_type:     'offline',   // short-lived access token + long-lived refresh token
+  });
+
+  const popup = window.open(
+    'https://www.dropbox.com/oauth2/authorize?' + params,
+    'dropbox_auth', 'width=600,height=720,left=200,top=100'
+  );
+  if (!popup) {
+    showInfoModal('Popup Blocked', 'Please allow pop-ups for this page and try again.');
+    return;
+  }
+
+  try {
+    await new Promise((resolve, reject) => {
+      let done = false;
+      function onMsg(e) {
+        if (e.origin !== window.location.origin || !e.data || e.data.type !== 'oauth_callback') return;
+        window.removeEventListener('message', onMsg);
+        clearInterval(poll);
+        done = true;
+        const { code, error } = e.data.payload;
+        if (error) { reject(new Error(error)); return; }
+        if (!code)  { reject(new Error('no_code'));  return; }
+        _dropboxExchangeCode(code).then(resolve).catch(reject);
+      }
+      window.addEventListener('message', onMsg);
+      const poll = setInterval(() => {
+        if (!done && popup.closed) {
+          clearInterval(poll);
+          window.removeEventListener('message', onMsg);
+          reject(new Error('closed'));
+        }
+      }, 500);
+    });
+    updateShareUI();
+  } catch (err) {
+    sessionStorage.removeItem('dnd_oauth_verifier');
+    if (err.message !== 'closed') {
+      showInfoModal('Connection Failed', 'Could not connect to Dropbox — please try again.');
+      console.error('[dropbox] connect error:', err);
+    }
+  }
+}
+
+async function _dropboxExchangeCode(code) {
+  const verifier = sessionStorage.getItem('dnd_oauth_verifier');
+  sessionStorage.removeItem('dnd_oauth_verifier');
+  const resp = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      grant_type:    'authorization_code',
+      client_id:     DROPBOX_APP_KEY,
+      redirect_uri:  DROPBOX_REDIRECT,
+      code_verifier: verifier,
+    }),
+  });
+  if (!resp.ok) throw new Error('token_exchange_' + resp.status);
+  const data = await resp.json();
+  setShareConnection('dropbox', data.access_token, data.refresh_token || null);
+  return data;
+}
+
+// ── Dropbox token refresh ──
+async function _dropboxRefresh() {
+  const rt = localStorage.getItem('dnd_share_refresh_token');
+  if (!rt) throw new Error('no_refresh_token');
+  const resp = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: rt, client_id: DROPBOX_APP_KEY }),
+  });
+  if (!resp.ok) throw new Error('refresh_' + resp.status);
+  const data = await resp.json();
+  localStorage.setItem('dnd_share_token', data.access_token);
+  return data.access_token;
+}
+
+// ── Dropbox fetch wrapper — auto-refreshes on 401, clears on second failure ──
+async function _dbx(url, options, _retried) {
+  const token = getShareToken();
+  const resp  = await fetch(url, {
+    ...options,
+    headers: { ...options.headers, Authorization: 'Bearer ' + token },
+  });
+  if (resp.status === 401 && !_retried) {
+    try { await _dropboxRefresh(); } catch {
+      clearShareConnection();
+      showInfoModal('Dropbox Disconnected', 'Your Dropbox session has expired. Please reconnect in Settings → Share Provider.');
+      throw new Error('auth_expired');
+    }
+    return _dbx(url, options, true);
+  }
+  return resp;
+}
+
+// ── shareCurrentCard — upload + create share link (Step 9) ──
+async function shareCurrentCard() {
+  const provider = getShareProvider();
+  if (provider !== 'dropbox') {
+    showInfoModal('Not Connected', 'Connect Dropbox in Settings → Share Provider first.');
+    return null;
+  }
+
+  const state    = collectShareState();
+  const json     = JSON.stringify(state);
+  const slug     = (state.name || 'card').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  const filename = `artifex-arcanum-${slug}-${Date.now()}.json`;
+  const path     = `${DROPBOX_FOLDER}/${filename}`;
+
+  // 1 — Upload file
+  const upResp = await _dbx('https://content.dropboxapi.com/2/files/upload', {
+    method:  'POST',
+    headers: {
+      'Content-Type':    'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false, mute: true }),
+    },
+    body: json,
+  });
+  if (!upResp.ok) {
+    const err = await upResp.json().catch(() => ({}));
+    throw new Error('upload_failed: ' + (err.error_summary || upResp.status));
+  }
+
+  // 2 — Create shared link (handle "already exists" gracefully)
+  const linkResp = await _dbx('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ path, settings: { requested_visibility: 'public' } }),
+  });
+
+  let sharedUrl;
+  if (linkResp.status === 409) {
+    const body = await linkResp.json();
+    // Dropbox returns the existing link metadata in the error payload
+    if (body.error && body.error['.tag'] === 'shared_link_already_exists') {
+      sharedUrl = body.error.metadata.url;
+    } else {
+      throw new Error('share_link_error: ' + JSON.stringify(body));
+    }
+  } else if (!linkResp.ok) {
+    throw new Error('share_link_failed: ' + linkResp.status);
+  } else {
+    const body = await linkResp.json();
+    sharedUrl  = body.url;
+  }
+
+  // 3 — Convert to direct download URL
+  const directUrl = sharedUrl.replace(/[?&]dl=0/, '').replace(/\?$/, '') +
+                    (sharedUrl.includes('?') ? '&dl=1' : '?dl=1');
+
+  // 4 — Build and return full share URL
+  return `${location.origin}${location.pathname}#share=dropbox:${encodeURIComponent(directUrl)}`;
+}
+
+// ── fetchSharedCard — recipient download (Step 10) ──
 async function fetchSharedCard(provider, id) {
-  console.log('[share] fetchSharedCard() called — provider:', provider, 'id:', id, '— stub');
+  if (provider === 'dropbox') {
+    const directUrl = decodeURIComponent(id);
+    const resp = await fetch(directUrl);
+    if (resp.status === 404) throw new Error('not_found');
+    if (!resp.ok) throw new Error('fetch_' + resp.status);
+    return resp.json();
+  }
+  // Other providers added in later phases
   return null;
 }
 
@@ -5139,14 +5320,16 @@ updateShareUI();
     try {
       cardState = await fetchSharedCard(provider, id);
     } catch (err) {
-      showInfoModal('Share Error', 'Could not load the shared card. The link may have expired or the file may have been deleted.');
+      if (err.message === 'not_found') {
+        showInfoModal('Card Not Found', 'This shared card is no longer available — the owner may have deleted it.');
+      } else {
+        showInfoModal('Share Error', 'Could not load the shared card. Please check your connection and try again.');
+        console.error('[share] fetchSharedCard error:', err);
+      }
       return;
     }
 
-    if (!cardState) {
-      // fetchSharedCard stub returns null — silently skip for now
-      return;
-    }
+    if (!cardState) return; // provider not yet implemented
 
     const cardName = cardState.name || 'Unnamed Card';
     $('shareImportMsg').innerHTML =
