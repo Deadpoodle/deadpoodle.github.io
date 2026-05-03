@@ -3105,6 +3105,8 @@ function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad, options = {}
 bindUpload('bgUpload','bgPreview','bgZone','clearBg', src => {
   $('cardBgImg').style.backgroundImage = src ? `url('${src}')` : '';
   $('bgOpacityRow').style.display = src ? 'block' : 'none';
+  setDirty(true);
+  scheduleAutoSave();
 }, { warnKb: 2000, imageType: 'bg' });
 
 bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
@@ -3118,6 +3120,8 @@ bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
       if ($('itemImgZoom')) $('itemImgZoom').value = 1;
       updateItemImageTransform();
       showCropControls(true);
+      setDirty(true);
+      scheduleAutoSave();
     };
     img.src = src;
     img.style.display = 'block';
@@ -3128,6 +3132,8 @@ bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
     itemImgX = 0; itemImgY = 0; itemImgScale = 1;
     itemImgNaturalW = 0; itemImgNaturalH = 0;
     showCropControls(false);
+    setDirty(true);
+    scheduleAutoSave();
   }
 }, { warnKb: 2000 });
 
