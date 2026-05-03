@@ -477,14 +477,16 @@
     pointer-events: none;
   }
 
-  /* Top ornament — real div */
+  /* Top ornament — CSS diamond, no font/transform dependency for centering */
   .card-frame-ornament {
     position: absolute;
-    top: -8px; left: 50%; transform: translateX(-50%);
-    color: rgba(100,70,30,0.6);
-    font-size: 14px;
-    line-height: 1;
-    white-space: nowrap;
+    top: -5px;
+    left: 50%;
+    margin-left: -5px;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    background: rgba(100,70,30,0.5);
     pointer-events: none;
   }
 
@@ -523,13 +525,19 @@
     position: relative;
   }
 
-  .card-divider::before {
-    content: '◆';
+  /* CSS diamond centred on the 1px divider line — no font/character dependency */
+  .divider-gem {
     position: absolute;
-    left: 50%; transform: translate(-50%,-50%);
-    font-size: 10px;
-    line-height: 1;
-    color: rgba(90,60,30,0.6);
+    top: 50%;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    margin-top: -3.5px;
+    transform: rotate(45deg);
+    background: rgba(90,60,30,0.55);
+    pointer-events: none;
+    font-size: 0;
   }
 
   /* Item image area */
@@ -2462,7 +2470,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
       <div class="card-vignette"></div>
       <div class="card-frame" id="cardFrame">
         <div class="card-frame-inner"></div>
-        <div class="card-frame-ornament">✦</div>
+        <div class="card-frame-ornament"></div>
       </div>
 
       <div class="card-content">
@@ -2472,7 +2480,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           <div class="card-rarity rarity-rare" id="previewRarity">◆ Rare ◆</div>
         </div>
 
-        <div class="card-divider"></div>
+        <div class="card-divider"><span class="divider-gem"></span></div>
 
         <div class="card-image-wrap" id="imageWrap">
           <div class="card-side-stat" id="saveStat" style="display:none;">
@@ -2512,7 +2520,7 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
           </div>
         </div>
 
-        <div class="card-divider" style="margin-top:4px;"></div>
+        <div class="card-divider" style="margin-top:4px;"><span class="divider-gem"></span></div>
 
         <div class="card-body">
           <div class="card-description" id="previewDesc"></div>
@@ -3252,7 +3260,7 @@ function buildCardNode(s) {
   const frame = document.createElement('div');
   frame.className = 'card-frame';
   frame.style.display = s.showFrame === false ? 'none' : 'block';
-  frame.innerHTML = '<div class="card-frame-inner"></div><div class="card-frame-ornament">✦</div>';
+  frame.innerHTML = '<div class="card-frame-inner"></div><div class="card-frame-ornament"></div>';
 
   // attunement text
   let attuneText = s.attunement || '';
@@ -3327,7 +3335,7 @@ function buildCardNode(s) {
       <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
       <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;line-height:1;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
-    <div class="card-divider"></div>
+    <div class="card-divider"><span class="divider-gem"></span></div>
     <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
       ${saveHtml}
       <div class="card-image-container" style="width:${C}px;height:${C}px;border-radius:50%;border:2px solid ${circleBorder};overflow:hidden;background:rgba(90,60,30,0.12);display:${imageDisplay};align-items:center;justify-content:center;grid-column:2;">
@@ -3349,7 +3357,7 @@ function buildCardNode(s) {
         <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${weight}</span>
       </div>
     </div>
-    <div class="card-divider"></div>
+    <div class="card-divider"><span class="divider-gem"></span></div>
     <div class="card-body" style="padding:8px 20px 16px;flex:1;">
       <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
     </div>
@@ -3462,6 +3470,9 @@ function printImagesInPopup(dataUrls, mode) {
       height: 297mm;
       overflow: hidden;
       break-after: page;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .page:last-child { break-after: avoid; }
     .print-header {
@@ -3470,6 +3481,7 @@ function printImagesInPopup(dataUrls, mode) {
       color: #aaa;
       text-align: center;
       padding: 6mm 0 2mm;
+      width: 100%;
     }
     .grid {
       display: grid;
@@ -3478,7 +3490,7 @@ function printImagesInPopup(dataUrls, mode) {
       gap: 1mm;
       width: 191mm;
       height: 266mm;
-      margin: 0 9.5mm;
+      margin: auto;
     }
     .card-cell {
       width: 63mm;
@@ -3490,10 +3502,10 @@ function printImagesInPopup(dataUrls, mode) {
       background: white;
     }
     .card-cell img {
-      width: 63mm;
-      height: 88mm;
+      width: 100%;
+      height: 100%;
       display: block;
-      object-fit: fill;
+      object-fit: contain;
     }
   `;
 
