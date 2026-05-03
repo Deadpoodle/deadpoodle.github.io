@@ -125,7 +125,7 @@
     border-bottom: 2px solid transparent;
     color: rgba(210,160,70,0.75);
     font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -949,7 +949,7 @@
   /* Fixed left label */
   .history-label {
     font-family: 'Cinzel', serif;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #ffdeb9;
@@ -964,23 +964,27 @@
   /* Arrow scroll buttons */
   .history-arrow {
     flex-shrink: 0;
-    width: 28px;
-    background: rgba(12,6,2,0.95);
+    width: 72px;
+    background: rgba(30,15,4,0.98);
     border: none;
-    border-right: 1px solid rgba(180,130,60,0.1);
-    color: #dabb80;
-    font-size: 1rem;
+    border-right: 1px solid rgba(180,130,60,0.2);
+    color: rgba(180,130,60,0.4);
+    font-size: 0.75rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.06em;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.15s, background 0.15s, opacity 0.2s;
-    opacity: 0.35;
+    gap: 0.25rem;
+    transition: color 0.15s, background 0.15s;
+    pointer-events: none;
     padding: 0;
   }
-  .history-arrow:last-of-type { border-right: none; border-left: 1px solid rgba(180,130,60,0.1); }
-  .history-arrow:hover { color: var(--gold-light); background: rgba(180,130,60,0.07); }
-  .history-arrow.active { opacity: 1; color: #dabb80; }
+  .history-arrow:last-of-type { border-right: none; border-left: 1px solid rgba(180,130,60,0.2); }
+  .history-arrow:hover { color: var(--gold-light); background: rgba(180,130,60,0.1); }
+  .history-arrow.active { color: #dabb80; pointer-events: auto; }
 
   /* Scrollable track — the only part that scrolls */
   .history-track {
@@ -1193,7 +1197,7 @@
 
   .history-save-btn {
     font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     letter-spacing: 0.1em;
     padding: 0.3rem 0.8rem;
     background: transparent;
@@ -1613,10 +1617,11 @@
   }
   body.light .history-label { color: #5a3810; }
   body.light .history-arrow {
-    background: rgba(185,150,70,0.25);
-    border-color: rgba(120,80,30,0.15) !important;
-    color: #5a3810;
+    background: rgba(160,110,40,0.15);
+    border-color: rgba(120,80,30,0.25) !important;
+    color: rgba(90,56,16,0.4);
   }
+  body.light .history-arrow.active { color: #5a3810; }
   body.light .history-arrow:hover  { background: rgba(120,80,30,0.12); color: #3a2008; }
   body.light .history-arrow.active { color: #3a2008; }
   body.light .history-item          { border-right-color: rgba(120,80,30,0.15); }
@@ -1904,12 +1909,12 @@
     </div>
   </div>
   <div class="mobile-dirty-msg" id="mobileDirtyMsg"><span class="dirty-dot"></span> Unsaved changes</div>
-  <button class="history-arrow" id="historyPrev" title="Scroll left" aria-label="Scroll items left">&#171;</button>
+  <button class="history-arrow" id="historyPrev" title="Previous item" aria-label="Previous item">&#171; Prev</button>
   <div class="history-track" id="historyTrack">
     <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
     <div id="historyItems"></div>
   </div>
-  <button class="history-arrow" id="historyNext" title="Scroll right" aria-label="Scroll items right">&#187;</button>
+  <button class="history-arrow" id="historyNext" title="Next item" aria-label="Next item">Next &#187;</button>
   <button id="newCardBtn" class="history-save-btn" title="Save current &amp; start new card" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">＋ New</button>
   <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">☀ Light</button>
 </div>
@@ -4369,7 +4374,7 @@ function renderHistoryBar() {
     el.appendChild(meta);
     el.appendChild(barMark);
     el.appendChild(del);
-    el.addEventListener('click', () => tryLoadItem(item));
+    el.addEventListener('click', () => { tryLoadItem(item); requestAnimationFrame(scrollHistoryActiveToCenter); });
     container.appendChild(el);
 
     // ── Dropdown item ──
@@ -4449,30 +4454,54 @@ $('historySaveBtn').addEventListener('click', () => {
   setTimeout(() => { btn.classList.remove('flash'); btn.textContent = '＋ Save'; }, 1500);
 });
 
+// ── HISTORY BAR SCROLL HELPER ──
+// Centres the active history item in the track.
+// applyState calls updateHistoryActiveClass() (not renderHistoryBar), so the
+// .history-active class is already set by the time a requestAnimationFrame fires.
+function scrollHistoryActiveToCenter() {
+  const track    = $('historyTrack');
+  const activeEl = $('historyItems').querySelector('.history-active');
+  if (!track || !activeEl) return;
+  const trackRect = track.getBoundingClientRect();
+  const elRect    = activeEl.getBoundingClientRect();
+  // Convert the element's viewport-relative position into an absolute scroll offset,
+  // then subtract half the track width to centre it.
+  const elAbsLeft    = track.scrollLeft + (elRect.left - trackRect.left);
+  const targetScroll = elAbsLeft + elRect.width / 2 - track.clientWidth / 2;
+  track.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
+}
+
 // ── HISTORY BAR ARROWS ──
 (function() {
-  const track    = $('historyTrack');
-  const btnPrev  = $('historyPrev');
-  const btnNext  = $('historyNext');
-  const STEP     = 180; // px per click
+  const track   = $('historyTrack');
+  const btnPrev = $('historyPrev');
+  const btnNext = $('historyNext');
 
+  // Arrows are active whenever there are 2+ items to navigate between.
+  // With looping there is no start/end boundary, so scroll position is irrelevant.
   function updateArrows() {
-    const atStart = track.scrollLeft <= 2;
-    const atEnd   = track.scrollLeft >= track.scrollWidth - track.clientWidth - 2;
-    const hasScroll = track.scrollWidth > track.clientWidth + 4;
-    btnPrev.classList.toggle('active', hasScroll && !atStart);
-    btnNext.classList.toggle('active', hasScroll && !atEnd);
+    const hasMultiple = getHistory().length > 1;
+    btnPrev.classList.toggle('active', hasMultiple);
+    btnNext.classList.toggle('active', hasMultiple);
   }
 
-  btnPrev.addEventListener('click', () => {
-    track.scrollBy({ left: -STEP, behavior: 'smooth' });
-  });
-  btnNext.addEventListener('click', () => {
-    track.scrollBy({ left: STEP, behavior: 'smooth' });
-  });
+  // Navigate to the adjacent history item with wraparound, then centre it in the track.
+  function navigateHistory(dir) {
+    const items = getHistory();
+    if (items.length < 2) return;
+    let idx = items.findIndex(h => h.id === activeHistoryId);
+    if (idx === -1) idx = dir === 1 ? -1 : items.length;
+    const targetIdx = ((idx + dir) + items.length) % items.length;
+    tryLoadItem(items[targetIdx]);
+    // applyState (called synchronously inside tryLoadItem for the common case) sets
+    // .history-active before returning, so one rAF is enough to read layout.
+    requestAnimationFrame(scrollHistoryActiveToCenter);
+  }
+
+  btnPrev.addEventListener('click', () => navigateHistory(-1));
+  btnNext.addEventListener('click', () => navigateHistory(1));
 
   track.addEventListener('scroll', updateArrows, { passive: true });
-  // Also update after render (content width changes)
   window._updateHistoryArrows = updateArrows;
 })();
 
