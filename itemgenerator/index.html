@@ -3956,9 +3956,9 @@ $('clearAllDataConfirm').addEventListener('click', () => {
   applyTheme(false);
 
   // Preferences
-  $('autoSave').checked = false;
+  $('autoSave').checked = true;
   $('suppressConfirmToggle').checked = false;
-  $('persistScaleToggle').checked = false;
+  $('persistScaleToggle').checked = true;
   $('compressImagesToggle').checked = false;
   const levelRow = $('compressLevelRow');
   levelRow.style.setProperty('--compress-opt-opacity', '0.4');
@@ -4030,7 +4030,7 @@ $('imgUploadHint').addEventListener('click', () => {
 
 // ── HISTORY ──
 const HISTORY_KEY = 'dnd_item_history';
-const MAX_HISTORY_DEFAULT = 9;
+const MAX_HISTORY_DEFAULT = 25;
 function getMaxHistory() {
   const v = parseInt(localStorage.getItem('dnd_max_history'), 10);
   return (isNaN(v) || v < 1) ? MAX_HISTORY_DEFAULT : v;
@@ -4478,7 +4478,7 @@ $('defaultTypeImgToggle').addEventListener('change', e => {
 });
 
 // ── AUTO-SAVE PERSISTENCE ──
-$('autoSave').checked = localStorage.getItem('dnd_autosave') === 'true';
+$('autoSave').checked = localStorage.getItem('dnd_autosave') !== 'false';
 $('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave', e.target.checked));
 
 // ── SUPPRESS CONFIRMATIONS ──
@@ -4520,7 +4520,7 @@ $('suppressConfirmToggle').addEventListener('change', e => localStorage.setItem(
 })();
 
 // ── PERSIST CARD SCALE ──
-$('persistScaleToggle').checked = localStorage.getItem('dnd_persist_scale') === 'true';
+$('persistScaleToggle').checked = localStorage.getItem('dnd_persist_scale') !== 'false';
 $('persistScaleToggle').addEventListener('change', e => {
   localStorage.setItem('dnd_persist_scale', e.target.checked);
   if (!e.target.checked) localStorage.removeItem('dnd_card_scale');
@@ -4680,8 +4680,8 @@ if ($('persistScaleToggle').checked) {
     $('unlockMaxHistoryLabel').textContent = 'Unlock card history';
     sliderRow.style.display = 'block';
     unlockedRow.style.display = 'none';
-    slider.value = 9;
-    label.textContent = '9';
+    slider.value = 25;
+    label.textContent = '25';
     note.textContent = 'Max 50. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.';
   };
 
