@@ -2244,6 +2244,15 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
       </div>
 
       <div>
+        <div class="section-title">Export Quality</div>
+        <div class="png-quality-row" style="flex-wrap:nowrap;">
+          <label class="png-quality-option"><input type="radio" name="shareQuality" value="draft"> Draft (1.5×)</label>
+          <label class="png-quality-option"><input type="radio" name="shareQuality" value="standard"> Standard (2×)</label>
+          <label class="png-quality-option"><input type="radio" name="shareQuality" value="high"> High (3×)</label>
+        </div>
+      </div>
+
+      <div>
         <div class="section-title">Share</div>
         <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Export all items (including images) as a single JSON file. Share it with others — they can import it to load and edit your items.</p>
         <div class="btn-row">
@@ -2530,6 +2539,14 @@ function safeConfirm(msg) {
   const el = $('suppressConfirmToggle');
   if (el && el.checked) return true;
   return confirm(msg);
+}
+
+// Syncs all export quality radio groups (Settings, Share tab, Download modal) from a value
+function syncAllQualityUI(q) {
+  ['exportQuality', 'shareQuality', 'pngModalQuality'].forEach(name => {
+    const r = document.querySelector(`input[name="${name}"][value="${q}"]`);
+    if (r) r.checked = true;
+  });
 }
 
 function showInfoModal(title, msgHtml) {
@@ -3471,20 +3488,12 @@ ${pagesHTML}
     $('pngSelectConfirm').disabled = checked === 0;
   }
 
-  // Sync quality row to current localStorage value
-  function syncModalQuality() {
-    const q = localStorage.getItem('dnd_export_quality') || 'standard';
-    const radio = document.querySelector(`input[name="pngModalQuality"][value="${q}"]`);
-    if (radio) radio.checked = true;
-  }
-
-  // When quality changes in modal → update localStorage + Settings page radios
+  // When quality changes in modal → update localStorage + all other quality UI
   document.querySelectorAll('input[name="pngModalQuality"]').forEach(radio => {
     radio.addEventListener('change', () => {
       if (!radio.checked) return;
       localStorage.setItem('dnd_export_quality', radio.value);
-      const settingsRadio = document.querySelector(`input[name="exportQuality"][value="${radio.value}"]`);
-      if (settingsRadio) settingsRadio.checked = true;
+      syncAllQualityUI(radio.value);
     });
   });
 
@@ -3492,7 +3501,7 @@ ${pagesHTML}
     const items = getHistory();
     if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
 
-    syncModalQuality();
+    syncAllQualityUI(localStorage.getItem('dnd_export_quality') || 'standard');
 
     const list = $('pngSelectList');
     list.innerHTML = '';
@@ -3931,9 +3940,8 @@ $('clearAllDataConfirm').addEventListener('click', () => {
   $('defaultRarity').value = '';
   $('defaultSource').value = '';
 
-  // Export quality → standard
-  const qualStd = document.querySelector('input[name="exportQuality"][value="standard"]');
-  if (qualStd) qualStd.checked = true;
+  // Export quality → standard (all groups)
+  syncAllQualityUI('standard');
 });
 $('clearAllDataCancel').addEventListener('click', () => {
   $('clearAllDataModal').classList.remove('active');
@@ -4470,10 +4478,18 @@ if ($('persistScaleToggle').checked) {
 // ── EXPORT QUALITY ──
 (function() {
   const saved = localStorage.getItem('dnd_export_quality') || 'standard';
-  const el = document.querySelector(`input[name="exportQuality"][value="${saved}"]`);
-  if (el) el.checked = true;
+  syncAllQualityUI(saved);
   document.querySelectorAll('input[name="exportQuality"]').forEach(r =>
-    r.addEventListener('change', e => localStorage.setItem('dnd_export_quality', e.target.value))
+    r.addEventListener('change', e => {
+      localStorage.setItem('dnd_export_quality', e.target.value);
+      syncAllQualityUI(e.target.value);
+    })
+  );
+  document.querySelectorAll('input[name="shareQuality"]').forEach(r =>
+    r.addEventListener('change', e => {
+      localStorage.setItem('dnd_export_quality', e.target.value);
+      syncAllQualityUI(e.target.value);
+    })
   );
 })();
 
