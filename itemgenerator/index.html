@@ -3721,7 +3721,23 @@ if (_initialHistory.length > 0) {
         }
       }
     } catch (e) {
-      console.warn('[init] could not convert logo to data URL:', e);
+      // canvas.toDataURL() is blocked in some browsers when the page is served
+      // from file:// (Firefox private-mode security restriction). The image src
+      // is a non-embeddable file:// URL at this point, so html2canvas would also
+      // fail trying to export it. Clear the image state so the card remains
+      // exportable without the logo — this only affects local file:// testing;
+      // on GitHub Pages (https://) the conversion succeeds normally.
+      console.warn('[init] could not convert logo to data URL — clearing image to keep export working:', e);
+      cardImg.src = '';
+      cardImg.style.display = 'none';
+      placeholder.style.display = 'block';
+      $('itemImgPreview').src = '';
+      $('itemImgZone').classList.remove('has-image');
+      $('clearItem').style.display = 'none';
+      itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+      itemImgNaturalW = 0; itemImgNaturalH = 0;
+      showCropControls(false);
+      syncCard();
     }
   };
 
