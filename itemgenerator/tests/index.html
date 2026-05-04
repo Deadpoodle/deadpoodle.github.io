@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artifex Arcanum — Tests</title>
+  <style>
+    :root { --pass: #4caf50; --fail: #f44336; --skip: #ff9800; --bg: #1a1510; --bg2: #221c14; --border: rgba(180,130,60,0.3); --gold: #d4a84b; --text: #c8b89a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; padding: 2rem; line-height: 1.6; }
+    h1 { color: var(--gold); font-size: 1.6rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
+    .suite { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 1.5rem; overflow: hidden; }
+    .suite-header { padding: 0.7rem 1rem; background: rgba(180,130,60,0.08); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; }
+    .suite-name { color: var(--gold); font-weight: 600; font-size: 1rem; flex: 1; }
+    .suite-badge { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 99px; font-weight: 600; }
+    .badge-pass  { background: rgba(76,175,80,0.2);  color: var(--pass);  border: 1px solid rgba(76,175,80,0.4); }
+    .badge-fail  { background: rgba(244,67,54,0.2);  color: var(--fail);  border: 1px solid rgba(244,67,54,0.4); }
+    .badge-skip  { background: rgba(255,152,0,0.2);  color: var(--skip);  border: 1px solid rgba(255,152,0,0.4); }
+    .test-list { list-style: none; }
+    .test-list li { padding: 0.5rem 1rem; border-bottom: 1px solid rgba(180,130,60,0.1); display: flex; align-items: flex-start; gap: 0.75rem; }
+    .test-list li:last-child { border-bottom: none; }
+    .icon { font-size: 0.9rem; line-height: 1.6; flex-shrink: 0; }
+    .test-name { flex: 1; }
+    .test-err { color: var(--fail); font-size: 0.82rem; font-family: 'Consolas', monospace; margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word; }
+    .summary { margin-top: 2rem; padding: 1rem 1.25rem; border-radius: 6px; background: var(--bg2); border: 1px solid var(--border); font-size: 1.05rem; }
+    .summary span { font-weight: 700; }
+    .all-pass { border-color: rgba(76,175,80,0.5); }
+    .has-fail  { border-color: rgba(244,67,54,0.5); }
+    .note { margin-top: 1rem; font-size: 0.8rem; color: #666; }
+  </style>
+</head>
+<body>
+
+<h1>⚗️ Artifex Arcanum — Test Suite</h1>
+<p class="subtitle">Browser-based unit tests for pure utility functions. No build step required — open in any browser.</p>
+
+<div id="output"></div>
+<div id="summary"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 1: Functions under test
+// These are copied verbatim from index.html so the tests run standalone.
+// After the CSS/JS refactor, replace these inline definitions with:
+//   import { _stableStringify, _cardFingerprint, ... } from '../js/utils.js';
+// ─────────────────────────────────────────────────────────────────────────────
+
+// -- Share deduplication cache (localStorage) ---------------------------------
+const SHARE_CACHE_KEY = 'artifex_share_cache';
+
+function _getShareCache() {
+  try { return JSON.parse(localStorage.getItem(SHARE_CACHE_KEY) || '{}'); } catch { return {}; }
+}
+function _setShareCache(hash, url) {
+  const cache = _getShareCache();
+  cache[hash] = url;
+  const keys = Object.keys(cache);
+  if (keys.length > 100) keys.slice(0, keys.length - 100).forEach(k => delete cache[k]);
+  try { localStorage.setItem(SHARE_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+// -- Stable JSON stringify (sorted keys) --------------------------------------
+function _stableStringify(obj) {
+  if (Array.isArray(obj)) return '[' + obj.map(_stableStringify).join(',') + ']';
+  if (obj !== null && typeof obj === 'object') {
+    return '{' + Object.keys(obj).sort().map(k => JSON.stringify(k) + ':' + _stableStringify(obj[k])).join(',') + '}';
+  }
+  return JSON.stringify(obj);
+}
+
+// -- Card content fingerprint (strips volatile fields) ------------------------
+function _cardFingerprint(card) {
+  const { id, sharedAt, appVersion, ...rest } = card;
+  return _stableStringify(rest);
+}
+
+// -- Import deduplication -----------------------------------------------------
+function _deduplicateCards(incoming, existing) {
+  const seenFPs = new Set(existing.map(_cardFingerprint));
+  const existingIds = new Set(existing.map(c => c.id));
+  const newCards = [];
+  let skipCount = 0;
+  for (const card of incoming) {
+    const fp = _cardFingerprint(card);
+    if (seenFPs.has(fp)) { skipCount++; continue; }
+    seenFPs.add(fp);
+    newCards.push({ ...card, id: Date.now() + newCards.length });
+  }
+  return { newCards, skipCount };
+}
+
+// -- Attunement / Requirements rendering --------------------------------------
+const ATTUNE_PREFIXES = {
+  attunement: 'Requires attunement by ',
+  craftsman:  'Creation by ',
+  custom:     'Requires ',
+};
+const ATTUNE_KNOWN_MODES = new Set(Object.keys(ATTUNE_PREFIXES).concat(['']));
+
+function _resolveAttunement(mode, text) {
+  mode = mode || '';
+  text = (text || '').trim();
+  if (!mode) return '';
+  if (!ATTUNE_KNOWN_MODES.has(mode)) {
+    return 'Requires ' + mode;
+  }
+  if (!text) return '';
+  return ATTUNE_PREFIXES[mode] + text;
+}
+
+// -- Share content hash (async / Web Crypto) ----------------------------------
+async function _shareContentHash(states) {
+  const stable = states.map(({ id, sharedAt, appVersion, ...rest }) => rest);
+  const str    = _stableStringify(stable);
+  const buf    = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 2: Minimal test runner
+// ─────────────────────────────────────────────────────────────────────────────
+
+const results = [];
+let currentSuite = null;
+
+function suite(name, fn) {
+  currentSuite = { name, tests: [] };
+  results.push(currentSuite);
+  fn();
+}
+
+function test(name, fn) {
+  currentSuite.tests.push({ name, fn, async: false });
+}
+
+function testAsync(name, fn) {
+  currentSuite.tests.push({ name, fn, async: true });
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message || 'Assertion failed');
+}
+
+function assertEqual(a, b, message) {
+  const aStr = JSON.stringify(a);
+  const bStr = JSON.stringify(b);
+  if (aStr !== bStr) throw new Error(message || `Expected ${bStr} but got ${aStr}`);
+}
+
+function assertThrows(fn, message) {
+  let threw = false;
+  try { fn(); } catch { threw = true; }
+  if (!threw) throw new Error(message || 'Expected function to throw but it did not');
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 3: Test definitions
+// ─────────────────────────────────────────────────────────────────────────────
+
+suite('_stableStringify', () => {
+
+  test('primitives: strings, numbers, booleans, null', () => {
+    assertEqual(_stableStringify('hello'), '"hello"');
+    assertEqual(_stableStringify(42), '42');
+    assertEqual(_stableStringify(true), 'true');
+    assertEqual(_stableStringify(null), 'null');
+    assertEqual(_stableStringify(0), '0');
+    assertEqual(_stableStringify(''), '""');
+  });
+
+  test('plain array', () => {
+    assertEqual(_stableStringify([1, 2, 3]), '[1,2,3]');
+    assertEqual(_stableStringify([]), '[]');
+    assertEqual(_stableStringify(['a', 'b']), '["a","b"]');
+  });
+
+  test('object key order is sorted regardless of insertion order', () => {
+    const a = { z: 1, a: 2, m: 3 };
+    const b = { a: 2, m: 3, z: 1 };
+    assertEqual(_stableStringify(a), _stableStringify(b));
+    assertEqual(_stableStringify(a), '{"a":2,"m":3,"z":1}');
+  });
+
+  test('nested objects are sorted at every level', () => {
+    const obj = { outer: { z: 1, a: 2 }, b: 3 };
+    assertEqual(_stableStringify(obj), '{"b":3,"outer":{"a":2,"z":1}}');
+  });
+
+  test('array of objects — elements are not sorted, but object keys within are', () => {
+    const arr = [{ z: 1, a: 2 }, { y: 9, b: 0 }];
+    assertEqual(_stableStringify(arr), '[{"a":2,"z":1},{"b":0,"y":9}]');
+  });
+
+  test('two objects with the same keys/values but different insertion order produce the same string', () => {
+    const card1 = { name: 'Sword', rarity: 'rare', type: 'Weapon' };
+    const card2 = { type: 'Weapon', name: 'Sword', rarity: 'rare' };
+    assertEqual(_stableStringify(card1), _stableStringify(card2));
+  });
+
+  test('two objects with different values produce different strings', () => {
+    const a = { name: 'Sword', rarity: 'rare' };
+    const b = { name: 'Staff', rarity: 'rare' };
+    assert(_stableStringify(a) !== _stableStringify(b), 'Different values should produce different strings');
+  });
+
+});
+
+
+suite('_cardFingerprint', () => {
+
+  const baseCard = { id: 1, name: 'Sword of Fire', rarity: 'uncommon', description: 'It burns.' };
+
+  test('returns consistent fingerprint for same content', () => {
+    const fp1 = _cardFingerprint({ ...baseCard });
+    const fp2 = _cardFingerprint({ ...baseCard });
+    assertEqual(fp1, fp2);
+  });
+
+  test('id field is stripped — two cards differing only in id have the same fingerprint', () => {
+    const card1 = { ...baseCard, id: 100 };
+    const card2 = { ...baseCard, id: 999 };
+    assertEqual(_cardFingerprint(card1), _cardFingerprint(card2));
+  });
+
+  test('sharedAt field is stripped — timestamps do not affect fingerprint', () => {
+    const card1 = { ...baseCard, sharedAt: '2024-01-01T00:00:00Z' };
+    const card2 = { ...baseCard, sharedAt: '2025-06-15T12:34:56Z' };
+    assertEqual(_cardFingerprint(card1), _cardFingerprint(card2));
+  });
+
+  test('appVersion field is stripped', () => {
+    const card1 = { ...baseCard, appVersion: '1.0' };
+    const card2 = { ...baseCard, appVersion: '2.0' };
+    assertEqual(_cardFingerprint(card1), _cardFingerprint(card2));
+  });
+
+  test('all volatile fields stripped together', () => {
+    const card1 = { ...baseCard, id: 1, sharedAt: 'then', appVersion: '1.0' };
+    const card2 = { ...baseCard, id: 2, sharedAt: 'now',  appVersion: '2.0' };
+    assertEqual(_cardFingerprint(card1), _cardFingerprint(card2));
+  });
+
+  test('different content produces different fingerprints', () => {
+    const card1 = { ...baseCard, name: 'Sword of Fire' };
+    const card2 = { ...baseCard, name: 'Staff of Ice' };
+    assert(_cardFingerprint(card1) !== _cardFingerprint(card2));
+  });
+
+  test('key insertion order does not affect fingerprint', () => {
+    const card1 = { id: 1, name: 'Sword', rarity: 'rare' };
+    const card2 = { rarity: 'rare', id: 2, name: 'Sword' };
+    assertEqual(_cardFingerprint(card1), _cardFingerprint(card2));
+  });
+
+});
+
+
+suite('_deduplicateCards', () => {
+
+  function makeCard(overrides = {}) {
+    return { id: Math.random(), name: 'Test Card', rarity: 'common', description: 'desc', ...overrides };
+  }
+
+  test('all new cards are added when existing is empty', () => {
+    const incoming = [makeCard({ name: 'A' }), makeCard({ name: 'B' })];
+    const { newCards, skipCount } = _deduplicateCards(incoming, []);
+    assertEqual(newCards.length, 2);
+    assertEqual(skipCount, 0);
+  });
+
+  test('exact duplicate against existing collection is skipped', () => {
+    const card = makeCard({ name: 'Duplicate' });
+    const { newCards, skipCount } = _deduplicateCards([card], [card]);
+    assertEqual(newCards.length, 0);
+    assertEqual(skipCount, 1);
+  });
+
+  test('card differing only in id is still considered a duplicate', () => {
+    const card1 = makeCard({ id: 1, name: 'Same Content' });
+    const card2 = makeCard({ id: 2, name: 'Same Content' });
+    const { newCards, skipCount } = _deduplicateCards([card2], [card1]);
+    assertEqual(newCards.length, 0);
+    assertEqual(skipCount, 1);
+  });
+
+  test('card with different content is not a duplicate', () => {
+    const existing = [makeCard({ name: 'Alpha' })];
+    const incoming = [makeCard({ name: 'Beta' })];
+    const { newCards, skipCount } = _deduplicateCards(incoming, existing);
+    assertEqual(newCards.length, 1);
+    assertEqual(skipCount, 0);
+  });
+
+  test('intra-batch duplicates are deduplicated', () => {
+    const card = makeCard({ name: 'Same' });
+    const duplicate = makeCard({ id: 99, name: 'Same' }); // same content, different id
+    const { newCards, skipCount } = _deduplicateCards([card, duplicate], []);
+    assertEqual(newCards.length, 1);
+    assertEqual(skipCount, 1);
+  });
+
+  test('kept cards always receive a fresh id (not the original)', () => {
+    const card = makeCard({ id: 12345, name: 'Fresh' });
+    const { newCards } = _deduplicateCards([card], []);
+    assert(newCards[0].id !== 12345, 'Kept card should have a new id, not the original');
+  });
+
+  test('sharedAt and appVersion are ignored for deduplication', () => {
+    const card1 = makeCard({ name: 'Copy', sharedAt: 'yesterday', appVersion: '1.0' });
+    const card2 = makeCard({ name: 'Copy', sharedAt: 'today',     appVersion: '2.0' });
+    const { newCards, skipCount } = _deduplicateCards([card2], [card1]);
+    assertEqual(newCards.length, 0);
+    assertEqual(skipCount, 1);
+  });
+
+  test('mixed batch: some new, some duplicates', () => {
+    const existing = [makeCard({ name: 'Existing' })];
+    const incoming = [
+      makeCard({ name: 'Existing' }),   // duplicate
+      makeCard({ name: 'New A' }),       // new
+      makeCard({ name: 'New B' }),       // new
+      makeCard({ name: 'New A' }),       // intra-batch duplicate
+    ];
+    const { newCards, skipCount } = _deduplicateCards(incoming, existing);
+    assertEqual(newCards.length, 2);
+    assertEqual(skipCount, 2);
+  });
+
+  test('empty incoming produces no changes', () => {
+    const existing = [makeCard(), makeCard({ name: 'Other' })];
+    const { newCards, skipCount } = _deduplicateCards([], existing);
+    assertEqual(newCards.length, 0);
+    assertEqual(skipCount, 0);
+  });
+
+  test('does not mutate the existing array', () => {
+    const existing = [makeCard({ name: 'Original' })];
+    const snapshot = JSON.stringify(existing);
+    _deduplicateCards([makeCard({ name: 'New' })], existing);
+    assertEqual(JSON.stringify(existing), snapshot);
+  });
+
+});
+
+
+suite('_resolveAttunement', () => {
+
+  test('mode="" returns empty string regardless of text', () => {
+    assertEqual(_resolveAttunement('', 'a wizard'), '');
+    assertEqual(_resolveAttunement('', ''), '');
+    assertEqual(_resolveAttunement(null, 'anything'), '');
+    assertEqual(_resolveAttunement(undefined, 'anything'), '');
+  });
+
+  test('mode="attunement" prepends "Requires attunement by "', () => {
+    assertEqual(_resolveAttunement('attunement', 'a cleric'), 'Requires attunement by a cleric');
+  });
+
+  test('mode="craftsman" prepends "Creation by "', () => {
+    assertEqual(_resolveAttunement('craftsman', 'a master smith'), 'Creation by a master smith');
+  });
+
+  test('mode="custom" prepends "Requires "', () => {
+    assertEqual(_resolveAttunement('custom', 'a blood sacrifice'), 'Requires a blood sacrifice');
+  });
+
+  test('empty text with a known mode returns empty string', () => {
+    assertEqual(_resolveAttunement('attunement', ''), '');
+    assertEqual(_resolveAttunement('attunement', '   '), '');
+    assertEqual(_resolveAttunement('craftsman', ''), '');
+    assertEqual(_resolveAttunement('custom', ''), '');
+  });
+
+  test('text is trimmed before processing', () => {
+    assertEqual(_resolveAttunement('custom', '  a paladin  '), 'Requires a paladin');
+  });
+
+  test('legacy mode (old display text) falls back to "Requires " prefix', () => {
+    // Old saved cards stored text like "by a spellcaster" in the mode field
+    assertEqual(_resolveAttunement('by a spellcaster', ''), 'Requires by a spellcaster');
+    assertEqual(_resolveAttunement('a ranger', ''), 'Requires a ranger');
+  });
+
+  test('all known modes are handled without falling back to legacy path', () => {
+    // Ensure none of the real modes accidentally trigger the legacy path
+    for (const mode of ['', 'attunement', 'craftsman', 'custom']) {
+      // Should not throw; empty text returns ''
+      const result = _resolveAttunement(mode, '');
+      assert(typeof result === 'string', `mode "${mode}" should return a string`);
+    }
+  });
+
+});
+
+
+suite('_shareContentHash', () => {
+
+  testAsync('returns a 16-character hex string', async () => {
+    const states = [{ id: 1, name: 'Test', rarity: 'rare' }];
+    const hash = await _shareContentHash(states);
+    assertEqual(typeof hash, 'string');
+    assertEqual(hash.length, 16);
+    assert(/^[0-9a-f]{16}$/.test(hash), `Hash "${hash}" is not lowercase hex`);
+  });
+
+  testAsync('same content produces same hash', async () => {
+    const states = [{ id: 1, name: 'Consistent', rarity: 'uncommon', description: 'stable' }];
+    const h1 = await _shareContentHash(states);
+    const h2 = await _shareContentHash(states);
+    assertEqual(h1, h2);
+  });
+
+  testAsync('different content produces different hash', async () => {
+    const h1 = await _shareContentHash([{ id: 1, name: 'Alpha' }]);
+    const h2 = await _shareContentHash([{ id: 1, name: 'Beta' }]);
+    assert(h1 !== h2, 'Different card content should produce different hashes');
+  });
+
+  testAsync('volatile fields (id, sharedAt, appVersion) are excluded from hash', async () => {
+    const base = { name: 'Same', rarity: 'legendary', description: 'content' };
+    const h1 = await _shareContentHash([{ ...base, id: 1, sharedAt: 'yesterday', appVersion: '1.0' }]);
+    const h2 = await _shareContentHash([{ ...base, id: 2, sharedAt: 'today',     appVersion: '2.0' }]);
+    assertEqual(h1, h2);
+  });
+
+  testAsync('key insertion order does not affect hash', async () => {
+    const h1 = await _shareContentHash([{ name: 'Sword', rarity: 'rare' }]);
+    const h2 = await _shareContentHash([{ rarity: 'rare', name: 'Sword' }]);
+    assertEqual(h1, h2);
+  });
+
+  testAsync('array with multiple states produces different hash than same states in different order', async () => {
+    const a = { name: 'A', rarity: 'common' };
+    const b = { name: 'B', rarity: 'uncommon' };
+    const h1 = await _shareContentHash([a, b]);
+    const h2 = await _shareContentHash([b, a]);
+    assert(h1 !== h2, 'Order of states in a selection should matter for the hash');
+  });
+
+});
+
+
+suite('_getShareCache / _setShareCache', () => {
+
+  // Clean up before these tests so other stored data doesn't interfere
+  function clearCache() {
+    localStorage.removeItem(SHARE_CACHE_KEY);
+  }
+
+  test('returns empty object when cache is empty', () => {
+    clearCache();
+    assertEqual(_getShareCache(), {});
+  });
+
+  test('stores and retrieves a hash→url mapping', () => {
+    clearCache();
+    _setShareCache('abc123', 'https://example.com/card.json');
+    const cache = _getShareCache();
+    assertEqual(cache['abc123'], 'https://example.com/card.json');
+  });
+
+  test('multiple entries are stored correctly', () => {
+    clearCache();
+    _setShareCache('hash1', 'https://example.com/1.json');
+    _setShareCache('hash2', 'https://example.com/2.json');
+    const cache = _getShareCache();
+    assertEqual(cache['hash1'], 'https://example.com/1.json');
+    assertEqual(cache['hash2'], 'https://example.com/2.json');
+  });
+
+  test('overwriting an existing hash updates its value', () => {
+    clearCache();
+    _setShareCache('hashA', 'https://example.com/old.json');
+    _setShareCache('hashA', 'https://example.com/new.json');
+    assertEqual(_getShareCache()['hashA'], 'https://example.com/new.json');
+  });
+
+  test('cap at 100 entries: oldest keys are trimmed when limit is exceeded', () => {
+    clearCache();
+    // Fill with 100 entries
+    for (let i = 0; i < 100; i++) {
+      _setShareCache(`hash${String(i).padStart(3, '0')}`, `https://example.com/${i}.json`);
+    }
+    // Adding one more should drop the oldest
+    _setShareCache('hashNEW', 'https://example.com/new.json');
+    const cache = _getShareCache();
+    const keys = Object.keys(cache);
+    assertEqual(keys.length, 100);
+    // The oldest entry (hash000) should be gone
+    assert(!('hash000' in cache), 'Oldest entry should have been evicted');
+    // The new entry should be present
+    assert('hashNEW' in cache, 'Newest entry should be present');
+  });
+
+  test('does not exceed 100 entries after multiple overflow writes', () => {
+    clearCache();
+    for (let i = 0; i < 120; i++) {
+      _setShareCache(`h${i}`, `url${i}`);
+    }
+    const keys = Object.keys(_getShareCache());
+    assert(keys.length <= 100, `Cache should have at most 100 entries, got ${keys.length}`);
+  });
+
+  // Clean up after these tests so they don't pollute the real app's cache
+  test('cleanup: remove test cache entries', () => {
+    clearCache();
+    assertEqual(_getShareCache(), {});
+  });
+
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 4: Test runner — execute and render
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function runAll() {
+  let totalPass = 0, totalFail = 0;
+  const outputEl = document.getElementById('output');
+
+  for (const s of results) {
+    let suitePass = 0, suiteFail = 0;
+    const testItems = [];
+
+    for (const t of s.tests) {
+      let passed = false, errMsg = '';
+      try {
+        if (t.async) { await t.fn(); } else { t.fn(); }
+        passed = true;
+        suitePass++;
+        totalPass++;
+      } catch (e) {
+        errMsg = e.message || String(e);
+        suiteFail++;
+        totalFail++;
+      }
+      testItems.push({ name: t.name, passed, errMsg });
+    }
+
+    const suiteEl = document.createElement('div');
+    suiteEl.className = 'suite';
+
+    const headerEl = document.createElement('div');
+    headerEl.className = 'suite-header';
+    headerEl.innerHTML = `<span class="suite-name">${s.name}</span>
+      <span class="suite-badge ${suiteFail > 0 ? 'badge-fail' : 'badge-pass'}">
+        ${suitePass} / ${suitePass + suiteFail}
+      </span>`;
+    suiteEl.appendChild(headerEl);
+
+    const listEl = document.createElement('ul');
+    listEl.className = 'test-list';
+    for (const t of testItems) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="icon">${t.passed ? '✅' : '❌'}</span>
+        <span class="test-name">
+          ${t.name}
+          ${t.errMsg ? `<div class="test-err">${t.errMsg.replace(/</g,'&lt;')}</div>` : ''}
+        </span>`;
+      listEl.appendChild(li);
+    }
+    suiteEl.appendChild(listEl);
+    outputEl.appendChild(suiteEl);
+  }
+
+  const summaryEl = document.getElementById('summary');
+  const allPassed = totalFail === 0;
+  summaryEl.innerHTML = `
+    <div class="summary ${allPassed ? 'all-pass' : 'has-fail'}">
+      ${allPassed
+        ? `✅ All <span>${totalPass}</span> tests passed.`
+        : `<span style="color:var(--pass)">${totalPass} passed</span> &nbsp;·&nbsp; <span style="color:var(--fail)">${totalFail} failed</span> &nbsp;·&nbsp; ${totalPass + totalFail} total`}
+    </div>
+    <p class="note">
+      Note: These tests cover pure utility functions copied from <code>index.html</code>.
+      After the JS refactor, replace the inline function definitions at the top of this file
+      with ES module imports from the extracted JS file(s).
+    </p>`;
+}
+
+runAll();
+</script>
+</body>
+</html>

@@ -13,7 +13,7 @@
 <title>Artifex Arcanum</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="marked.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2073,7 +2073,7 @@
         <div style="display:flex;flex-direction:column;gap:0.7rem;">
           <div class="field-group">
             <label>Item Name</label>
-            <input type="text" id="itemName" placeholder="e.g. Blade of Eternal Frost" value="Staff of the Arcane Tide">
+            <input type="text" id="itemName" placeholder="e.g. Blade of Eternal Frost" value="The Artifex Arcanum">
           </div>
           <div class="row-2">
             <div class="field-group">
@@ -2083,7 +2083,7 @@
                 <option>Weapon</option>
                 <option>Armour</option>
                 <option>Wand</option>
-                <option selected>Staff</option>
+                <option>Staff</option>
                 <option>Ring</option>
                 <option>Amulet</option>
                 <option>Cloak</option>
@@ -2094,13 +2094,13 @@
                 <option>Boots</option>
                 <option>Gloves</option>
                 <option>Helm</option>
-                <option>Wondrous Item</option>
+                <option selected>Wondrous Item</option>
                 <option>Other</option>
               </select>
             </div>
             <div class="field-group">
               <label>Subtype / Material <span class="field-note">*</span></label>
-              <input type="text" id="itemSubtype" placeholder="e.g. Longsword, Oak" value="Quarterstaff">
+              <input type="text" id="itemSubtype" placeholder="e.g. Longsword, Oak" value="The Master Forge">
             </div>
           </div>
           <div class="field-group">
@@ -2108,9 +2108,9 @@
             <select id="itemRarity">
               <option value="common">Common</option>
               <option value="uncommon">Uncommon</option>
-              <option value="rare" selected>Rare</option>
+              <option value="rare">Rare</option>
               <option value="very-rare">Very Rare</option>
-              <option value="legendary">Legendary</option>
+              <option value="legendary" selected>Legendary</option>
               <option value="artifact">Artifact</option>
               <option value="unique">Unique</option>
             </select>
@@ -2124,22 +2124,22 @@
           <div>
             <div class="row-3" style="margin-bottom:0.25rem;">
               <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="bonusLabel" value="Bonus" placeholder="Bonus">
+                <input class="stat-label-rename" type="text" id="bonusLabel" value="Type" placeholder="Bonus">
                 <span class="label-rename-icon">✒</span>
               </div>
               <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="damageLabel" value="Damage" placeholder="Damage">
+                <input class="stat-label-rename" type="text" id="damageLabel" value="Dice" placeholder="Damage">
                 <span class="label-rename-icon">✒</span>
               </div>
               <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="weightLabel" value="Weight" placeholder="Weight">
+                <input class="stat-label-rename" type="text" id="weightLabel" value="Value" placeholder="Weight">
                 <span class="label-rename-icon">✒</span>
               </div>
             </div>
             <div class="row-3">
-              <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="+2">
-              <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="1d6 force">
-              <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="4 lb">
+              <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="Utility">
+              <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="Unnecessary">
+              <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="Free">
             </div>
           </div>
           <div>
@@ -2168,18 +2168,18 @@
             <label>Requirements</label>
             <select id="itemAttunement">
               <option value="">None</option>
-              <option value="attunement">Attunement</option>
+              <option value="attunement" selected>Attunement</option>
               <option value="craftsman">Craftsman</option>
               <option value="custom">Custom</option>
             </select>
           </div>
           <div class="field-group" id="attunementCustomWrap">
             <label>Custom Requirement Text</label>
-            <input type="text" id="attunementCustom" placeholder="e.g. an artificer or a bribe to the DM">
+            <input type="text" id="attunementCustom" placeholder="e.g. an artificer or a bribe to the DM" value="a Master Craftsman">
           </div>
           <div class="field-group">
             <label>Source / Campaign <span class="field-note">*</span></label>
-            <input type="text" id="itemSource" placeholder="e.g. Homebrew — The Shattered Realm" value="Homebrew">
+            <input type="text" id="itemSource" placeholder="e.g. Homebrew — The Shattered Realm" value="">
           </div>
           <p class="field-note-legend"><span class="field-note">*</span> These fields are hidden on the card when left empty</p>
         </div>
@@ -2196,16 +2196,17 @@ Markdown is supported:
 - Item two
 > Blockquote for flavour text
 ---
-### Section heading">While attuned to this staff, you gain a **+2 bonus** to spell attack rolls and spell save DC.
+### Section heading">*A living codex of arcane craft — its pages take whatever form your imagination demands.*
 
-*The staff is topped with a swirling orb of trapped seawater, perpetually in motion.*
+**Forge.** Craft any weapon, armour, or wondrous item. Names, colours, rarity, art, and lore are yours to define — most fields and labels can be renamed.
 
-**Spells.** The staff has **10 charges**. While holding it, you can use an action to expend charges to cast the following spells:
-- *Control Water* (3 charges)
-- *Tidal Wave* (3 charges)
-- *Shape Water* (1 charge)
+**Illuminate.** Upload images and customise to taste; each card renders in ink that never fades.
 
-The staff regains **1d6+4 charges** at dawn.</textarea>
+**Preserve.** Export as PNG or JSON, print, or share via the Share tab.
+
+---
+> Mom, can we have brew?
+> *No, we have brew at home.*</textarea>
 
           <div class="char-counter-row">
             <span class="char-count" id="charCount">0 / 560</span>
@@ -2636,9 +2637,9 @@ The staff regains **1d6+4 charges** at dawn.</textarea>
 
       <div class="card-content">
         <div class="card-header">
-          <div class="card-item-name" id="previewName">Staff of the Arcane Tide</div>
-          <div class="card-subtype" id="previewSubtype">Staff • Quarterstaff</div>
-          <div class="card-rarity rarity-rare" id="previewRarity">◆ Rare ◆</div>
+          <div class="card-item-name" id="previewName">The Artifex Arcanum</div>
+          <div class="card-subtype" id="previewSubtype">Wondrous Item • The Master Forge</div>
+          <div class="card-rarity rarity-legendary" id="previewRarity">◆ Legendary ◆</div>
         </div>
 
         <div class="card-divider"><span class="divider-gem"></span></div>
@@ -2944,7 +2945,9 @@ function syncCard() {
   }
 
   // Description (markdown)
-  $('previewDesc').innerHTML = marked.parse(desc, { breaks: true });
+  $('previewDesc').innerHTML = typeof marked !== 'undefined'
+    ? marked.parse(desc, { breaks: true })
+    : desc.replace(/\n/g, '<br>');
 
   // ── CHAR COUNTER + OVERFLOW CONTROL ──
   // CHAR_LIMIT is used only for the counter display and the "warn" colour.
@@ -5506,6 +5509,69 @@ if (_initialHistory.length > 0) {
 } else {
   syncCard();
 }
+
+// ── DEFAULT CARD IMAGE ──
+// Load brown_logo.png and inject it into the welcome card shown to first-time visitors.
+// Mirrors the upload handler exactly to avoid applyState side-effects.
+// Also patches the history entry that registerNewCard() already created (without the image)
+// and updates DEFAULT_STATE so factory reset restores it too.
+// Not included in getNewCardState() — blank new cards remain logo-free.
+(function loadDefaultCardImage() {
+  if (_initialHistory.length > 0) return; // returning visitor — leave their card alone
+
+  const cardImg     = $('cardItemImg');
+  const placeholder = $('imgPlaceholder');
+
+  cardImg.onload = () => {
+    itemImgNaturalW = cardImg.naturalWidth;
+    itemImgNaturalH = cardImg.naturalHeight;
+    itemImgX = 0; itemImgY = 0; itemImgScale = 1;
+    if ($('itemImgZoom')) $('itemImgZoom').value = 1;
+    updateItemImageTransform();
+    showCropControls(true);
+
+    // Convert to data URL via canvas (same-origin PNG — no CORS issue).
+    // This ensures the image is embedded when saved to history or exported.
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width  = itemImgNaturalW;
+      canvas.height = itemImgNaturalH;
+      canvas.getContext('2d').drawImage(cardImg, 0, 0);
+      const dataUrl = canvas.toDataURL('image/png');
+
+      cardImg.src = dataUrl;
+      $('itemImgPreview').src = dataUrl;
+
+      DEFAULT_STATE.itemImage   = dataUrl;
+      DEFAULT_STATE.imgNaturalW = itemImgNaturalW;
+      DEFAULT_STATE.imgNaturalH = itemImgNaturalH;
+
+      // Patch the history entry registerNewCard() already saved without the image
+      if (activeHistoryId) {
+        const hist = getHistory();
+        const idx  = hist.findIndex(h => h.id === activeHistoryId);
+        if (idx >= 0) {
+          hist[idx].itemImage   = dataUrl;
+          hist[idx].imgNaturalW = itemImgNaturalW;
+          hist[idx].imgNaturalH = itemImgNaturalH;
+          saveHistory(hist);
+        }
+      }
+    } catch (e) {
+      console.warn('[init] could not convert logo to data URL:', e);
+    }
+  };
+
+  cardImg.onerror = () => console.warn('[init] could not load brown_logo.png');
+
+  // Set src directly — same-origin file, no fetch needed
+  cardImg.src = 'brown_logo.png';
+  cardImg.style.display     = 'block';
+  placeholder.style.display = 'none';
+  $('itemImgPreview').src   = 'brown_logo.png';
+  $('itemImgZone').classList.add('has-image');
+  $('clearItem').style.display = 'inline-block';
+})();
 
 // ── SHARE PROVIDER UI — initial sync ──
 updateShareUI();
