@@ -1654,7 +1654,7 @@
   }
   .print-select-item:last-child { border-bottom: none; }
   .print-select-item:hover { background: rgba(180,130,60,0.07); }
-  .print-select-item.collection-child { padding-left: 2rem; }
+  .print-select-item.collection-child { padding-left: 2.1rem; }
   .print-select-item input[type="checkbox"] {
     accent-color: var(--gold);
     width: 14px;
