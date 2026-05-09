@@ -195,15 +195,60 @@
   </div>
 </div>
 
+<!-- COLLECTIONS MANAGEMENT MODAL -->
+<div class="confirm-modal" id="collectionsModal">
+  <div class="confirm-modal-box collections-modal-box">
+    <div class="confirm-modal-title">Collections</div>
+    <div id="collectionsList" class="collections-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="collectionsAddNew">＋ New Collection</button>
+      <button class="btn btn-secondary" id="collectionsClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTION CREATE / EDIT MODAL -->
+<div class="confirm-modal" id="collectionEditModal">
+  <div class="confirm-modal-box collection-edit-box">
+    <div class="confirm-modal-title" id="collectionEditTitle">New Collection</div>
+    <div class="collection-edit-fields">
+      <div class="field-group">
+        <label>Name</label>
+        <input type="text" id="collectionEditName" placeholder="e.g. The Breaking Campaign" maxlength="60" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label>Description <span class="field-note">*</span></label>
+        <input type="text" id="collectionEditDesc" placeholder="Optional description" maxlength="120" autocomplete="off">
+      </div>
+    </div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="collectionEditSave">Save</button>
+      <button class="btn btn-secondary" id="collectionEditCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- OFF-SCREEN RENDER AREA -->
 <div id="offscreenRender"></div>
 
 <!-- HISTORY BAR -->
 <div class="history-bar" id="historyBar">
+  <!-- Collections dropdown -->
+  <div class="history-label-wrap" id="collectionLabelWrap">
+    <button class="history-label" id="collectionDropdownBtn"><span>📁</span> <span id="collectionDropdownLabel">Collections</span> <span class="dropdown-caret">▼</span></button>
+    <div class="history-dropdown collection-dropdown" id="collectionDropdown">
+      <div class="history-dropdown-new" id="collectionFilterAll">All Cards</div>
+      <div class="collection-dropdown-divider"></div>
+      <div id="collectionDropdownItems"></div>
+      <div class="collection-dropdown-divider" id="collectionDropdownDivider2"></div>
+      <div class="history-dropdown-new" id="collectionDropdownNew">＋ New Collection</div>
+      <div class="history-dropdown-new" id="collectionDropdownManage">⚙ Manage</div>
+    </div>
+  </div>
+  <!-- Recent dropdown -->
   <div class="history-label-wrap">
     <button class="history-label" id="historyDropdownBtn"><span>📜</span> Recent <span class="dropdown-caret">▼</span></button>
     <div class="history-dropdown" id="historyDropdown">
-
       <div class="history-dropdown-new" id="historyDropdownNew">＋ New Card</div>
       <div class="history-dropdown-empty" id="historyDropdownEmpty">No saved items yet</div>
       <div id="historyDropdownItems"></div>
@@ -220,6 +265,13 @@
     <input type="text" id="historySearch" class="history-search-input" placeholder="Search…" autocomplete="off" spellcheck="false">
     <button class="history-search-clear" id="historySearchClear" title="Clear search">✕</button>
     <div id="historySearchResults" class="history-search-results"></div>
+  </div>
+  <!-- Type filter -->
+  <div class="history-type-filter" id="historyTypeFilter">
+    <button class="type-filter-btn active" data-type="all">All</button>
+    <button class="type-filter-btn" data-type="item">Item</button>
+    <button class="type-filter-btn type-filter-disabled" data-type="spell" title="Spell cards coming soon">Spell</button>
+    <button class="type-filter-btn type-filter-disabled" data-type="monster" title="Monster cards coming soon">Monster</button>
   </div>
   <button id="newCardBtn" class="history-save-btn" title="Save current &amp; start new card" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">＋ New</button>
   <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;"><span class="theme-icon">☀</span><span class="theme-label"> Light</span></button>
@@ -284,6 +336,12 @@
               <option value="legendary" selected>Legendary</option>
               <option value="artifact">Artifact</option>
               <option value="unique">Unique</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Collection <span class="field-note">*</span></label>
+            <select id="itemCollection">
+              <option value="">— None —</option>
             </select>
           </div>
         </div>
