@@ -217,7 +217,9 @@ function syncCard() {
   const bonus   = $('itemBonus').value;
   const damage  = $('itemDamage').value;
   const weight  = $('itemWeight').value;
-  const source  = $('itemSource').value;
+  const showCollection = $('showCollection').checked;
+  const collectionId   = $('itemCollection').value ? parseInt($('itemCollection').value, 10) : null;
+  const source         = showCollection ? (getCollectionById(collectionId)?.name || '') : '';
   const desc    = $('itemDescription').value;
 
   // Attunement
@@ -364,8 +366,8 @@ function syncCard() {
 // ── BIND ALL INPUTS ──
 [
   'itemName','itemType','itemSubtype','itemRarity','itemBonus',
-  'itemDamage','itemWeight','itemSource','itemDescription',
-  'itemAttunement','attunementCustom','showImage','showStats','showFrame','squareCorners',
+  'itemDamage','itemWeight','itemDescription',
+  'itemAttunement','attunementCustom','showImage','showStats','showCollection','showFrame','squareCorners',
   'allowOversized',
   'bonusLabel','damageLabel','weightLabel','saveLabel','rangeLabel',
   'itemSave','itemRange'
@@ -840,7 +842,7 @@ function buildCardNode(s) {
     </div>
     ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">${attuneText}</div>` : ''}
     <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
-      <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.source || ''}</div>
+      <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.showCollection !== false ? (getCollectionById(s.collectionId)?.name || '') : ''}</div>
     </div>
   `;
 
@@ -1491,11 +1493,11 @@ const BLANK_STATE = {
   bonus: '', damage: '', weight: '',
   bonusLabel: 'Bonus', damageLabel: 'Damage', weightLabel: 'Weight',
   savingThrow: '', range: '', saveLabel: 'Save', rangeLabel: 'Range',
-  source: '', description: '',
+  description: '',
   attunement: '', attunementCustom: '',
   cardColor: '#d4b87a', inkColor: '#2c1a0e',
   rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
-  showImage: true, showStats: true, showFrame: true, squareCorners: false,
+  showImage: true, showStats: true, showCollection: false, showFrame: true, squareCorners: false,
   bgImage: null, itemImage: null,
   imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
   imgNaturalW: 0, imgNaturalH: 0,
@@ -1506,10 +1508,8 @@ function getNewCardState() {
   const state = { ...BLANK_STATE };
   const defType   = localStorage.getItem('dnd_default_type');
   const defRarity = localStorage.getItem('dnd_default_rarity');
-  const defSource = localStorage.getItem('dnd_default_source');
   if (defType)   state.type   = defType;
   if (defRarity) state.rarity = defRarity;
-  if (defSource) state.source = defSource;
   return state;
 }
 
@@ -1652,7 +1652,6 @@ $('clearAllDataConfirm').addEventListener('click', () => {
   $('defaultTypeImgToggle').checked = false;
   $('defaultType').value = '';
   $('defaultRarity').value = '';
-  $('defaultSource').value = '';
 
   // Export quality → standard (all groups)
   syncAllQualityUI('standard');
@@ -2326,7 +2325,7 @@ function collectCurrentState() {
     range:       $('itemRange').value,
     saveLabel:   $('saveLabel').value   || 'Save',
     rangeLabel:  $('rangeLabel').value  || 'Range',
-    source:      $('itemSource').value,
+    showCollection: $('showCollection').checked,
     description: $('itemDescription').value,
     attunement:  $('itemAttunement').value,
     attunementCustom: $('attunementCustom').value,
@@ -2455,7 +2454,7 @@ function applyState(s) {
   $('itemRange').value       = s.range       || '';
   $('saveLabel').value       = s.saveLabel   || 'Save';
   $('rangeLabel').value      = s.rangeLabel  || 'Range';
-  $('itemSource').value      = s.source      || '';
+  $('showCollection').checked = s.showCollection === true;
   $('itemDescription').value = s.description || '';
   const knownAttuneModes = new Set(['', 'attunement', 'craftsman', 'resources', 'custom']);
   if (!knownAttuneModes.has(s.attunement || '')) {
@@ -3077,6 +3076,7 @@ $('collectionEditName').addEventListener('keydown', e => { if (e.key === 'Enter'
 $('itemCollection').addEventListener('change', () => {
   if (_applyingState) return;
   setDirty(true);
+  syncCard();
 });
 
 // ── TYPE FILTER ──
@@ -3196,7 +3196,7 @@ function scrollHistoryActiveToCenter() {
   const hintLabel = $('swipeHintLabel');
   if (!preview || !hint) return;
 
-  let startX = 0, startY = 0, previewRect = null, hintVisible = false, hideTimer = null;
+  let startX = 0, startY = 0, previewRect = null, hintVisible = false, hideTimer = null, ignored = false;
 
   function showHint(dir) {
     if (getHistory().length < 2 || !previewRect) return;
@@ -3234,12 +3234,15 @@ function scrollHistoryActiveToCenter() {
   }
 
   preview.addEventListener('touchstart', e => {
+    ignored = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON';
+    if (ignored) return;
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     previewRect = preview.getBoundingClientRect();
   }, { passive: true });
 
   preview.addEventListener('touchmove', e => {
+    if (ignored) return;
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
     if (Math.abs(dx) > 22 && Math.abs(dx) > Math.abs(dy)) {
@@ -3250,6 +3253,7 @@ function scrollHistoryActiveToCenter() {
   }, { passive: true });
 
   preview.addEventListener('touchend', e => {
+    if (ignored) { ignored = false; return; }
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
     hideHint();
@@ -3258,7 +3262,7 @@ function scrollHistoryActiveToCenter() {
     }
   }, { passive: true });
 
-  preview.addEventListener('touchcancel', hideHint, { passive: true });
+  preview.addEventListener('touchcancel', () => { ignored = false; hideHint(); }, { passive: true });
 })();
 
 // ── DEFAULT TYPE IMAGE PERSISTENCE ──
@@ -3343,10 +3347,8 @@ if ($('persistScaleToggle').checked) {
 (function() {
   const savedType   = localStorage.getItem('dnd_default_type');
   const savedRarity = localStorage.getItem('dnd_default_rarity');
-  const savedSource = localStorage.getItem('dnd_default_source');
   if (savedType)   $('defaultType').value   = savedType;
   if (savedRarity) $('defaultRarity').value = savedRarity;
-  if (savedSource) $('defaultSource').value = savedSource;
 
   $('defaultType').addEventListener('change', e => {
     if (e.target.value) localStorage.setItem('dnd_default_type', e.target.value);
@@ -3355,10 +3357,6 @@ if ($('persistScaleToggle').checked) {
   $('defaultRarity').addEventListener('change', e => {
     if (e.target.value) localStorage.setItem('dnd_default_rarity', e.target.value);
     else localStorage.removeItem('dnd_default_rarity');
-  });
-  $('defaultSource').addEventListener('input', e => {
-    if (e.target.value) localStorage.setItem('dnd_default_source', e.target.value);
-    else localStorage.removeItem('dnd_default_source');
   });
 })();
 

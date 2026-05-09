@@ -406,10 +406,6 @@
             <label>Custom Requirement Text</label>
             <input type="text" id="attunementCustom" placeholder="e.g. an artificer or a bribe to the DM" value="a Master Craftsman">
           </div>
-          <div class="field-group">
-            <label>Source / Campaign <span class="field-note">*</span></label>
-            <input type="text" id="itemSource" placeholder="e.g. Homebrew — The Shattered Realm" value="">
-          </div>
           <p class="field-note-legend"><span class="field-note">*</span> These fields are hidden on the card when left empty</p>
         </div>
       </div>
@@ -568,6 +564,10 @@ Markdown is supported:
           <label class="toggle-row">
             <span class="toggle-wrap"><input type="checkbox" id="showStats" checked><span class="toggle-knob"></span></span>
             Show stats strip (damage / weight / bonus)
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-wrap"><input type="checkbox" id="showCollection"><span class="toggle-knob"></span></span>
+            Show collection name in card footer
           </label>
           <label class="toggle-row">
             <span class="toggle-wrap"><input type="checkbox" id="showFrame" checked><span class="toggle-knob"></span></span>
@@ -770,10 +770,6 @@ Markdown is supported:
               <option value="artifact">Artifact</option>
               <option value="unique">Unique</option>
             </select>
-          </div>
-          <div class="field-group" style="margin:0;">
-            <label>Default source / campaign</label>
-            <input type="text" id="defaultSource" placeholder="e.g. Homebrew" style="width:100%;">
           </div>
         </div>
       </div>
