@@ -3104,10 +3104,37 @@ $('historyDropdownNew').addEventListener('click', () => {
   openNewCard();
 });
 
-$('newCardBtn').addEventListener('click', openNewCard);
+$('newCardBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  $('newCardDropdown').classList.toggle('open');
+});
+
+$('newCardClean').addEventListener('click', () => {
+  $('newCardDropdown').classList.remove('open');
+  openNewCard();
+});
+
+$('newCardCopy').addEventListener('click', () => {
+  $('newCardDropdown').classList.remove('open');
+  // Save current card if tracked
+  if (activeHistoryId) {
+    const current = collectCurrentState();
+    current.id = activeHistoryId;
+    const hist = getHistory();
+    const idx = hist.findIndex(h => h.id === activeHistoryId);
+    if (idx >= 0) { hist[idx] = current; saveHistory(hist); }
+  }
+  const copy = collectCurrentState();
+  copy.name = (copy.name || '').trim() + ' - Copy';
+  delete copy.id;
+  activeHistoryId = null;
+  applyState(copy);
+});
+
 document.addEventListener('click', e => {
   $('historyDropdown').classList.remove('open');
   $('collectionDropdown').classList.remove('open');
+  $('newCardDropdown').classList.remove('open');
   const wrap = document.querySelector('.history-search-wrap');
   if (wrap && !wrap.contains(e.target)) {
     $('historySearchResults').classList.remove('open');
