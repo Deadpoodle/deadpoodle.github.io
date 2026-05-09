@@ -1782,6 +1782,19 @@ function updateShareUI() {
     const info = SHARE_PROVIDER_LABELS[provider] || { name: provider, icon: '☁' };
     $('shareProviderIcon').textContent = info.icon;
     $('shareProviderName').textContent = info.name;
+    const browseLink = $('shareProviderBrowseLink');
+    if (browseLink) {
+      if (provider === 'dropbox') {
+        browseLink.href = 'https://www.dropbox.com/home/Artifex%20Arcanum%20Cards';
+      } else if (provider === 'gdrive') {
+        const folderId = localStorage.getItem('dnd_gdrive_folder_id');
+        browseLink.href = folderId
+          ? `https://drive.google.com/drive/folders/${folderId}`
+          : 'https://drive.google.com/drive/my-drive';
+      } else {
+        browseLink.href = '#';
+      }
+    }
     connectedEl.style.display  = 'block';
     btnsEl.style.display       = 'none';
     noProviderEl.style.display = 'none';
@@ -2163,7 +2176,7 @@ async function fetchSharedCard(provider, id) {
     const resp = await fetch(fetchUrl);
     if (resp.status === 404) throw new Error('not_found');
     if (!resp.ok) throw new Error('fetch_' + resp.status);
-    return resp.json();
+    try { return await resp.json(); } catch { throw new Error('not_found'); }
   }
   if (provider === 'gdrive') {
     const downloadUrl = `https://drive.google.com/uc?export=download&id=${id}`;
@@ -2176,7 +2189,7 @@ async function fetchSharedCard(provider, id) {
     const resp = await fetch(fetchUrl);
     if (resp.status === 404) throw new Error('not_found');
     if (!resp.ok) throw new Error('fetch_' + resp.status);
-    return resp.json();
+    try { return await resp.json(); } catch { throw new Error('not_found'); }
   }
   // Other providers added in later phases
   return null;
