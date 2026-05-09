@@ -1,11 +1,11 @@
 // Cloudflare Worker — artifex-arcanum.joefahey87.workers.dev
 //
 // Proxies requests that Firefox Enhanced Tracking Protection blocks when made
-// directly from the browser. Handles:
+// directly from the browser. Currently handles:
 //   - Dropbox recipient fetch (GET dl.dropboxusercontent.com)
-//   - Google Drive token exchange + refresh (POST oauth2.googleapis.com)
-//   - Google Drive upload + permissions (POST/GET www.googleapis.com)
-//   - Google Drive recipient fetch (GET drive.google.com)
+//
+// www.googleapis.com and drive.google.com are allowed for future use but are
+// not currently routed through the proxy (Google Drive API calls are made directly).
 //
 // Usage: fetch(`${WORKER_URL}?url=${encodeURIComponent(targetUrl)}`, options)
 
@@ -13,9 +13,8 @@ const ALLOW_ORIGIN = 'https://deadpoodle.github.io';
 
 const ALLOWED_HOSTS = new Set([
   'dl.dropboxusercontent.com',   // Dropbox recipient fetch
-  'oauth2.googleapis.com',       // Google token exchange + refresh
-  'www.googleapis.com',          // Google Drive upload + permissions
-  'drive.google.com',            // Google Drive recipient fetch
+  'www.googleapis.com',          // Google Drive API (future use)
+  'drive.google.com',            // Google Drive recipient fetch (future use)
 ]);
 
 addEventListener('fetch', event => {

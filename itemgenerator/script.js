@@ -1906,43 +1906,17 @@ const GDRIVE_CLIENT_ID = '33952755898-n2ce7raec9995di0s0coplgrbn4d3g49.apps.goog
 const GDRIVE_REDIRECT  = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
 
-// Routes a POST through the Cloudflare Worker so Firefox Enhanced Tracking Protection
-// doesn't block token exchange requests to oauth2.googleapis.com.
-function _proxyPost(url, options) {
-  if (!DROPBOX_PROXY || DROPBOX_PROXY.includes('YOUR-WORKER')) {
-    console.warn('[proxy] no proxy configured — fetching directly:', url);
-    return fetch(url, options);
-  }
-  const proxyUrl = `${DROPBOX_PROXY}?url=${encodeURIComponent(url)}`;
-  console.log('[proxy] routing via Worker:', proxyUrl);
-  return fetch(proxyUrl, options);
-}
-
-// ── PKCE helpers (used by Google Drive and future providers) ──
-async function _pkceVerifier() {
-  const arr = crypto.getRandomValues(new Uint8Array(64));
-  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-async function _pkceChallenge(verifier) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-// ── Google Drive OAuth PKCE flow (Step 13) ──
+// ── Google Drive OAuth — implicit flow (Step 13) ──
+// Google's "Web application" client type requires a client_secret for the code exchange,
+// which cannot be embedded in client-side JS. Implicit flow (response_type=token) returns
+// the access token directly in the redirect fragment, bypassing the exchange entirely.
+// Tokens expire after 1 hour; the _gdrive() wrapper handles 401s by prompting reconnect.
 async function connectGoogleDrive() {
-  const verifier  = await _pkceVerifier();
-  const challenge = await _pkceChallenge(verifier);
-  sessionStorage.setItem('dnd_oauth_verifier', verifier);
-
   const params = new URLSearchParams({
-    client_id:             GDRIVE_CLIENT_ID,
-    redirect_uri:          GDRIVE_REDIRECT,
-    response_type:         'code',
-    scope:                 GDRIVE_SCOPE,
-    code_challenge:        challenge,
-    code_challenge_method: 'S256',
-    access_type:           'offline',
-    prompt:                'consent',  // ensures refresh token is always issued
+    client_id:     GDRIVE_CLIENT_ID,
+    redirect_uri:  GDRIVE_REDIRECT,
+    response_type: 'token',
+    scope:         GDRIVE_SCOPE,
   });
 
   const popup = window.open(
@@ -1957,44 +1931,16 @@ async function connectGoogleDrive() {
   try {
     await new Promise((resolve, reject) => {
       let done = false;
-      async function onMsg(e) {
+      function onMsg(e) {
         if (e.origin !== window.location.origin || !e.data || e.data.type !== 'oauth_callback') return;
         window.removeEventListener('message', onMsg);
         clearInterval(poll);
         done = true;
-        const { code, error } = e.data.payload;
-        if (error) { reject(new Error(error)); return; }
-        if (!code) { reject(new Error('no_code')); return; }
-        try {
-          const stored = sessionStorage.getItem('dnd_oauth_verifier');
-          sessionStorage.removeItem('dnd_oauth_verifier');
-          console.log('[gdrive] code received, starting token exchange. DROPBOX_PROXY:', DROPBOX_PROXY);
-          const resp = await _proxyPost('https://oauth2.googleapis.com/token', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    new URLSearchParams({
-              code,
-              client_id:     GDRIVE_CLIENT_ID,
-              redirect_uri:  GDRIVE_REDIRECT,
-              code_verifier: stored,
-              grant_type:    'authorization_code',
-            }),
-          });
-          console.log('[gdrive] token exchange response status:', resp.status, resp.ok);
-          if (!resp.ok) {
-            const body = await resp.text().catch(() => '(unreadable)');
-            console.error('[gdrive] token exchange failed. Response body:', body);
-            reject(new Error('token_exchange_failed'));
-            return;
-          }
-          const data = await resp.json();
-          console.log('[gdrive] token exchange succeeded. Has refresh_token:', !!data.refresh_token);
-          setShareConnection('gdrive', data.access_token, data.refresh_token || null);
-          resolve();
-        } catch (err) {
-          console.error('[gdrive] token exchange threw:', err.name, err.message);
-          reject(err);
-        }
+        const { access_token, error } = e.data.payload;
+        if (error)         { reject(new Error(error));     return; }
+        if (!access_token) { reject(new Error('no_token')); return; }
+        setShareConnection('gdrive', access_token, null);
+        resolve();
       }
       window.addEventListener('message', onMsg);
       const poll = setInterval(() => {
@@ -2011,7 +1957,6 @@ async function connectGoogleDrive() {
     });
     updateShareUI();
   } catch (err) {
-    sessionStorage.removeItem('dnd_oauth_verifier');
     if (err.message !== 'closed') {
       showInfoModal('Connection Failed', 'Could not connect to Google Drive — please try again.');
       console.error('[gdrive] connect error:', err);
@@ -2019,45 +1964,16 @@ async function connectGoogleDrive() {
   }
 }
 
-// ── Google Drive token refresh (Step 16) ──
-async function refreshGoogleToken() {
-  const refreshToken = localStorage.getItem('dnd_share_refresh_token');
-  if (!refreshToken) throw new Error('no_refresh_token');
-  const resp = await _proxyPost('https://oauth2.googleapis.com/token', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    new URLSearchParams({
-      client_id:     GDRIVE_CLIENT_ID,
-      refresh_token: refreshToken,
-      grant_type:    'refresh_token',
-    }),
-  });
-  if (!resp.ok) throw new Error('refresh_failed');
-  const data = await resp.json();
-  localStorage.setItem('dnd_share_token', data.access_token);
-  return data.access_token;
-}
-
-// ── Google Drive fetch wrapper — auto-refreshes on 401 (Step 16) ──
-async function _gdrive(url, options, _retried = false) {
+// ── Google Drive fetch wrapper — prompts reconnect on 401 ──
+async function _gdrive(url, options) {
   const token = getShareToken();
   const resp  = await fetch(url, {
     ...options,
     headers: { ...options.headers, Authorization: 'Bearer ' + token },
   });
-  if (resp.status === 401 && !_retried) {
-    try {
-      await refreshGoogleToken();
-      return _gdrive(url, options, true);
-    } catch {
-      clearShareConnection();
-      showInfoModal('Google Drive Disconnected', 'Your session has expired. Please reconnect in Settings → Share Provider.');
-      throw new Error('auth_expired');
-    }
-  }
   if (resp.status === 401) {
     clearShareConnection();
-    showInfoModal('Google Drive Disconnected', 'Your session has expired. Please reconnect in Settings → Share Provider.');
+    showInfoModal('Google Drive Disconnected', 'Your session has expired (tokens last 1 hour). Please reconnect in Settings → Share Provider.');
     throw new Error('auth_expired');
   }
   return resp;
