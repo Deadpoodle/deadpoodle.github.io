@@ -1852,19 +1852,38 @@ const DROPBOX_FOLDER     = '/Artifex Arcanum Cards';
 // Deploy the worker from SHARE_UPGRADE.md and replace the placeholder URL below.
 const DROPBOX_PROXY      = 'https://artifex-arcanum.joefahey87.workers.dev';
 
-// ── Dropbox OAuth — implicit flow (Step 8) ──
-// Dropbox's /oauth2/token endpoint does not send CORS headers, so the PKCE
-// authorization-code exchange cannot be completed from a browser fetch().
-// The implicit flow (response_type=token) returns the access token directly
-// in the redirect URL fragment, bypassing the exchange entirely.
-// token_access_type=legacy requests a long-lived token so users don't need
-// to reconnect frequently.
+// ── PKCE helpers ──
+function _pkceVerifier() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function _pkceChallenge(verifier) {
+  const data   = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// ── Dropbox OAuth — PKCE flow via Cloudflare Worker ──
+// Dropbox's /oauth2/token endpoint has no CORS headers, so the code exchange is
+// proxied through the Worker (POST /dropbox-token). No client secret is needed —
+// PKCE uses a code_verifier instead. token_access_type=offline gets a refresh token
+// so the user never needs to manually reconnect after the initial authorisation.
 async function connectDropbox() {
+  const verifier   = _pkceVerifier();
+  const challenge  = await _pkceChallenge(verifier);
+  sessionStorage.setItem('dnd_oauth_verifier', verifier);
+
   const params = new URLSearchParams({
-    client_id:         DROPBOX_APP_KEY,
-    redirect_uri:      DROPBOX_REDIRECT,
-    response_type:     'token',
-    token_access_type: 'legacy',
+    client_id:             DROPBOX_APP_KEY,
+    redirect_uri:          DROPBOX_REDIRECT,
+    response_type:         'code',
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
+    token_access_type:     'offline',
   });
 
   const popup = window.open(
@@ -1873,6 +1892,7 @@ async function connectDropbox() {
   );
   if (!popup) {
     showInfoModal('Popup Blocked', 'Please allow pop-ups for this page and try again.');
+    sessionStorage.removeItem('dnd_oauth_verifier');
     return;
   }
 
@@ -1884,19 +1904,42 @@ async function connectDropbox() {
         window.removeEventListener('message', onMsg);
         clearInterval(poll);
         done = true;
-        const { access_token, error } = e.data.payload;
-        if (error)        { reject(new Error(error));     return; }
-        if (!access_token){ reject(new Error('no_token')); return; }
-        setShareConnection('dropbox', access_token, null);
-        resolve();
+        const { code, error } = e.data.payload;
+        if (error) { reject(new Error(error)); return; }
+        if (!code)  { reject(new Error('no_code')); return; }
+
+        const storedVerifier = sessionStorage.getItem('dnd_oauth_verifier');
+        sessionStorage.removeItem('dnd_oauth_verifier');
+
+        const body = new URLSearchParams({
+          grant_type:    'authorization_code',
+          code,
+          code_verifier: storedVerifier,
+          client_id:     DROPBOX_APP_KEY,
+          redirect_uri:  DROPBOX_REDIRECT,
+        });
+
+        fetch(`${DROPBOX_PROXY}/dropbox-token`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body:    body.toString(),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.error || !data.access_token) {
+              reject(new Error(data.error || 'no_token'));
+              return;
+            }
+            console.log('[dropbox] PKCE exchange succeeded. refresh_token present:', !!data.refresh_token);
+            setShareConnection('dropbox', data.access_token, data.refresh_token || null);
+            resolve();
+          })
+          .catch(reject);
       }
       window.addEventListener('message', onMsg);
       const poll = setInterval(() => {
         if (!done && popup.closed) {
           clearInterval(poll);
-          // Grace period: oauth.html sends postMessage then immediately calls
-          // window.close(). The message event may still be queued when the
-          // interval fires. Wait 800ms before giving up so it can arrive.
           setTimeout(() => {
             if (!done) {
               window.removeEventListener('message', onMsg);
@@ -1916,19 +1959,53 @@ async function connectDropbox() {
   }
 }
 
-// ── Dropbox fetch wrapper — clears connection on 401 ──
-// Legacy tokens don't expire, but handle revocation gracefully.
+// ── Dropbox silent token refresh ──
+// Uses the stored refresh_token to get a new access_token via the Worker.
+// Returns true on success (new token stored), false if refresh is unavailable or fails.
+async function _refreshDropboxToken() {
+  const refreshToken = localStorage.getItem('dnd_share_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const body = new URLSearchParams({
+      grant_type:    'refresh_token',
+      refresh_token: refreshToken,
+      client_id:     DROPBOX_APP_KEY,
+    });
+    const resp = await fetch(`${DROPBOX_PROXY}/dropbox-token`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    body.toString(),
+    });
+    const data = await resp.json();
+    if (data.error || !data.access_token) return false;
+    localStorage.setItem('dnd_share_token', data.access_token);
+    console.log('[dropbox] access token silently refreshed.');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── Dropbox fetch wrapper — auto-refreshes on 401, then prompts reconnect ──
 async function _dbx(url, options) {
-  const token = getShareToken();
-  const resp  = await fetch(url, {
+  const doFetch = token => fetch(url, {
     ...options,
     headers: { ...options.headers, Authorization: 'Bearer ' + token },
   });
+
+  let resp = await doFetch(getShareToken());
+
   if (resp.status === 401) {
+    const refreshed = await _refreshDropboxToken();
+    if (refreshed) {
+      resp = await doFetch(getShareToken());
+      if (resp.status !== 401) return resp;
+    }
     clearShareConnection();
     showInfoModal('Dropbox Disconnected', 'Your Dropbox session has expired or been revoked. Please reconnect in Settings → Share Provider.');
     throw new Error('auth_expired');
   }
+
   return resp;
 }
 

@@ -35,6 +35,8 @@
   var payload = {
     code:         params.code         || null,
     access_token: params.access_token || null,
+    expires_in:   params.expires_in   ? parseInt(params.expires_in, 10) : null,
+    token_type:   params.token_type   || null,
     error:        params.error        || null,
     state:        params.state        || null
   };

@@ -26,6 +26,13 @@ async function handle(request) {
     return new Response(null, { headers: corsHeaders() });
   }
 
+  // Route: POST /dropbox-token — proxies PKCE code exchange and token refresh.
+  // Dropbox's token endpoint has no CORS headers so the browser can't call it directly.
+  // No secrets are needed — PKCE uses code_verifier instead of a client secret.
+  if (request.method === 'POST' && new URL(request.url).pathname === '/dropbox-token') {
+    return handleDropboxToken(request);
+  }
+
   const target = new URL(request.url).searchParams.get('url');
   if (!target) return new Response('Missing url param', { status: 400 });
 
@@ -43,6 +50,23 @@ async function handle(request) {
     status: upstream.status,
     headers: {
       'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
+      'Cache-Control': 'no-store',
+      ...corsHeaders(),
+    },
+  });
+}
+
+async function handleDropboxToken(request) {
+  const body = await request.text();
+  const upstream = await fetch('https://api.dropboxapi.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  return new Response(await upstream.text(), {
+    status: upstream.status,
+    headers: {
+      'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
       ...corsHeaders(),
     },
