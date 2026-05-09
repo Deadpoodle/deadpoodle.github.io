@@ -2776,9 +2776,9 @@ function buildSelectionList(listEl, updateUICb) {
     listEl.appendChild(header);
   }
 
-  function addItemRow(item) {
+  function addItemRow(item, isChild) {
     const row = document.createElement('label');
-    row.className = 'print-select-item';
+    row.className = 'print-select-item' + (isChild ? ' collection-child' : '');
     const rarityLabel = rarityLabels[item.rarity] || item.rarity;
     row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
       <span class="print-select-name">${item.name || 'Unnamed'}</span>
@@ -2792,13 +2792,13 @@ function buildSelectionList(listEl, updateUICb) {
     const group = byCollection.get(col.id);
     if (!group || group.length === 0) return;
     addGroupHeader(col.name, group);
-    group.forEach(addItemRow);
+    group.forEach(item => addItemRow(item, true));
   });
 
   // Uncollected at bottom
   if (uncollected.length > 0) {
     if (byCollection.size > 0) addGroupHeader('Uncollected', uncollected);
-    uncollected.forEach(addItemRow);
+    uncollected.forEach(item => addItemRow(item, byCollection.size > 0));
   }
 }
 
