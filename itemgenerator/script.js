@@ -3027,6 +3027,8 @@ function renderHistoryBar() {
 // ── COLLECTION DROPDOWN EVENTS ──
 $('collectionDropdownBtn').addEventListener('click', e => {
   e.stopPropagation();
+  $('historyDropdown').classList.remove('open');
+  $('newCardDropdown').classList.remove('open');
   $('collectionDropdown').classList.toggle('open');
   if ($('collectionDropdown').classList.contains('open')) renderCollectionDropdown();
 });
@@ -3096,6 +3098,8 @@ document.querySelectorAll('.type-filter-btn').forEach(btn => {
 // Dropdown toggle
 $('historyDropdownBtn').addEventListener('click', e => {
   e.stopPropagation();
+  $('collectionDropdown').classList.remove('open');
+  $('newCardDropdown').classList.remove('open');
   $('historyDropdown').classList.toggle('open');
 });
 
@@ -3106,6 +3110,8 @@ $('historyDropdownNew').addEventListener('click', () => {
 
 $('newCardBtn').addEventListener('click', e => {
   e.stopPropagation();
+  $('collectionDropdown').classList.remove('open');
+  $('historyDropdown').classList.remove('open');
   $('newCardDropdown').classList.toggle('open');
 });
 
