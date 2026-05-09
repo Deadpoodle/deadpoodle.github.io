@@ -29,10 +29,13 @@ function showGenericConfirm(title, msgHtml, confirmText = 'Confirm') {
   $('genericConfirmTitle').textContent = title;
   $('genericConfirmMsg').innerHTML = msgHtml;
   $('genericConfirmOk').textContent = confirmText;
-  $('genericConfirmModal').classList.add('active');
+  const modal = $('genericConfirmModal');
+  modal.style.zIndex = '10000';
+  modal.classList.add('active');
   return new Promise(resolve => {
-    $('genericConfirmOk').onclick    = () => { $('genericConfirmModal').classList.remove('active'); resolve(true);  };
-    $('genericConfirmCancel').onclick = () => { $('genericConfirmModal').classList.remove('active'); resolve(false); };
+    const close = (result) => { modal.classList.remove('active'); modal.style.zIndex = ''; resolve(result); };
+    $('genericConfirmOk').onclick    = () => close(true);
+    $('genericConfirmCancel').onclick = () => close(false);
   });
 }
 
