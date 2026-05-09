@@ -177,6 +177,26 @@ $('itemImgZoom').addEventListener('input', () => {
 });
 $('resetImgCrop').addEventListener('click', resetImageCrop);
 
+// ── STAT TEXT AUTO-SHRINK ──
+// Reduces font size of an element until its content fits, down to minRem.
+function _shrinkToFit(el, baseRem, minRem) {
+  el.style.fontSize = baseRem + 'rem';
+  let size = baseRem;
+  while (el.scrollWidth > el.offsetWidth + 1 && size > minRem) {
+    size = Math.round((size - 0.05) * 100) / 100;
+    el.style.fontSize = size + 'rem';
+  }
+}
+
+// Runs _shrinkToFit on all stat/subtype elements within a built card node.
+// Must be called after the node is in the DOM so scrollWidth is measurable.
+function _applyStatShrink(node) {
+  node.querySelectorAll('.stat-value').forEach(el => _shrinkToFit(el, 0.82, 0.55));
+  node.querySelectorAll('.side-stat-value').forEach(el => _shrinkToFit(el, 0.72, 0.55));
+  const subtype = node.querySelector('.card-subtype');
+  if (subtype) _shrinkToFit(subtype, 0.65, 0.5);
+}
+
 // ── LIVE SYNC ──
 function syncCard() {
   if (!_applyingState) setDirty(true);
@@ -205,9 +225,13 @@ function syncCard() {
 
   $('previewName').textContent   = name;
   $('previewSubtype').textContent = type ? (subtype ? `${type} • ${subtype}` : type) : subtype;
+  _shrinkToFit($('previewSubtype'), 0.65, 0.5);
   $('previewBonus').textContent  = bonus  || '—';
   $('previewDamage').textContent = damage || '—';
   $('previewWeight').textContent = weight || '—';
+  _shrinkToFit($('previewBonus'),  0.82, 0.55);
+  _shrinkToFit($('previewDamage'), 0.82, 0.55);
+  _shrinkToFit($('previewWeight'), 0.82, 0.55);
   $('previewSource').textContent = source || '';
 
   // Rarity badge
@@ -289,8 +313,8 @@ function syncCard() {
   const rangeVal = $('itemRange').value.trim();
   $('saveStat').style.display  = saveVal  ? 'block' : 'none';
   $('rangeStat').style.display = rangeVal ? 'block' : 'none';
-  if (saveVal)  { $('previewSave').textContent  = saveVal;  $('previewSaveLabel').textContent  = $('saveLabel').value  || 'Save'; }
-  if (rangeVal) { $('previewRange').textContent = rangeVal; $('previewRangeLabel').textContent = $('rangeLabel').value || 'Range'; }
+  if (saveVal)  { $('previewSave').textContent  = saveVal;  $('previewSaveLabel').textContent  = $('saveLabel').value  || 'Save';  _shrinkToFit($('previewSave'),  0.82, 0.55); }
+  if (rangeVal) { $('previewRange').textContent = rangeVal; $('previewRangeLabel').textContent = $('rangeLabel').value || 'Range'; _shrinkToFit($('previewRange'), 0.82, 0.55); }
 
   // Toggles
   const showImg = $('showImage').checked;
@@ -770,10 +794,10 @@ function buildCardNode(s) {
   const sideStatValueStyle = `font-family:Cinzel,serif;font-size:0.72rem;font-weight:700;color:${inkCol};display:block;margin-top:3px;line-height:1.3;`;
 
   const saveHtml  = s.savingThrow
-    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${saveLbl}</span><span style="${sideStatValueStyle}">${s.savingThrow}</span></div>`
+    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${saveLbl}</span><span class="side-stat-value" style="${sideStatValueStyle}">${s.savingThrow}</span></div>`
     : `<div></div>`;
   const rangeHtml = s.range
-    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${rangeLbl}</span><span style="${sideStatValueStyle}">${s.range}</span></div>`
+    ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${rangeLbl}</span><span class="side-stat-value" style="${sideStatValueStyle}">${s.range}</span></div>`
     : `<div></div>`;
 
   const descHtml = typeof marked !== 'undefined' ? marked.parse(s.description || '', { breaks: true }) : (s.description || '');
@@ -835,6 +859,7 @@ async function renderStateToCanvas(s) {
   const node = buildCardNode(s);
   // Must be visible in the DOM for html2canvas — opacity:0 wrapper hides it from user
   offscreen.appendChild(node);
+  _applyStatShrink(node);
 
   // Wait for all images inside the node to fully load/decode
   const imgs = Array.from(node.querySelectorAll('img'));
@@ -2720,6 +2745,80 @@ function scrollHistoryActiveToCenter() {
 
   track.addEventListener('scroll', updateArrows, { passive: true });
   window._updateHistoryArrows = updateArrows;
+  window._navigateHistory = navigateHistory;
+})();
+
+// ── MOBILE SWIPE TO CHANGE CARD ──
+(function () {
+  const preview   = document.querySelector('.preview-area');
+  const hint      = $('swipeHint');
+  const hintIcon  = $('swipeHintIcon');
+  const hintLabel = $('swipeHintLabel');
+  if (!preview || !hint) return;
+
+  let startX = 0, startY = 0, previewRect = null, hintVisible = false, hideTimer = null;
+
+  function showHint(dir) {
+    if (getHistory().length < 2 || !previewRect) return;
+    clearTimeout(hideTimer);
+
+    hintIcon.textContent = dir < 0 ? '←' : '→';
+    hintLabel.innerHTML  = dir < 0 ? 'Swipe for<br>Previous' : 'Swipe for<br>Next';
+
+    // Position the fixed overlay to cover the left or right 30% of the preview pane.
+    // Using inline styles avoids any CSS-class-swap flicker.
+    const w = Math.round(previewRect.width * 0.30);
+    hint.style.top    = previewRect.top + 'px';
+    hint.style.height = previewRect.height + 'px';
+    hint.style.width  = w + 'px';
+    if (dir < 0) {
+      hint.style.left  = previewRect.left + 'px';
+      hint.style.right = 'auto';
+    } else {
+      hint.style.right = (window.innerWidth - previewRect.right) + 'px';
+      hint.style.left  = 'auto';
+    }
+
+    hint.classList.add('visible');
+    hintVisible = true;
+  }
+
+  function hideHint() {
+    hint.classList.remove('visible');
+    hintVisible = false;
+    clearTimeout(hideTimer);
+    // Clear inline position styles after the opacity transition finishes
+    hideTimer = setTimeout(() => {
+      hint.style.cssText = '';
+    }, 200);
+  }
+
+  preview.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    previewRect = preview.getBoundingClientRect();
+  }, { passive: true });
+
+  preview.addEventListener('touchmove', e => {
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.abs(dx) > 22 && Math.abs(dx) > Math.abs(dy)) {
+      showHint(dx < 0 ? 1 : -1);
+    } else if (hintVisible) {
+      hideHint();
+    }
+  }, { passive: true });
+
+  preview.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    hideHint();
+    if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (window._navigateHistory) window._navigateHistory(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  preview.addEventListener('touchcancel', hideHint, { passive: true });
 })();
 
 // ── DEFAULT TYPE IMAGE PERSISTENCE ──
