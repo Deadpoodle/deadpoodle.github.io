@@ -2754,29 +2754,50 @@ function buildSelectionList(listEl, updateUICb) {
   function addGroupHeader(name, groupItems) {
     const header = document.createElement('div');
     header.className = 'select-group-header';
-    const toggle = document.createElement('input');
-    toggle.type = 'checkbox';
-    toggle.checked = true;
-    toggle.className = 'select-group-toggle';
-    toggle.addEventListener('change', () => {
+
+    const caret = document.createElement('span');
+    caret.className = 'select-group-caret';
+    caret.textContent = '▾';
+
+    const selectToggle = document.createElement('input');
+    selectToggle.type = 'checkbox';
+    selectToggle.checked = true;
+    selectToggle.className = 'select-group-toggle';
+    selectToggle.addEventListener('change', () => {
       groupItems.forEach(item => {
-        const cb = listEl.querySelector(`input[value="${item.id}"]`);
-        if (cb) { cb.checked = toggle.checked; updateUICb(); }
+        const cb = body.querySelector(`input[value="${item.id}"]`);
+        if (cb) { cb.checked = selectToggle.checked; updateUICb(); }
       });
     });
+
     const label = document.createElement('span');
     label.className = 'select-group-name';
     label.textContent = name;
+
     const count = document.createElement('span');
     count.className = 'select-group-count';
     count.textContent = `(${groupItems.length})`;
-    header.appendChild(toggle);
+
+    header.appendChild(caret);
+    header.appendChild(selectToggle);
     header.appendChild(label);
     header.appendChild(count);
     listEl.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'select-group-body';
+    listEl.appendChild(body);
+
+    // Collapse on caret click (don't interfere with the checkbox)
+    caret.addEventListener('click', () => {
+      const collapsed = body.classList.toggle('collapsed');
+      caret.textContent = collapsed ? '▸' : '▾';
+    });
+
+    return body;
   }
 
-  function addItemRow(item, isChild) {
+  function addItemRow(item, isChild, container) {
     const row = document.createElement('label');
     row.className = 'print-select-item' + (isChild ? ' collection-child' : '');
     const rarityLabel = rarityLabels[item.rarity] || item.rarity;
@@ -2784,21 +2805,22 @@ function buildSelectionList(listEl, updateUICb) {
       <span class="print-select-name">${item.name || 'Unnamed'}</span>
       <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
     row.querySelector('input').addEventListener('change', updateUICb);
-    listEl.appendChild(row);
+    (container || listEl).appendChild(row);
   }
 
   // Render collections first
   cols.forEach(col => {
     const group = byCollection.get(col.id);
     if (!group || group.length === 0) return;
-    addGroupHeader(col.name, group);
-    group.forEach(item => addItemRow(item, true));
+    const body = addGroupHeader(col.name, group);
+    group.forEach(item => addItemRow(item, true, body));
   });
 
   // Uncollected at bottom
   if (uncollected.length > 0) {
-    if (byCollection.size > 0) addGroupHeader('Uncollected', uncollected);
-    uncollected.forEach(item => addItemRow(item, byCollection.size > 0));
+    const hasGroups = byCollection.size > 0;
+    const body = hasGroups ? addGroupHeader('Uncollected', uncollected) : null;
+    uncollected.forEach(item => addItemRow(item, hasGroups, body));
   }
 }
 
