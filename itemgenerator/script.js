@@ -1785,7 +1785,7 @@ function updateShareUI() {
     const browseLink = $('shareProviderBrowseLink');
     if (browseLink) {
       if (provider === 'dropbox') {
-        browseLink.href = 'https://www.dropbox.com/home/Artifex%20Arcanum%20Cards';
+        browseLink.href = 'https://www.dropbox.com/home/Apps/Artifex%20Arcanum/Artifex%20Arcanum%20Cards';
       } else if (provider === 'gdrive') {
         const folderId = localStorage.getItem('dnd_gdrive_folder_id');
         browseLink.href = folderId
