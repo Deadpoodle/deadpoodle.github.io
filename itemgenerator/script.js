@@ -675,8 +675,7 @@ async function exportCurrentPng() {
   const state = collectCurrentState();
   const canvas = await renderStateToCanvas(state);
   const link = document.createElement('a');
-  const name = (state.name || 'magic_item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
-  link.download = `${name}.png`;
+  link.download = buildExportFilename(state);
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
@@ -2668,12 +2667,13 @@ function mergeImportedCollections(sharedCollections, cards) {
 }
 
 function buildExportFilename(item) {
-  const safe = s => (s || '').replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const safe = s => (s || '').replace(/[/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
   const col  = item.collectionId ? getCollectionById(item.collectionId) : null;
-  const mode = item.cardMode || 'item';
-  const name = safe(item.name) || 'unnamed';
-  if (col) return `${safe(col.name)}_${mode}_${name}.png`;
-  return `${mode}_${name}.png`;
+  const mode = (item.cardMode || 'item');
+  const modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1) + 's';
+  const name = safe(item.name) || 'Unnamed';
+  if (col) return `${safe(col.name)} - ${modeLabel} - ${name}.png`;
+  return `${modeLabel} - ${name}.png`;
 }
 
 function populateCollectionSelect(selectedId) {
