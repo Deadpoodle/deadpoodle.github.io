@@ -216,8 +216,13 @@
     <div id="historyItems"></div>
   </div>
   <button class="history-arrow" id="historyNext" title="Next item" aria-label="Next item">Next &#187;</button>
+  <div class="history-search-wrap">
+    <input type="text" id="historySearch" class="history-search-input" placeholder="Search…" autocomplete="off" spellcheck="false">
+    <button class="history-search-clear" id="historySearchClear" title="Clear search">✕</button>
+    <div id="historySearchResults" class="history-search-results"></div>
+  </div>
   <button id="newCardBtn" class="history-save-btn" title="Save current &amp; start new card" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">＋ New</button>
-  <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;">☀ Light</button>
+  <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;"><span class="theme-icon">☀</span><span class="theme-label"> Light</span></button>
 </div>
 
 <div class="workspace">
@@ -400,7 +405,7 @@ Markdown is supported:
       <div class="details-action-row">
         <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
         <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
-        <button class="btn btn-secondary" id="clearCardBtn" title="Reset all fields to blank">✕ Clear</button>
+        <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo Changes</button>
       </div>
 
     </div><!-- /tab-identity -->

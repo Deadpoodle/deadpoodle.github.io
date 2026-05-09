@@ -541,6 +541,11 @@ function bindUpload(inputId, previewId, zoneId, clearBtnId, onLoad, options = {}
           // User chose "Enable & Upload" — turn the setting on for future uploads too
           $('compressImagesToggle').checked = true;
           localStorage.setItem('dnd_compress_images', 'true');
+          const lr = $('compressLevelRow');
+          if (lr) {
+            lr.style.setProperty('--compress-opt-opacity', '1');
+            lr.style.setProperty('--compress-opt-events', 'auto');
+          }
         }
       }
 
@@ -671,7 +676,7 @@ $('exportPrint').addEventListener('click', async () => {
     updateProgress(1, 1, 'Opening print dialog…');
     await new Promise(r => setTimeout(r, 150));
     hideProgress();
-    printImagesInPopup([dataUrl], 'single');
+    printImagesInPopup([{ url: dataUrl, oversized: !!state.allowOversized }], 'single');
   } catch(e) {
     hideProgress();
     showInfoModal('Print Failed', 'Print failed: ' + e.message);
@@ -683,7 +688,8 @@ function buildCardNode(s) {
   const wrap = document.createElement('div');
   wrap.className = 'item-card';
   const radius = s.squareCorners ? '0' : '8px';
-  wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:${radius};overflow:hidden;flex-shrink:0;`;
+  const wrapOverflow = s.allowOversized ? 'visible' : 'hidden';
+  wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:${radius};overflow:${wrapOverflow};flex-shrink:0;`;
 
   // bg colour layer
   const bg = document.createElement('div');
@@ -774,7 +780,8 @@ function buildCardNode(s) {
 
   const content = document.createElement('div');
   content.className = 'card-content';
-  content.style.cssText = 'position:relative;z-index:2;padding:0;display:flex;flex-direction:column;min-height:580px;';
+  const contentOverride = s.allowOversized ? 'height:auto;overflow:visible;' : 'height:580px;overflow:hidden;';
+  content.style.cssText = `position:relative;z-index:2;padding:0;display:flex;flex-direction:column;min-height:580px;${contentOverride}`;
   content.innerHTML = `
     <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
       <div class="card-item-name" style="font-family:Cinzel,serif;font-size:1.15rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
@@ -804,7 +811,7 @@ function buildCardNode(s) {
       </div>
     </div>
     <div class="card-divider"><span class="divider-gem"></span></div>
-    <div class="card-body" style="padding:8px 20px 16px;flex:1;">
+    <div class="card-body" style="padding:8px 20px 16px;${s.allowOversized ? 'flex:none;height:auto;overflow:visible;' : 'flex:1;'}">
       <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
     </div>
     ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">${attuneText}</div>` : ''}
@@ -897,30 +904,70 @@ function hideProgress() {
 // Because the popup contains nothing but <img> tags on a white page,
 // no browser CSS stripping can affect the output — colours are baked into the PNGs.
 //
-// Layout: A4 portrait, 3×3 grid, each card exactly 63mm × 88mm, no cut lines.
-// Single item print: card sits in the top-left cell; remaining 8 cells are empty.
-function printImagesInPopup(dataUrls, mode) {
+// entries: array of { url, oversized } objects.
+// Normal cards: A4 portrait 3×3 grid, each cell 63mm × 88mm.
+// If any card is oversized: one card per page, 63mm wide, full height — no grid.
+function printImagesInPopup(entries, mode) {
   // A4 portrait = 210mm × 297mm
   // 3 cols × 63mm + 2 × 1mm gap = 191mm  →  side margin = (210 - 191) / 2 = 9.5mm
   // 3 rows × 88mm + 2 × 1mm gap = 266mm  →  top margin  = (297 - 266) / 2 = 15.5mm
-  const PER_PAGE = 9;
-  const totalPages = Math.max(1, Math.ceil(dataUrls.length / PER_PAGE));
+  const hasOversized = entries.some(e => e.oversized);
 
-  const pagesHTML = Array.from({ length: totalPages }, (_, p) => {
-    const pageUrls = dataUrls.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
-    const slots = Array.from({ length: PER_PAGE }, (_, i) =>
-      pageUrls[i]
-        ? `<div class="card-cell"><img src="${pageUrls[i]}"></div>`
-        : `<div class="card-cell"></div>`
-    ).join('');
-    const pageLabel = totalPages > 1 ? ` &bull; Page ${p + 1} of ${totalPages}` : '';
-    return `<div class="page">
+  let pagesHTML, css;
+
+  if (hasOversized) {
+    // One card per page, full height — no grid constraint
+    pagesHTML = entries.map(({ url }, i) => {
+      const pageLabel = entries.length > 1 ? ` &bull; Card ${i + 1} of ${entries.length}` : '';
+      return `<div class="page">
+  <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
+  <div class="card-wrap"><img src="${url}"></div>
+</div>`;
+    }).join('\n');
+
+    css = `
+    @page { size: A4 portrait; margin: 0; }
+    html, body { margin: 0; padding: 0; background: white; }
+    .page {
+      width: 210mm;
+      break-after: page;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 6mm;
+    }
+    .page:last-child { break-after: avoid; }
+    .print-header {
+      font-family: Georgia, serif;
+      font-size: 7pt;
+      color: #aaa;
+      text-align: center;
+      padding: 6mm 0 2mm;
+      width: 100%;
+    }
+    .card-wrap { width: 63mm; }
+    .card-wrap img { width: 63mm; height: auto; display: block; }
+  `;
+  } else {
+    // Normal 3×3 grid layout
+    const PER_PAGE = 9;
+    const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE));
+
+    pagesHTML = Array.from({ length: totalPages }, (_, p) => {
+      const pageEntries = entries.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+      const slots = Array.from({ length: PER_PAGE }, (_, i) =>
+        pageEntries[i]
+          ? `<div class="card-cell"><img src="${pageEntries[i].url}"></div>`
+          : `<div class="card-cell"></div>`
+      ).join('');
+      const pageLabel = totalPages > 1 ? ` &bull; Page ${p + 1} of ${totalPages}` : '';
+      return `<div class="page">
   <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
   <div class="grid">${slots}</div>
 </div>`;
-  }).join('\n');
+    }).join('\n');
 
-  const css = `
+    css = `
     @page { size: A4 portrait; margin: 0; }
     html, body { margin: 0; padding: 0; background: white; }
     .page {
@@ -966,6 +1013,7 @@ function printImagesInPopup(dataUrls, mode) {
       object-fit: contain;
     }
   `;
+  }
 
   const html = `<!DOCTYPE html>
 <html>
@@ -1156,7 +1204,7 @@ ${pagesHTML}
     if (!items.length) return;
 
     showProgress('Preparing print sheet…', true);
-    const dataUrls = [];
+    const printEntries = [];
 
     for (let i = 0; i < items.length; i++) {
       if (_exportCancelled) break;
@@ -1164,21 +1212,21 @@ ${pagesHTML}
       try {
         const canvas = await renderStateToCanvas(items[i]);
         if (_exportCancelled) break;
-        dataUrls.push(canvas.toDataURL('image/png'));
+        printEntries.push({ url: canvas.toDataURL('image/png'), oversized: !!items[i].allowOversized });
       } catch (e) {
         console.error('Failed to render', items[i].name, e);
       }
     }
 
     if (_exportCancelled) {
-      updateProgress(dataUrls.length, items.length, `Cancelled — ${dataUrls.length} of ${items.length} rendered.`);
+      updateProgress(printEntries.length, items.length, `Cancelled — ${printEntries.length} of ${items.length} rendered.`);
       await new Promise(r => setTimeout(r, 1200));
       hideProgress();
     } else {
       updateProgress(items.length, items.length, 'Opening print dialog…');
       await new Promise(r => setTimeout(r, 200));
       hideProgress();
-      printImagesInPopup(dataUrls, 'all');
+      printImagesInPopup(printEntries, 'all');
     }
   });
 })();
@@ -1441,7 +1489,10 @@ $('shareImportDismiss').addEventListener('click', () => {
 // ── THEME TOGGLE ──
 function applyTheme(light) {
   document.body.classList.toggle('light', light);
-  $('themeToggle').textContent = light ? '☽ Dark' : '☀ Light';
+  const _ti = $('themeToggle').querySelector('.theme-icon');
+  const _tl = $('themeToggle').querySelector('.theme-label');
+  if (_ti) _ti.textContent = light ? '☽' : '☀';
+  if (_tl) _tl.textContent = light ? ' Dark' : ' Light';
   $('themeSettingsCheck').checked = light;
   $('themeSettingsLabel').textContent = light ? 'Dark mode' : 'Light mode';
   localStorage.setItem('dnd_theme', light ? 'light' : 'dark');
@@ -1496,6 +1547,11 @@ function openNewCard() {
 }
 
 $('clearCardBtn').addEventListener('click', async () => {
+  if (_undoBaseline) {
+    if (!await showGenericConfirm('Undo Changes', 'Discard unsaved changes and reload this card from when you last opened or saved it?', 'Undo Changes')) return;
+    applyState(_undoBaseline);
+    return;
+  }
   if (!await showGenericConfirm('Clear Card', 'Clear the current card? All fields will be reset to blank.', 'Clear')) return;
   applyState(getNewCardState());
   activeHistoryId = null;
@@ -1984,10 +2040,11 @@ function collectCurrentState() {
     circleSize:  parseInt($('circleSize').value) || 110,
     circleBorderColor: $('circleBorderColorHex').value || null,
     bgOpacity:   parseFloat($('bgOpacity').value) ?? 1,
-    showImage:   $('showImage').checked,
-    showStats:   $('showStats').checked,
-    showFrame:   $('showFrame').checked,
+    showImage:     $('showImage').checked,
+    showStats:     $('showStats').checked,
+    showFrame:     $('showFrame').checked,
     squareCorners: $('squareCorners').checked,
+    allowOversized: $('allowOversized').checked,
     bgImage:     $('cardBgImg').style.backgroundImage
                    ? $('cardBgImg').style.backgroundImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '')
                    : null,
@@ -2005,6 +2062,7 @@ function collectCurrentState() {
 let activeHistoryId = null;
 let isDirty = false;
 let _applyingState = false;
+let _undoBaseline = null; // snapshot of state at load time, never touched by autosave
 
 function registerNewCard() {
   if (activeHistoryId !== null) return;
@@ -2107,10 +2165,11 @@ function applyState(s) {
   $('circleBorderColor').value    = /^#[0-9a-fA-F]{6}$/.test(cbc) ? cbc : '#5a3c1e';
   $('circleSize').value      = s.circleSize  ?? 110;
   $('bgOpacity').value       = s.bgOpacity   ?? 1;
-  $('showImage').checked     = s.showImage    !== false;
-  $('showStats').checked     = s.showStats    !== false;
-  $('showFrame').checked     = s.showFrame    !== false;
-  $('squareCorners').checked = s.squareCorners === true;
+  $('showImage').checked      = s.showImage     !== false;
+  $('showStats').checked      = s.showStats     !== false;
+  $('showFrame').checked      = s.showFrame     !== false;
+  $('squareCorners').checked  = s.squareCorners  === true;
+  $('allowOversized').checked = s.allowOversized === true;
 
   // Background image
   if (s.bgImage) {
@@ -2177,6 +2236,9 @@ function applyState(s) {
   if (s.id) {
     activeHistoryId = s.id;
     updateHistoryActiveClass();
+    _undoBaseline = JSON.parse(JSON.stringify(s));
+  } else {
+    _undoBaseline = null;
   }
   syncCard();
   setDirty(false);
@@ -2215,8 +2277,51 @@ function makeHistoryThumb(item) {
   return thumb;
 }
 
+let _historySearchQuery = '';
+
+function _applyHistorySearch(query) {
+  _historySearchQuery = query;
+  const bar = $('historySearch');
+  if (bar && bar.value !== query) bar.value = query;
+  const barClear = $('historySearchClear');
+  if (barClear) barClear.classList.toggle('visible', query.length > 0);
+
+  const resultsEl = $('historySearchResults');
+  if (resultsEl) {
+    const q = query.trim().toLowerCase();
+    if (q) {
+      const matches = getHistory().filter(h => (h.name || '').toLowerCase().includes(q));
+      resultsEl.innerHTML = '';
+      matches.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'history-search-result-item';
+        const name = document.createElement('span');
+        name.className = 'history-search-result-name';
+        name.textContent = item.name || 'Unnamed';
+        row.appendChild(name);
+        if (item.rarity) {
+          const meta = document.createElement('span');
+          meta.className = 'history-search-result-meta';
+          meta.textContent = item.rarity;
+          row.appendChild(meta);
+        }
+        row.addEventListener('click', () => { applyState(item); _applyHistorySearch(''); });
+        resultsEl.appendChild(row);
+      });
+      resultsEl.classList.toggle('open', matches.length > 0);
+    } else {
+      resultsEl.innerHTML = '';
+      resultsEl.classList.remove('open');
+    }
+  }
+
+  renderHistoryBar();
+}
+
 function renderHistoryBar() {
-  const items      = getHistory();
+  const allItems   = getHistory();
+  const q          = _historySearchQuery.trim().toLowerCase();
+  const items      = q ? allItems.filter(h => (h.name || '').toLowerCase().includes(q)) : allItems;
   const container  = $('historyItems');
   const emptyMsg   = $('historyEmpty');
   const ddContainer = $('historyDropdownItems');
@@ -2224,8 +2329,17 @@ function renderHistoryBar() {
   container.innerHTML = '';
   ddContainer.innerHTML = '';
 
-  if (items.length === 0) {
+  if (allItems.length === 0) {
+    emptyMsg.textContent = 'No saved items yet — click Save to History below';
     emptyMsg.style.display = 'flex';
+    ddEmpty.textContent = 'No saved items yet';
+    ddEmpty.style.display = 'block';
+    return;
+  }
+  if (items.length === 0) {
+    emptyMsg.textContent = 'No items match your search';
+    emptyMsg.style.display = 'flex';
+    ddEmpty.textContent = 'No items match your search';
     ddEmpty.style.display = 'block';
     return;
   }
@@ -2252,9 +2366,17 @@ function renderHistoryBar() {
     del.textContent = '✕';
     del.addEventListener('click', e => {
       e.stopPropagation();
+      const wasActive = activeHistoryId === item.id;
       const updated = getHistory().filter(h => h.id !== item.id);
       saveHistory(updated);
-      if (activeHistoryId === item.id) activeHistoryId = null;
+      if (wasActive) {
+        if (updated.length > 0) {
+          applyState(updated[0]);
+        } else {
+          activeHistoryId = null;
+          applyState(getNewCardState());
+        }
+      }
       renderHistoryBar();
     });
 
@@ -2286,9 +2408,17 @@ function renderHistoryBar() {
     ddDel.textContent = '✕';
     ddDel.addEventListener('click', e => {
       e.stopPropagation();
+      const wasActive = activeHistoryId === item.id;
       const updated = getHistory().filter(h => h.id !== item.id);
       saveHistory(updated);
-      if (activeHistoryId === item.id) activeHistoryId = null;
+      if (wasActive) {
+        if (updated.length > 0) {
+          applyState(updated[0]);
+        } else {
+          activeHistoryId = null;
+          applyState(getNewCardState());
+        }
+      }
       renderHistoryBar();
     });
 
@@ -2328,9 +2458,19 @@ $('historyDropdownNew').addEventListener('click', () => {
 });
 
 $('newCardBtn').addEventListener('click', openNewCard);
-document.addEventListener('click', () => {
+document.addEventListener('click', e => {
   $('historyDropdown').classList.remove('open');
+  const wrap = document.querySelector('.history-search-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    $('historySearchResults').classList.remove('open');
+  }
 });
+
+// ── HISTORY SEARCH ──
+$('historySearch').addEventListener('input', e => _applyHistorySearch(e.target.value));
+$('historySearch').addEventListener('keydown', e => { if (e.key === 'Escape') _applyHistorySearch(''); });
+$('historySearchClear').addEventListener('click', () => _applyHistorySearch(''));
+
 
 $('historySaveBtn').addEventListener('click', () => {
   const state   = collectCurrentState();
@@ -2340,6 +2480,7 @@ $('historySaveBtn').addEventListener('click', () => {
   saveHistory(history.slice(0, getMaxHistory()));
   renderHistoryBar();
   setDirty(false);
+  _undoBaseline = JSON.parse(JSON.stringify(state));
 
   // Flash feedback
   const btn = $('historySaveBtn');
