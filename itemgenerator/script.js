@@ -3050,6 +3050,16 @@ document.addEventListener('click', e => {
   if (wrap && !wrap.contains(e.target)) {
     $('historySearchResults').classList.remove('open');
   }
+
+  // Click on the modal backdrop (not the box inside) → cancel/close the modal
+  if (e.target.classList.contains('confirm-modal')) {
+    const modal = e.target;
+    const cancelBtn = modal.querySelector('.btn-cancel') ||
+                      modal.querySelector('button[id$="Close"]') ||
+                      modal.querySelector('button[id$="Cancel"]');
+    if (cancelBtn) cancelBtn.click();
+    else modal.classList.remove('active');
+  }
 });
 
 // ── HISTORY SEARCH ──
