@@ -1558,7 +1558,7 @@ $('clearCardBtn').addEventListener('click', async () => {
 // ── DEFAULT TYPE IMAGES ──
 function getTypeDefaultSrc(type) {
   if (!type || type === 'Other') return null;
-  return 'defaults/' + type.toLowerCase().replace(/\s+/g, '_') + '.svg';
+  return 'img/defaults/' + type.toLowerCase().replace(/\s+/g, '_') + '.svg';
 }
 
 function updateDefaultTypeImage() {
@@ -1759,6 +1759,7 @@ function clearShareConnection() {
   localStorage.removeItem('dnd_share_provider');
   localStorage.removeItem('dnd_share_token');
   localStorage.removeItem('dnd_share_refresh_token');
+  localStorage.removeItem('dnd_gdrive_folder_id');
   updateShareUI();
 }
 
@@ -1979,6 +1980,34 @@ async function _gdrive(url, options) {
   return resp;
 }
 
+// ── Google Drive folder helper ──
+// Finds the "Artifex Arcanum" folder in the user's Drive, creating it if absent.
+// Caches the folder ID in localStorage so only one API call is made per session.
+async function _gdriveGetOrCreateFolder() {
+  const cached = localStorage.getItem('dnd_gdrive_folder_id');
+  if (cached) return cached;
+
+  const q = encodeURIComponent(`name='Artifex Arcanum' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const searchResp = await _gdrive(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`, { method: 'GET', headers: {} });
+  if (searchResp.ok) {
+    const data = await searchResp.json();
+    if (data.files && data.files.length > 0) {
+      localStorage.setItem('dnd_gdrive_folder_id', data.files[0].id);
+      return data.files[0].id;
+    }
+  }
+
+  const createResp = await _gdrive('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Artifex Arcanum', mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  if (!createResp.ok) throw new Error('folder_create_failed');
+  const folder = await createResp.json();
+  localStorage.setItem('dnd_gdrive_folder_id', folder.id);
+  return folder.id;
+}
+
 // ── Google Drive upload + share (Step 14) ──
 async function _shareGDrive(states, hash) {
   const now      = new Date().toISOString();
@@ -1989,9 +2018,11 @@ async function _shareGDrive(states, hash) {
     : `selection-${states.length}-cards`;
   const filename = `artifex-arcanum-${slugBase}-${Date.now()}.json`;
 
+  const folderId = await _gdriveGetOrCreateFolder().catch(() => null);
+
   // Multipart upload: metadata + file body in one request
   const boundary = 'aa_b_' + Math.random().toString(36).slice(2);
-  const meta     = JSON.stringify({ name: filename, mimeType: 'application/json' });
+  const meta     = JSON.stringify({ name: filename, mimeType: 'application/json', ...(folderId ? { parents: [folderId] } : {}) });
   const body     = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`;
 
   const upResp = await _gdrive(
@@ -2135,8 +2166,14 @@ async function fetchSharedCard(provider, id) {
     return resp.json();
   }
   if (provider === 'gdrive') {
-    // No proxy needed — drive.google.com/uc serves files with CORS headers
-    const resp = await fetch(`https://drive.google.com/uc?export=download&id=${id}`);
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${id}`;
+    // Route through the Cloudflare Worker proxy — drive.google.com/uc returns no CORS headers,
+    // which blocks the fetch in Firefox and Edge.
+    let fetchUrl = downloadUrl;
+    if (DROPBOX_PROXY && !DROPBOX_PROXY.includes('YOUR-WORKER')) {
+      fetchUrl = `${DROPBOX_PROXY}?url=${encodeURIComponent(downloadUrl)}`;
+    }
+    const resp = await fetch(fetchUrl);
     if (resp.status === 404) throw new Error('not_found');
     if (!resp.ok) throw new Error('fetch_' + resp.status);
     return resp.json();
