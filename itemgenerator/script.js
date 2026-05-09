@@ -2751,6 +2751,13 @@ function buildSelectionList(listEl, updateUICb) {
     }
   });
 
+  function syncGroupToggle(groupToggle, body) {
+    const cbs = [...body.querySelectorAll('input[type="checkbox"]')];
+    const n = cbs.filter(cb => cb.checked).length;
+    groupToggle.indeterminate = n > 0 && n < cbs.length;
+    groupToggle.checked = n === cbs.length;
+  }
+
   function addGroupHeader(name, groupItems) {
     const header = document.createElement('div');
     header.className = 'select-group-header';
@@ -2763,12 +2770,6 @@ function buildSelectionList(listEl, updateUICb) {
     selectToggle.type = 'checkbox';
     selectToggle.checked = true;
     selectToggle.className = 'select-group-toggle';
-    selectToggle.addEventListener('change', () => {
-      groupItems.forEach(item => {
-        const cb = body.querySelector(`input[value="${item.id}"]`);
-        if (cb) { cb.checked = selectToggle.checked; updateUICb(); }
-      });
-    });
 
     const label = document.createElement('span');
     label.className = 'select-group-name';
@@ -2788,39 +2789,51 @@ function buildSelectionList(listEl, updateUICb) {
     body.className = 'select-group-body';
     listEl.appendChild(body);
 
-    // Collapse on caret click (don't interfere with the checkbox)
+    selectToggle.addEventListener('change', () => {
+      body.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = selectToggle.checked; });
+      selectToggle.indeterminate = false;
+      updateUICb();
+    });
+
     caret.addEventListener('click', () => {
       const collapsed = body.classList.toggle('collapsed');
       caret.textContent = collapsed ? '▸' : '▾';
     });
 
-    return body;
+    return { body, selectToggle };
   }
 
-  function addItemRow(item, isChild, container) {
+  function addItemRow(item, isChild, body, groupToggle) {
     const row = document.createElement('label');
     row.className = 'print-select-item' + (isChild ? ' collection-child' : '');
     const rarityLabel = rarityLabels[item.rarity] || item.rarity;
     row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
       <span class="print-select-name">${item.name || 'Unnamed'}</span>
       <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
-    row.querySelector('input').addEventListener('change', updateUICb);
-    (container || listEl).appendChild(row);
+    row.querySelector('input').addEventListener('change', () => {
+      if (groupToggle) syncGroupToggle(groupToggle, body);
+      updateUICb();
+    });
+    (body || listEl).appendChild(row);
   }
 
   // Render collections first
   cols.forEach(col => {
     const group = byCollection.get(col.id);
     if (!group || group.length === 0) return;
-    const body = addGroupHeader(col.name, group);
-    group.forEach(item => addItemRow(item, true, body));
+    const { body, selectToggle } = addGroupHeader(col.name, group);
+    group.forEach(item => addItemRow(item, true, body, selectToggle));
   });
 
   // Uncollected at bottom
   if (uncollected.length > 0) {
     const hasGroups = byCollection.size > 0;
-    const body = hasGroups ? addGroupHeader('Uncollected', uncollected) : null;
-    uncollected.forEach(item => addItemRow(item, hasGroups, body));
+    if (hasGroups) {
+      const { body, selectToggle } = addGroupHeader('Uncollected', uncollected);
+      uncollected.forEach(item => addItemRow(item, true, body, selectToggle));
+    } else {
+      uncollected.forEach(item => addItemRow(item, false, null, null));
+    }
   }
 }
 
@@ -3051,15 +3064,6 @@ document.addEventListener('click', e => {
     $('historySearchResults').classList.remove('open');
   }
 
-  // Click on the modal backdrop (not the box inside) → cancel/close the modal
-  if (e.target.classList.contains('confirm-modal')) {
-    const modal = e.target;
-    const cancelBtn = modal.querySelector('.btn-cancel') ||
-                      modal.querySelector('button[id$="Close"]') ||
-                      modal.querySelector('button[id$="Cancel"]');
-    if (cancelBtn) cancelBtn.click();
-    else modal.classList.remove('active');
-  }
 });
 
 // ── HISTORY SEARCH ──
@@ -3527,6 +3531,21 @@ if ($('persistScaleToggle').checked) {
   document.addEventListener('mousemove', e => { if (dragging) moveDrag(e.clientY); });
   document.addEventListener('mouseup', endDrag);
 })();
+
+// ── MODAL BACKDROP CLOSE ──
+// Clicking the dark backdrop (the .confirm-modal element itself, not the box inside)
+// closes the modal as though the user clicked Cancel.
+document.querySelectorAll('.confirm-modal').forEach(modal => {
+  modal.addEventListener('click', e => {
+    if (e.target !== modal) return;
+    // Prefer an explicit cancel/dismiss/close button; avoid meta-buttons like Select All/None
+    const cancelBtn = modal.querySelector('.btn-cancel:not(.print-select-meta-btn)') ||
+                      modal.querySelector('button[id$="Close"]') ||
+                      modal.querySelector('button[id$="Cancel"]');
+    if (cancelBtn) cancelBtn.click();
+    else modal.classList.remove('active');
+  });
+});
 
 // ── INITIAL RENDER ──
 // Snapshot the HTML default values before any localStorage state is applied.
