@@ -1903,6 +1903,8 @@
     .history-arrow,
     .history-type-filter { display: none !important; }
     .history-label-wrap { border-right: none; }
+    .history-label-text,
+    #collectionDropdownLabel { display: none; }
     #themeToggle { margin-left: auto; }
     .theme-label { display: none; }
     .history-search-wrap { flex: 1; flex-shrink: 1; min-width: 0; }
