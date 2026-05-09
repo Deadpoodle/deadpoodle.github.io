@@ -1078,7 +1078,7 @@ ${pagesHTML}
 // ── DOWNLOAD SELECTION ──
 (function () {
   function updatePngSelectUI() {
-    const checked = $('pngSelectList').querySelectorAll('input[type="checkbox"]:checked').length;
+    const checked = $('pngSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
     $('pngSelectConfirm').textContent = `⬇ Download Selected (${checked})`;
     $('pngSelectConfirm').disabled = checked === 0;
   }
@@ -1158,7 +1158,7 @@ ${pagesHTML}
 // ── PRINT SELECTION ──
 (function () {
   function updatePrintSelectUI() {
-    const checked = $('printSelectList').querySelectorAll('input[type="checkbox"]:checked').length;
+    const checked = $('printSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
     const pages = Math.max(1, Math.ceil(checked / 9));
     $('printSelectConfirm').textContent = `🖨 Print Selected (${checked})`;
     $('printSelectConfirm').disabled = checked === 0;
@@ -1361,7 +1361,7 @@ $('disconnectShareBtn').addEventListener('click', () => {
 // ── Share selection modal ──
 
 function updateShareSelectUI() {
-  const checked = $('shareSelectList').querySelectorAll('input[type="checkbox"]:checked').length;
+  const checked = $('shareSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
   $('shareSelectConfirm').textContent = `🔗 Share Selected (${checked})`;
   $('shareSelectConfirm').disabled = checked === 0;
 }
