@@ -1229,7 +1229,7 @@ ${pagesHTML}
 // ── EXPORT JSON ──
 $('exportJsonBtn').addEventListener('click', () => {
   const saved   = getHistory();
-  const payload = { version: 1, items: saved };
+  const payload = { version: 2, collections: collectionsForCards(saved), items: saved };
   const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url     = URL.createObjectURL(blob);
   const a       = document.createElement('a');
@@ -1283,6 +1283,7 @@ $('importJsonFile').addEventListener('change', e => {
       // Accept either the { version, items } envelope or a bare array
       const incoming = (Array.isArray(data) ? data : (data.items || []))
                          .filter(item => item && typeof item === 'object');
+      const sharedCollections = Array.isArray(data) ? [] : (data.collections || []);
       if (!incoming.length) { showInfoModal('Nothing to Import', 'No items found in that JSON file.'); return; }
 
       const existing = getHistory();
@@ -1297,26 +1298,30 @@ $('importJsonFile').addEventListener('change', e => {
         return;
       }
 
-      // Merge: new/updated cards first, then existing cards not superseded by name
-      const newNames = new Set(newCards.map(c => c.name));
-      const merged = [...newCards, ...existing.filter(e => !newNames.has(e.name))];
+      // Pre-compute merge shape for overflow UI (lengths unchanged by collection remapping)
+      const newNames       = new Set(newCards.map(c => c.name));
+      const existingToKeep = existing.filter(e => !newNames.has(e.name));
+      const totalMerged    = newCards.length + existingToKeep.length;
 
       const s  = n => n !== 1 ? 's' : '';
       const skipNote = skipCount > 0
         ? ` (${skipCount} duplicate${s(skipCount)} skipped)` : '';
 
       function doImport(limit) {
-        saveHistory(merged.slice(0, limit));
+        // Remap collection IDs at confirm time so collections are only created if user proceeds
+        const remapped = mergeImportedCollections(sharedCollections, newCards);
+        saveHistory([...remapped, ...existingToKeep].slice(0, limit));
+        renderCollectionDropdown();
         renderHistoryBar();
-        applyState(newCards[0]);
+        applyState(remapped[0]);
         showInfoModal('Import Complete',
-          `Imported ${newCards.length} card${s(newCards.length)}${skipNote}.`);
+          `Imported ${remapped.length} card${s(remapped.length)}${skipNote}.`);
       }
 
-      const wouldDrop = Math.max(0, merged.length - getMaxHistory());
+      const wouldDrop = Math.max(0, totalMerged - getMaxHistory());
       if (wouldDrop > 0) {
         const currentMax = getMaxHistory();
-        const newMax = merged.length;
+        const newMax = totalMerged;
         $('importOverflowMsg').innerHTML =
           `You're importing <strong>${newCards.length} card${s(newCards.length)}</strong>${skipNote}, but your current storage limit is <strong>${currentMax}</strong>. ` +
           `Keeping everything would need a limit of <strong>${newMax}</strong> — or continue as-is and the oldest <strong>${wouldDrop} card${s(wouldDrop)}</strong> will be removed.`;
@@ -2124,9 +2129,17 @@ async function _gdriveGetOrCreateFolder() {
 }
 
 // ── Google Drive upload + share (Step 14) ──
+function _buildSharePayload(states) {
+  const now = new Date().toISOString();
+  return {
+    version: 2,
+    collections: collectionsForCards(states),
+    cards: states.map(s => ({ ...s, sharedAt: now, appVersion: '1.0' })),
+  };
+}
+
 async function _shareGDrive(states, hash) {
-  const now      = new Date().toISOString();
-  const payload  = states.map(s => ({ ...s, sharedAt: now, appVersion: '1.0' }));
+  const payload  = _buildSharePayload(states);
   const json     = JSON.stringify(payload);
   const slugBase = states.length === 1
     ? (states[0].name || 'card').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)
@@ -2192,9 +2205,8 @@ async function shareCurrentCard(states) {
     return null;
   }
 
-  const now = new Date().toISOString();
-  const payload = states.map(s => ({ ...s, sharedAt: now, appVersion: '1.0' }));
-  const json  = JSON.stringify(payload);
+  const payload = _buildSharePayload(states);
+  const json    = JSON.stringify(payload);
 
   // Build a descriptive filename
   const slugBase = states.length === 1
@@ -2621,6 +2633,40 @@ function _applyHistorySearch(query) {
 }
 
 // ── COLLECTION UI HELPERS ──
+
+// Returns only the collections that are actually referenced by the given cards.
+function collectionsForCards(cards) {
+  const needed = new Set(cards.map(c => c.collectionId).filter(Boolean));
+  return getCollections().filter(c => needed.has(c.id));
+}
+
+// Merges incoming collections into local storage, remapping IDs so cards
+// with sender IDs end up pointing at the correct local collection IDs.
+// Creates new collections for any that don't already exist by name.
+// Returns the cards array with collectionId fields updated.
+function mergeImportedCollections(sharedCollections, cards) {
+  if (!sharedCollections || !sharedCollections.length) return cards;
+  const existing = getCollections();
+  const idMap    = new Map(); // senderCollectionId → localCollectionId
+  const updated  = [...existing];
+  sharedCollections.forEach((sc, i) => {
+    const match = existing.find(c => c.name.toLowerCase() === sc.name.toLowerCase());
+    if (match) {
+      idMap.set(sc.id, match.id);
+    } else {
+      const newCol = { id: Date.now() + i, name: sc.name, description: sc.description || '' };
+      updated.push(newCol);
+      idMap.set(sc.id, newCol.id);
+    }
+  });
+  saveCollections(updated);
+  renderCollectionDropdown();
+  return cards.map(card =>
+    card.collectionId && idMap.has(card.collectionId)
+      ? { ...card, collectionId: idMap.get(card.collectionId) }
+      : card
+  );
+}
 
 function buildExportFilename(item) {
   const safe = s => (s || '').replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
@@ -3661,8 +3707,10 @@ updateShareUI();
 
     if (!cardState) return; // provider not yet implemented
 
-    // Normalise: the JSON may be a single card object (legacy) or an array of cards
-    const cards   = Array.isArray(cardState) ? cardState : [cardState];
+    // Normalise: handle legacy bare array, new envelope { version, collections, cards }, or single card
+    const isEnvelope       = !Array.isArray(cardState) && Array.isArray(cardState.cards);
+    const cards            = isEnvelope ? cardState.cards : (Array.isArray(cardState) ? cardState : [cardState]);
+    const sharedCollections = isEnvelope ? (cardState.collections || []) : [];
     const existing = getHistory();
 
     // Deduplicate against the user's existing collection before showing the modal
@@ -3698,12 +3746,13 @@ updateShareUI();
 
     $('shareImportOk').onclick = () => {
       $('shareImportModal').classList.remove('active');
-      // Merge: new cards first, existing cards not superseded by name
-      const newNames = new Set(newCards.map(c => c.name));
-      const merged   = [...newCards, ...existing.filter(e => !newNames.has(e.name))];
+      const remapped = mergeImportedCollections(sharedCollections, newCards);
+      const remappedNames = new Set(remapped.map(c => c.name));
+      const merged = [...remapped, ...existing.filter(e => !remappedNames.has(e.name))];
       saveHistory(merged.slice(0, getMaxHistory()));
+      renderCollectionDropdown();
       renderHistoryBar();
-      applyState(newCards[0]);
+      applyState(remapped[0]);
       if (newCards.length === 1) {
         showInfoModal('Imported', `"${newCards[0].name || 'Card'}" has been added to your history.`);
       } else {
