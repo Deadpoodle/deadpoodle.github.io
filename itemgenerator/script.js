@@ -1093,24 +1093,9 @@ ${pagesHTML}
   });
 
   $('pngSelectionBtn').addEventListener('click', () => {
-    const items = getHistory();
-    if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
-
+    if (!getHistory().length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
     syncAllQualityUI(localStorage.getItem('dnd_export_quality') || 'standard');
-
-    const list = $('pngSelectList');
-    list.innerHTML = '';
-    items.forEach(item => {
-      const row = document.createElement('label');
-      row.className = 'print-select-item';
-      const rarityLabel = rarityLabels[item.rarity] || item.rarity;
-      row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
-        <span class="print-select-name">${item.name || 'Unnamed'}</span>
-        <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
-      row.querySelector('input').addEventListener('change', updatePngSelectUI);
-      list.appendChild(row);
-    });
-
+    buildSelectionList($('pngSelectList'), updatePngSelectUI);
     updatePngSelectUI();
     $('pngSelectModal').classList.add('active');
   });
@@ -1149,8 +1134,7 @@ ${pagesHTML}
         const canvas = await renderStateToCanvas(item);
         if (_exportCancelled) break;
         const link = document.createElement('a');
-        const safeName = (item.name || 'item').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        link.download = `${String(i + 1).padStart(2, '0')}_${safeName}.png`;
+        link.download = buildExportFilename(item);
         link.href = canvas.toDataURL('image/png');
         link.click();
         exportedCount++;
@@ -1184,22 +1168,8 @@ ${pagesHTML}
   }
 
   $('printSelectionBtn').addEventListener('click', () => {
-    const items = getHistory();
-    if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
-
-    const list = $('printSelectList');
-    list.innerHTML = '';
-    items.forEach(item => {
-      const row = document.createElement('label');
-      row.className = 'print-select-item';
-      row.innerHTML = `
-        <input type="checkbox" checked value="${item.id}">
-        <span class="print-select-name">${item.name || 'Unnamed Item'}</span>
-        <span class="print-select-rarity rarity-${item.rarity}">${rarityLabels[item.rarity] || item.rarity}</span>`;
-      row.querySelector('input').addEventListener('change', updatePrintSelectUI);
-      list.appendChild(row);
-    });
-
+    if (!getHistory().length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
+    buildSelectionList($('printSelectList'), updatePrintSelectUI);
     updatePrintSelectUI();
     $('printSelectModal').classList.add('active');
   });
@@ -1393,21 +1363,8 @@ function updateShareSelectUI() {
 
 // "Share Dropbox Link to Selection" button — opens the selection modal
 $('copyShareLinkBtn').addEventListener('click', () => {
-  const items = getHistory();
-  if (!items.length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
-
-  const list = $('shareSelectList');
-  list.innerHTML = '';
-  items.forEach(item => {
-    const row = document.createElement('label');
-    row.className = 'print-select-item';
-    row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
-      <span class="print-select-name">${item.name || 'Unnamed Item'}</span>
-      <span class="print-select-rarity rarity-${item.rarity}">${rarityLabels[item.rarity] || item.rarity}</span>`;
-    row.querySelector('input').addEventListener('change', updateShareSelectUI);
-    list.appendChild(row);
-  });
-
+  if (!getHistory().length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
+  buildSelectionList($('shareSelectList'), updateShareSelectUI);
   updateShareSelectUI();
   $('shareSelectModal').classList.add('active');
 });
@@ -1537,6 +1494,7 @@ const BLANK_STATE = {
   bgImage: null, itemImage: null,
   imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
   imgNaturalW: 0, imgNaturalH: 0,
+  collectionId: null,
 };
 
 function getNewCardState() {
@@ -1715,6 +1673,7 @@ function doAutoSave() {
   if (idx >= 0) hist[idx] = state;
   else hist.unshift(state);
   saveHistory(hist);
+  renderCollectionDropdown();
   renderHistoryBar();
   setDirty(false);
 }
@@ -1740,6 +1699,47 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 $('imgUploadHint').addEventListener('click', () => {
   $('itemImgUpload').click();
 });
+
+// ── COLLECTIONS ──
+const COLLECTIONS_KEY = 'dnd_collections';
+
+function getCollections() {
+  try { return JSON.parse(localStorage.getItem(COLLECTIONS_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveCollections(cols) {
+  localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(cols));
+}
+
+function getCollectionById(id) {
+  return getCollections().find(c => c.id === id) || null;
+}
+
+function createCollection(name, description) {
+  const cols = getCollections();
+  const col = { id: Date.now(), name: name.trim(), description: (description || '').trim() };
+  cols.push(col);
+  saveCollections(cols);
+  return col;
+}
+
+function updateCollection(id, name, description) {
+  const cols = getCollections();
+  const idx = cols.findIndex(c => c.id === id);
+  if (idx < 0) return;
+  cols[idx].name = name.trim();
+  cols[idx].description = (description || '').trim();
+  saveCollections(cols);
+}
+
+function deleteCollection(id) {
+  // Remove collection and clear collectionId from all cards that referenced it
+  saveCollections(getCollections().filter(c => c.id !== id));
+  const hist = getHistory().map(h => h.collectionId === id ? { ...h, collectionId: null } : h);
+  saveHistory(hist);
+  if (_activeCollectionId === id) setActiveCollection(null);
+}
 
 // ── HISTORY ──
 const HISTORY_KEY = 'dnd_item_history';
@@ -2340,6 +2340,7 @@ function collectCurrentState() {
     imageScale:   itemImgScale,
     imgNaturalW:  itemImgNaturalW,
     imgNaturalH:  itemImgNaturalH,
+    collectionId: $('itemCollection').value ? parseInt($('itemCollection').value, 10) : null,
   };
 }
 
@@ -2347,6 +2348,22 @@ let activeHistoryId = null;
 let isDirty = false;
 let _applyingState = false;
 let _undoBaseline = null; // snapshot of state at load time, never touched by autosave
+let _activeCollectionId = null;
+let _activeTypeFilter = 'all';
+
+function setActiveCollection(id) {
+  _activeCollectionId = id;
+  const label = $('collectionDropdownLabel');
+  if (!label) return;
+  if (id === null) {
+    label.textContent = 'Collections';
+  } else {
+    const col = getCollectionById(id);
+    label.textContent = col ? col.name : 'Collections';
+  }
+  renderCollectionDropdown();
+  renderHistoryBar();
+}
 
 function registerNewCard() {
   if (activeHistoryId !== null) return;
@@ -2454,6 +2471,7 @@ function applyState(s) {
   $('showFrame').checked      = s.showFrame     !== false;
   $('squareCorners').checked  = s.squareCorners  === true;
   $('allowOversized').checked = s.allowOversized === true;
+  populateCollectionSelect(s.collectionId || null);
 
   // Background image
   if (s.bgImage) {
@@ -2602,10 +2620,199 @@ function _applyHistorySearch(query) {
   renderHistoryBar();
 }
 
+// ── COLLECTION UI HELPERS ──
+
+function buildExportFilename(item) {
+  const safe = s => (s || '').replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const col  = item.collectionId ? getCollectionById(item.collectionId) : null;
+  const mode = item.cardMode || 'item';
+  const name = safe(item.name) || 'unnamed';
+  if (col) return `${safe(col.name)}_${mode}_${name}.png`;
+  return `${mode}_${name}.png`;
+}
+
+function populateCollectionSelect(selectedId) {
+  const sel = $('itemCollection');
+  if (!sel) return;
+  const cols = getCollections();
+  sel.innerHTML = '<option value="">— None —</option>';
+  cols.forEach(col => {
+    const opt = document.createElement('option');
+    opt.value = col.id;
+    opt.textContent = col.name;
+    if (col.id === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function renderCollectionDropdown() {
+  const container = $('collectionDropdownItems');
+  if (!container) return;
+  const cols = getCollections();
+  const hist = getHistory();
+  container.innerHTML = '';
+
+  const allBtn = $('collectionFilterAll');
+  if (allBtn) allBtn.classList.toggle('history-active', _activeCollectionId === null);
+
+  if (cols.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'history-dropdown-empty';
+    empty.style.cssText = 'padding:0.45rem 0.9rem;font-size:0.78rem;';
+    empty.textContent = 'No collections yet';
+    container.appendChild(empty);
+    return;
+  }
+
+  cols.forEach(col => {
+    const count = hist.filter(h => h.collectionId === col.id).length;
+    const el = document.createElement('div');
+    el.className = 'history-dropdown-item collection-dropdown-item' +
+      (_activeCollectionId === col.id ? ' history-active' : '');
+    el.innerHTML = `<span class="collection-dd-name">${col.name}</span>
+                    <span class="collection-dd-count">${count}</span>`;
+    el.addEventListener('click', () => {
+      setActiveCollection(col.id);
+      $('collectionDropdown').classList.remove('open');
+    });
+    container.appendChild(el);
+  });
+}
+
+function renderCollectionsManageModal() {
+  const list = $('collectionsList');
+  if (!list) return;
+  const cols = getCollections();
+  const hist = getHistory();
+  list.innerHTML = '';
+
+  if (cols.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-style:italic;text-align:center;margin:0.5rem 0;">No collections yet. Create one below.</p>';
+    return;
+  }
+
+  cols.forEach(col => {
+    const count = hist.filter(h => h.collectionId === col.id).length;
+    const row = document.createElement('div');
+    row.className = 'collections-manage-row';
+    row.innerHTML = `
+      <div class="collections-manage-info">
+        <span class="collections-manage-name">${col.name}</span>
+        <span class="collections-manage-count">${count} card${count !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="collections-manage-actions">
+        <button class="btn-icon" title="Rename">✏</button>
+        <button class="btn-icon btn-icon-danger" title="Delete">✕</button>
+      </div>`;
+    const [renameBtn, deleteBtn] = row.querySelectorAll('.btn-icon');
+    renameBtn.addEventListener('click', () => openCollectionEditModal(col));
+    deleteBtn.addEventListener('click', async () => {
+      const confirmed = await showGenericConfirm(
+        'Delete Collection',
+        `Delete "<strong>${col.name}</strong>"? The ${count} card${count !== 1 ? 's' : ''} in it will become uncollected.`,
+        'Delete'
+      );
+      if (!confirmed) return;
+      deleteCollection(col.id);
+      renderCollectionsManageModal();
+      renderCollectionDropdown();
+      populateCollectionSelect($('itemCollection') ? (parseInt($('itemCollection').value, 10) || null) : null);
+      renderHistoryBar();
+    });
+    list.appendChild(row);
+  });
+}
+
+let _collectionEditTarget = null;
+
+function openCollectionEditModal(existing) {
+  _collectionEditTarget = existing || null;
+  $('collectionEditTitle').textContent = existing ? 'Rename Collection' : 'New Collection';
+  $('collectionEditName').value  = existing ? existing.name : '';
+  $('collectionEditDesc').value  = existing ? existing.description : '';
+  $('collectionEditModal').classList.add('active');
+  setTimeout(() => $('collectionEditName').focus(), 60);
+}
+
+function buildSelectionList(listEl, updateUICb) {
+  const items = getHistory();
+  const cols  = getCollections();
+  listEl.innerHTML = '';
+
+  // Group items
+  const byCollection = new Map();
+  const uncollected  = [];
+  items.forEach(item => {
+    if (item.collectionId && cols.find(c => c.id === item.collectionId)) {
+      if (!byCollection.has(item.collectionId)) byCollection.set(item.collectionId, []);
+      byCollection.get(item.collectionId).push(item);
+    } else {
+      uncollected.push(item);
+    }
+  });
+
+  function addGroupHeader(name, groupItems) {
+    const header = document.createElement('div');
+    header.className = 'select-group-header';
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.checked = true;
+    toggle.className = 'select-group-toggle';
+    toggle.addEventListener('change', () => {
+      groupItems.forEach(item => {
+        const cb = listEl.querySelector(`input[value="${item.id}"]`);
+        if (cb) { cb.checked = toggle.checked; updateUICb(); }
+      });
+    });
+    const label = document.createElement('span');
+    label.className = 'select-group-name';
+    label.textContent = name;
+    const count = document.createElement('span');
+    count.className = 'select-group-count';
+    count.textContent = `(${groupItems.length})`;
+    header.appendChild(toggle);
+    header.appendChild(label);
+    header.appendChild(count);
+    listEl.appendChild(header);
+  }
+
+  function addItemRow(item) {
+    const row = document.createElement('label');
+    row.className = 'print-select-item';
+    const rarityLabel = rarityLabels[item.rarity] || item.rarity;
+    row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
+      <span class="print-select-name">${item.name || 'Unnamed'}</span>
+      <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
+    row.querySelector('input').addEventListener('change', updateUICb);
+    listEl.appendChild(row);
+  }
+
+  // Render collections first
+  cols.forEach(col => {
+    const group = byCollection.get(col.id);
+    if (!group || group.length === 0) return;
+    addGroupHeader(col.name, group);
+    group.forEach(addItemRow);
+  });
+
+  // Uncollected at bottom
+  if (uncollected.length > 0) {
+    if (byCollection.size > 0) addGroupHeader('Uncollected', uncollected);
+    uncollected.forEach(addItemRow);
+  }
+}
+
 function renderHistoryBar() {
   const allItems   = getHistory();
   const q          = _historySearchQuery.trim().toLowerCase();
-  const items      = q ? allItems.filter(h => (h.name || '').toLowerCase().includes(q)) : allItems;
+  let items = allItems;
+  if (_activeCollectionId !== null) {
+    items = items.filter(h => h.collectionId === _activeCollectionId);
+  }
+  if (_activeTypeFilter !== 'all') {
+    items = items.filter(h => (h.cardMode || 'item') === _activeTypeFilter);
+  }
+  if (q) items = items.filter(h => (h.name || '').toLowerCase().includes(q));
   const container  = $('historyItems');
   const emptyMsg   = $('historyEmpty');
   const ddContainer = $('historyDropdownItems');
@@ -2621,9 +2828,13 @@ function renderHistoryBar() {
     return;
   }
   if (items.length === 0) {
-    emptyMsg.textContent = 'No items match your search';
+    const col = _activeCollectionId ? getCollectionById(_activeCollectionId) : null;
+    const msg = q ? 'No items match your search'
+              : col ? `No cards in "${col.name}" yet`
+              : 'No items match your search';
+    emptyMsg.textContent = msg;
     emptyMsg.style.display = 'flex';
-    ddEmpty.textContent = 'No items match your search';
+    ddEmpty.textContent = msg;
     ddEmpty.style.display = 'block';
     return;
   }
@@ -2730,6 +2941,74 @@ function renderHistoryBar() {
   });
 }
 
+// ── COLLECTION DROPDOWN EVENTS ──
+$('collectionDropdownBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  $('collectionDropdown').classList.toggle('open');
+  if ($('collectionDropdown').classList.contains('open')) renderCollectionDropdown();
+});
+
+$('collectionFilterAll').addEventListener('click', () => {
+  setActiveCollection(null);
+  $('collectionDropdown').classList.remove('open');
+});
+
+$('collectionDropdownNew').addEventListener('click', () => {
+  $('collectionDropdown').classList.remove('open');
+  openCollectionEditModal(null);
+});
+
+$('collectionDropdownManage').addEventListener('click', () => {
+  $('collectionDropdown').classList.remove('open');
+  renderCollectionsManageModal();
+  $('collectionsModal').classList.add('active');
+});
+
+// ── COLLECTION MANAGEMENT MODAL ──
+$('collectionsClose').addEventListener('click', () => $('collectionsModal').classList.remove('active'));
+$('collectionsAddNew').addEventListener('click', () => {
+  $('collectionsModal').classList.remove('active');
+  openCollectionEditModal(null);
+});
+
+// ── COLLECTION EDIT MODAL ──
+$('collectionEditSave').addEventListener('click', () => {
+  const name = $('collectionEditName').value.trim();
+  if (!name) { $('collectionEditName').focus(); return; }
+  const desc = $('collectionEditDesc').value;
+  if (_collectionEditTarget) {
+    updateCollection(_collectionEditTarget.id, name, desc);
+  } else {
+    createCollection(name, desc);
+  }
+  $('collectionEditModal').classList.remove('active');
+  renderCollectionDropdown();
+  populateCollectionSelect(parseInt($('itemCollection').value, 10) || null);
+  renderHistoryBar();
+  // If manage modal is open, refresh it
+  if ($('collectionsModal').classList.contains('active')) renderCollectionsManageModal();
+});
+
+$('collectionEditCancel').addEventListener('click', () => $('collectionEditModal').classList.remove('active'));
+$('collectionEditName').addEventListener('keydown', e => { if (e.key === 'Enter') $('collectionEditSave').click(); });
+
+// ── COLLECTION SELECT IN DETAILS TAB ──
+$('itemCollection').addEventListener('change', () => {
+  if (_applyingState) return;
+  setDirty(true);
+});
+
+// ── TYPE FILTER ──
+document.querySelectorAll('.type-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('type-filter-disabled')) return;
+    document.querySelectorAll('.type-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _activeTypeFilter = btn.dataset.type;
+    renderHistoryBar();
+  });
+});
+
 // Dropdown toggle
 $('historyDropdownBtn').addEventListener('click', e => {
   e.stopPropagation();
@@ -2744,6 +3023,7 @@ $('historyDropdownNew').addEventListener('click', () => {
 $('newCardBtn').addEventListener('click', openNewCard);
 document.addEventListener('click', e => {
   $('historyDropdown').classList.remove('open');
+  $('collectionDropdown').classList.remove('open');
   const wrap = document.querySelector('.history-search-wrap');
   if (wrap && !wrap.contains(e.target)) {
     $('historySearchResults').classList.remove('open');
@@ -2762,6 +3042,7 @@ $('historySaveBtn').addEventListener('click', () => {
   const history = getHistory().filter(h => h.id !== state.id && h.name !== state.name);
   history.unshift(state);
   saveHistory(history.slice(0, getMaxHistory()));
+  renderCollectionDropdown();
   renderHistoryBar();
   setDirty(false);
   _undoBaseline = JSON.parse(JSON.stringify(state));
@@ -3218,6 +3499,8 @@ if ($('persistScaleToggle').checked) {
 // ── INITIAL RENDER ──
 // Snapshot the HTML default values before any localStorage state is applied.
 const DEFAULT_STATE = collectCurrentState();
+renderCollectionDropdown();
+populateCollectionSelect(null);
 renderHistoryBar();
 const _initialHistory = getHistory();
 if (_initialHistory.length > 0) {
