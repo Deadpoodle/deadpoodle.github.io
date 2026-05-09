@@ -1349,10 +1349,7 @@ $('importJsonFile').addEventListener('change', e => {
 
 // ── SHARE PROVIDER UI EVENTS ──
 $('connectDropboxBtn').addEventListener('click', () => connectDropbox());
-$('connectGdriveBtn').addEventListener('click', () => {
-  console.log('[share] connectGoogleDrive() — not yet implemented');
-  showInfoModal('Coming Soon', 'Google Drive connection will be available in a future update.');
-});
+$('connectGdriveBtn').addEventListener('click', () => connectGoogleDrive());
 $('connectOnedriveBtn').addEventListener('click', () => {
   console.log('[share] connectOneDrive() — not yet implemented');
   showInfoModal('Coming Soon', 'OneDrive connection will be available in a future update.');
@@ -1432,17 +1429,17 @@ $('shareSelectConfirm').addEventListener('click', async () => {
       setShareFeedback(`✓ Link copied! (${n} card${n !== 1 ? 's' : ''})`, 'rgba(100,200,100,0.9)');
     }
   } catch (err) {
-    if (err.message === 'reconnect_needed') {
-      setShareFeedback('Dropbox needs to be reconnected — disconnect and reconnect in Settings.', 'rgba(220,80,80,0.9)', true);
-    } else if (err.message === 'network_error') {
-      setShareFeedback('Could not reach Dropbox — check your connection and try again.', 'rgba(220,80,80,0.9)', true);
+    if (err.message === 'network_error') {
+      setShareFeedback('Could not reach your cloud provider — check your connection and try again.', 'rgba(220,80,80,0.9)', true);
+    } else if (err.message === 'auth_expired') {
+      // modal already shown by _dbx / _gdrive
     } else {
       setShareFeedback('Failed to copy link — please try again.', 'rgba(220,80,80,0.9)', true);
     }
     console.error('[share] shareSelectConfirm error:', err);
   } finally {
     btn.disabled = false;
-    btn.textContent = '🔗 Share Dropbox Link to Selection';
+    btn.textContent = '🔗 Share Link to Selection';
   }
 });
 
@@ -1901,13 +1898,196 @@ async function _dbx(url, options) {
 // ATTUNE_KNOWN_MODES, _resolveAttunement, _shareContentHash) are defined in utils.js,
 // which is loaded before this file.
 
+// ══════════════════════════════════════════════════════
+// PHASE 3 — GOOGLE DRIVE
+// ══════════════════════════════════════════════════════
+
+const GDRIVE_CLIENT_ID = '33952755898-n2ce7raec9995di0s0coplgrbn4d3g49.apps.googleusercontent.com';
+const GDRIVE_REDIRECT  = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
+const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
+
+// ── PKCE helpers (used by Google Drive and future providers) ──
+async function _pkceVerifier() {
+  const arr = crypto.getRandomValues(new Uint8Array(64));
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+async function _pkceChallenge(verifier) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+// ── Google Drive OAuth PKCE flow (Step 13) ──
+async function connectGoogleDrive() {
+  const verifier  = await _pkceVerifier();
+  const challenge = await _pkceChallenge(verifier);
+  sessionStorage.setItem('dnd_oauth_verifier', verifier);
+
+  const params = new URLSearchParams({
+    client_id:             GDRIVE_CLIENT_ID,
+    redirect_uri:          GDRIVE_REDIRECT,
+    response_type:         'code',
+    scope:                 GDRIVE_SCOPE,
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
+    access_type:           'offline',
+    prompt:                'consent',  // ensures refresh token is always issued
+  });
+
+  const popup = window.open(
+    'https://accounts.google.com/o/oauth2/v2/auth?' + params,
+    'gdrive_auth', 'width=600,height=720,left=200,top=100'
+  );
+  if (!popup) {
+    showInfoModal('Popup Blocked', 'Please allow pop-ups for this page and try again.');
+    return;
+  }
+
+  try {
+    await new Promise((resolve, reject) => {
+      let done = false;
+      async function onMsg(e) {
+        if (e.origin !== window.location.origin || !e.data || e.data.type !== 'oauth_callback') return;
+        window.removeEventListener('message', onMsg);
+        clearInterval(poll);
+        done = true;
+        const { code, error } = e.data.payload;
+        if (error) { reject(new Error(error)); return; }
+        if (!code) { reject(new Error('no_code')); return; }
+        try {
+          const stored = sessionStorage.getItem('dnd_oauth_verifier');
+          sessionStorage.removeItem('dnd_oauth_verifier');
+          const resp = await fetch('https://oauth2.googleapis.com/token', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    new URLSearchParams({
+              code,
+              client_id:     GDRIVE_CLIENT_ID,
+              redirect_uri:  GDRIVE_REDIRECT,
+              code_verifier: stored,
+              grant_type:    'authorization_code',
+            }),
+          });
+          if (!resp.ok) { reject(new Error('token_exchange_failed')); return; }
+          const data = await resp.json();
+          setShareConnection('gdrive', data.access_token, data.refresh_token || null);
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      }
+      window.addEventListener('message', onMsg);
+      const poll = setInterval(() => {
+        if (!done && popup.closed) {
+          clearInterval(poll);
+          setTimeout(() => {
+            if (!done) {
+              window.removeEventListener('message', onMsg);
+              reject(new Error('closed'));
+            }
+          }, 800);
+        }
+      }, 500);
+    });
+    updateShareUI();
+  } catch (err) {
+    sessionStorage.removeItem('dnd_oauth_verifier');
+    if (err.message !== 'closed') {
+      showInfoModal('Connection Failed', 'Could not connect to Google Drive — please try again.');
+      console.error('[gdrive] connect error:', err);
+    }
+  }
+}
+
+// ── Google Drive token refresh (Step 16) ──
+async function refreshGoogleToken() {
+  const refreshToken = localStorage.getItem('dnd_share_refresh_token');
+  if (!refreshToken) throw new Error('no_refresh_token');
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({
+      client_id:     GDRIVE_CLIENT_ID,
+      refresh_token: refreshToken,
+      grant_type:    'refresh_token',
+    }),
+  });
+  if (!resp.ok) throw new Error('refresh_failed');
+  const data = await resp.json();
+  localStorage.setItem('dnd_share_token', data.access_token);
+  return data.access_token;
+}
+
+// ── Google Drive fetch wrapper — auto-refreshes on 401 (Step 16) ──
+async function _gdrive(url, options, _retried = false) {
+  const token = getShareToken();
+  const resp  = await fetch(url, {
+    ...options,
+    headers: { ...options.headers, Authorization: 'Bearer ' + token },
+  });
+  if (resp.status === 401 && !_retried) {
+    try {
+      await refreshGoogleToken();
+      return _gdrive(url, options, true);
+    } catch {
+      clearShareConnection();
+      showInfoModal('Google Drive Disconnected', 'Your session has expired. Please reconnect in Settings → Share Provider.');
+      throw new Error('auth_expired');
+    }
+  }
+  if (resp.status === 401) {
+    clearShareConnection();
+    showInfoModal('Google Drive Disconnected', 'Your session has expired. Please reconnect in Settings → Share Provider.');
+    throw new Error('auth_expired');
+  }
+  return resp;
+}
+
+// ── Google Drive upload + share (Step 14) ──
+async function _shareGDrive(states, hash) {
+  const now      = new Date().toISOString();
+  const payload  = states.map(s => ({ ...s, sharedAt: now, appVersion: '1.0' }));
+  const json     = JSON.stringify(payload);
+  const slugBase = states.length === 1
+    ? (states[0].name || 'card').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)
+    : `selection-${states.length}-cards`;
+  const filename = `artifex-arcanum-${slugBase}-${Date.now()}.json`;
+
+  // Multipart upload: metadata + file body in one request
+  const boundary = 'aa_b_' + Math.random().toString(36).slice(2);
+  const meta     = JSON.stringify({ name: filename, mimeType: 'application/json' });
+  const body     = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`;
+
+  const upResp = await _gdrive(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body }
+  ).catch(err => { console.error('[gdrive] upload fetch error:', err); throw new Error('network_error'); });
+
+  if (!upResp.ok) {
+    const errBody = await upResp.json().catch(() => ({}));
+    throw new Error('upload_failed: ' + (errBody.error?.message || upResp.status));
+  }
+  const { id: fileId } = await upResp.json();
+
+  // Set permission: anyone with the link can read
+  const permResp = await _gdrive(
+    `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'anyone' }) }
+  ).catch(err => { console.error('[gdrive] permission fetch error:', err); throw new Error('network_error'); });
+
+  if (!permResp.ok) throw new Error('permission_failed: ' + permResp.status);
+
+  const shareUrl = `${location.origin}${location.pathname}#share=gdrive:${fileId}`;
+  _setShareCache(hash, shareUrl);
+  return shareUrl;
+}
+
 // ── shareCurrentCard ───────────────────────────────────────────────────────────
 // states: array of card state objects (from history). Each will have sharedAt / appVersion
 // added. Always uploaded as a JSON array so the recipient handles single or multi uniformly.
 async function shareCurrentCard(states) {
   const provider = getShareProvider();
-  if (provider !== 'dropbox') {
-    showInfoModal('Not Connected', 'Connect Dropbox in Settings → Share Provider first.');
+  if (!provider || !getShareToken()) {
+    showInfoModal('Not Connected', 'Connect a cloud provider in Settings → Share Provider first.');
     return null;
   }
 
@@ -1919,6 +2099,14 @@ async function shareCurrentCard(states) {
   if (cached) {
     console.log('[share] cache hit — skipping upload');
     return cached;
+  }
+
+  if (provider === 'gdrive') return _shareGDrive(states, hash);
+
+  // ── Dropbox ──
+  if (provider !== 'dropbox') {
+    showInfoModal('Not Connected', 'Connect a cloud provider in Settings → Share Provider first.');
+    return null;
   }
 
   const now = new Date().toISOString();
@@ -2005,6 +2193,13 @@ async function fetchSharedCard(provider, id) {
       fetchUrl = `${DROPBOX_PROXY}?url=${encodeURIComponent(directUrl)}`;
     }
     const resp = await fetch(fetchUrl);
+    if (resp.status === 404) throw new Error('not_found');
+    if (!resp.ok) throw new Error('fetch_' + resp.status);
+    return resp.json();
+  }
+  if (provider === 'gdrive') {
+    // No proxy needed — drive.google.com/uc serves files with CORS headers
+    const resp = await fetch(`https://drive.google.com/uc?export=download&id=${id}`);
     if (resp.status === 404) throw new Error('not_found');
     if (!resp.ok) throw new Error('fetch_' + resp.status);
     return resp.json();
