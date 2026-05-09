@@ -1906,6 +1906,18 @@ const GDRIVE_CLIENT_ID = '33952755898-n2ce7raec9995di0s0coplgrbn4d3g49.apps.goog
 const GDRIVE_REDIRECT  = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
 
+// Routes a POST through the Cloudflare Worker so Firefox Enhanced Tracking Protection
+// doesn't block token exchange requests to oauth2.googleapis.com.
+function _proxyPost(url, options) {
+  if (!DROPBOX_PROXY || DROPBOX_PROXY.includes('YOUR-WORKER')) {
+    console.warn('[proxy] no proxy configured — fetching directly:', url);
+    return fetch(url, options);
+  }
+  const proxyUrl = `${DROPBOX_PROXY}?url=${encodeURIComponent(url)}`;
+  console.log('[proxy] routing via Worker:', proxyUrl);
+  return fetch(proxyUrl, options);
+}
+
 // ── PKCE helpers (used by Google Drive and future providers) ──
 async function _pkceVerifier() {
   const arr = crypto.getRandomValues(new Uint8Array(64));
@@ -1956,7 +1968,8 @@ async function connectGoogleDrive() {
         try {
           const stored = sessionStorage.getItem('dnd_oauth_verifier');
           sessionStorage.removeItem('dnd_oauth_verifier');
-          const resp = await fetch('https://oauth2.googleapis.com/token', {
+          console.log('[gdrive] code received, starting token exchange. DROPBOX_PROXY:', DROPBOX_PROXY);
+          const resp = await _proxyPost('https://oauth2.googleapis.com/token', {
             method:  'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body:    new URLSearchParams({
@@ -1967,11 +1980,19 @@ async function connectGoogleDrive() {
               grant_type:    'authorization_code',
             }),
           });
-          if (!resp.ok) { reject(new Error('token_exchange_failed')); return; }
+          console.log('[gdrive] token exchange response status:', resp.status, resp.ok);
+          if (!resp.ok) {
+            const body = await resp.text().catch(() => '(unreadable)');
+            console.error('[gdrive] token exchange failed. Response body:', body);
+            reject(new Error('token_exchange_failed'));
+            return;
+          }
           const data = await resp.json();
+          console.log('[gdrive] token exchange succeeded. Has refresh_token:', !!data.refresh_token);
           setShareConnection('gdrive', data.access_token, data.refresh_token || null);
           resolve();
         } catch (err) {
+          console.error('[gdrive] token exchange threw:', err.name, err.message);
           reject(err);
         }
       }
@@ -2002,7 +2023,7 @@ async function connectGoogleDrive() {
 async function refreshGoogleToken() {
   const refreshToken = localStorage.getItem('dnd_share_refresh_token');
   if (!refreshToken) throw new Error('no_refresh_token');
-  const resp = await fetch('https://oauth2.googleapis.com/token', {
+  const resp = await _proxyPost('https://oauth2.googleapis.com/token', {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    new URLSearchParams({
@@ -2458,7 +2479,7 @@ function makeHistoryThumb(item) {
     thumb.appendChild(tImg);
   } else {
     const fallback = document.createElement('img');
-    fallback.src = 'brown_logo.png';
+    fallback.src = 'img/brown_logo.png';
     fallback.alt = '';
     fallback.style.width = '65%';
     fallback.style.height = '65%';
@@ -3064,7 +3085,7 @@ if (_initialHistory.length > 0) {
 }
 
 // ── DEFAULT CARD IMAGE ──
-// Load brown_logo.png and inject it into the welcome card shown to first-time visitors.
+// Load img/brown_logo.png and inject it into the welcome card shown to first-time visitors.
 // Mirrors the upload handler exactly to avoid applyState side-effects.
 // Also patches the history entry that registerNewCard() already created (without the image)
 // and updates DEFAULT_STATE so factory reset restores it too.
@@ -3119,13 +3140,13 @@ if (_initialHistory.length > 0) {
     }
   };
 
-  cardImg.onerror = () => console.warn('[init] could not load brown_logo.png');
+  cardImg.onerror = () => console.warn('[init] could not load img/brown_logo.png');
 
   // Set src directly — same-origin file, no fetch needed
-  cardImg.src = 'brown_logo.png';
+  cardImg.src = 'img/brown_logo.png';
   cardImg.style.display     = 'block';
   placeholder.style.display = 'none';
-  $('itemImgPreview').src   = 'brown_logo.png';
+  $('itemImgPreview').src   = 'img/brown_logo.png';
   $('itemImgZone').classList.add('has-image');
   $('clearItem').style.display = 'inline-block';
 })();
