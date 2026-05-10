@@ -383,8 +383,7 @@ function syncCard() {
   liveCard.querySelectorAll('.stat-label').forEach(el => el.style.fontSize = `${(0.52*fs).toFixed(3)}rem`);
   liveCard.querySelectorAll('.side-stat-label').forEach(el => el.style.fontSize = `${(0.52*fs).toFixed(3)}rem`);
   liveCard.querySelector('.card-description').style.fontSize  = `${(0.87*fs).toFixed(3)}rem`;
-  const attuneEl = $('previewAttunement');
-  attuneEl.style.fontSize = `${(0.75*fs).toFixed(3)}rem`;
+  $('previewAttunement').style.fontSize = `${(0.75*fs).toFixed(3)}rem`;
   const srcEl = $('previewSource');
   if (srcEl) srcEl.style.fontSize = `${(0.55*fs).toFixed(3)}rem`;
 
