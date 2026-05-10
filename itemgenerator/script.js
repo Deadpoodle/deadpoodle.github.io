@@ -3943,6 +3943,12 @@ if (_initialHistory.length > 0) {
   syncCard();
 }
 
+// Web fonts load asynchronously; re-run shrink once they're ready so stat values
+// aren't measured against a fallback font that's narrower than Cinzel.
+document.fonts.ready.then(() => {
+  _applyStatShrink($('itemCard'), parseFloat($('fontScale').value) || 1);
+});
+
 // ── DEFAULT CARD IMAGE ──
 // Load img/brown_logo.png and inject it into the welcome card shown to first-time visitors.
 // Mirrors the upload handler exactly to avoid applyState side-effects.
