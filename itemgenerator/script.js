@@ -1387,10 +1387,6 @@ $('importJsonFile').addEventListener('change', e => {
 // ── SHARE PROVIDER UI EVENTS ──
 $('connectDropboxBtn').addEventListener('click', () => connectDropbox());
 $('connectGdriveBtn').addEventListener('click', () => connectGoogleDrive());
-$('connectOnedriveBtn').addEventListener('click', () => {
-  console.log('[share] connectOneDrive() — not yet implemented');
-  showInfoModal('Coming Soon', 'OneDrive connection will be available in a future update.');
-});
 $('disconnectShareBtn').addEventListener('click', () => {
   clearShareConnection();
 });
@@ -1832,7 +1828,6 @@ function clearShareConnection() {
 const SHARE_PROVIDER_LABELS = {
   dropbox:  { name: 'Dropbox',      icon: '📦' },
   gdrive:   { name: 'Google Drive', icon: '📂' },
-  onedrive: { name: 'OneDrive',     icon: '☁'  },
 };
 function updateShareUI() {
   const provider = getShareProvider();
