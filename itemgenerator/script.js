@@ -193,19 +193,16 @@ function _shrinkToFit(el, baseRem, minRem) {
 
 // Runs _shrinkToFit on all stat/subtype elements within a built card node.
 // Must be called after the node is in the DOM so scrollWidth is measurable.
-function _applyStatShrink(node, fontScale = 1) {
-  node.querySelectorAll('.stat-value').forEach(el => _shrinkToFit(el, 0.82 * fontScale, 0.55));
-  node.querySelectorAll('.side-stat-value').forEach(el => _shrinkToFit(el, 0.72 * fontScale, 0.55));
+function _applyStatShrink(node) {
+  node.querySelectorAll('.stat-value').forEach(el => _shrinkToFit(el, 0.82, 0.55));
+  node.querySelectorAll('.side-stat-value').forEach(el => _shrinkToFit(el, 0.72, 0.55));
   const subtype = node.querySelector('.card-subtype');
-  if (subtype) _shrinkToFit(subtype, 0.65 * fontScale, 0.5);
+  if (subtype) _shrinkToFit(subtype, 0.65, 0.5);
 }
 
 // ── LIVE SYNC ──
 function syncCard() {
   if (!_applyingState) setDirty(true);
-  const fs    = parseFloat($('fontScale').value)  || 1;
-  const hFont = $('headingFont').value || 'Cinzel';
-  const bFont = `'${$('bodyFont').value || 'Crimson Pro'}',Georgia,serif`;
   const name    = $('itemName').value || 'Unnamed Item';
 
   // Keep history bar/dropdown name in sync as the user types
@@ -233,13 +230,13 @@ function syncCard() {
 
   $('previewName').textContent   = name;
   $('previewSubtype').textContent = type ? (subtype ? `${type} • ${subtype}` : type) : subtype;
-  _shrinkToFit($('previewSubtype'), 0.65 * fs, 0.5);
+  _shrinkToFit($('previewSubtype'), 0.65, 0.5);
   $('previewBonus').textContent  = bonus  || '—';
   $('previewDamage').textContent = damage || '—';
   $('previewWeight').textContent = weight || '—';
-  _shrinkToFit($('previewBonus'),  0.82 * fs, 0.55);
-  _shrinkToFit($('previewDamage'), 0.82 * fs, 0.55);
-  _shrinkToFit($('previewWeight'), 0.82 * fs, 0.55);
+  _shrinkToFit($('previewBonus'),  0.82, 0.55);
+  _shrinkToFit($('previewDamage'), 0.82, 0.55);
+  _shrinkToFit($('previewWeight'), 0.82, 0.55);
   $('previewSource').textContent = source || '';
 
   // Rarity badge
@@ -321,8 +318,8 @@ function syncCard() {
   const rangeVal = $('itemRange').value.trim();
   $('saveStat').style.display  = saveVal  ? 'block' : 'none';
   $('rangeStat').style.display = rangeVal ? 'block' : 'none';
-  if (saveVal)  { $('previewSave').textContent  = saveVal;  $('previewSaveLabel').textContent  = $('saveLabel').value  || 'Save';  _shrinkToFit($('previewSave'),  0.82 * fs, 0.55); }
-  if (rangeVal) { $('previewRange').textContent = rangeVal; $('previewRangeLabel').textContent = $('rangeLabel').value || 'Range'; _shrinkToFit($('previewRange'), 0.82 * fs, 0.55); }
+  if (saveVal)  { $('previewSave').textContent  = saveVal;  $('previewSaveLabel').textContent  = $('saveLabel').value  || 'Save';  _shrinkToFit($('previewSave'),  0.82, 0.55); }
+  if (rangeVal) { $('previewRange').textContent = rangeVal; $('previewRangeLabel').textContent = $('rangeLabel').value || 'Range'; _shrinkToFit($('previewRange'), 0.82, 0.55); }
 
   // Toggles
   const showImg = $('showImage').checked;
@@ -366,28 +363,6 @@ function syncCard() {
       el.style.opacity = '0.75';
     });
   }
-
-  // Typography — apply font family to all card text elements, and font-size to non-shrink-to-fit ones
-  const liveCard = $('itemCard');
-  liveCard.querySelectorAll('.card-item-name,.card-subtype,.card-rarity,.stat-label,.stat-value,.side-stat-label,.side-stat-value,.card-source').forEach(el => {
-    el.style.fontFamily = `${hFont},serif`;
-  });
-  liveCard.querySelectorAll('.card-description,.card-attunement').forEach(el => {
-    el.style.fontFamily = bFont;
-  });
-  liveCard.querySelectorAll('.card-description h1,.card-description h2,.card-description h3').forEach(el => {
-    el.style.fontFamily = `${hFont},serif`;
-  });
-  liveCard.querySelector('.card-item-name').style.fontSize = `${(1.15*fs).toFixed(3)}rem`;
-  liveCard.querySelector('.card-rarity').style.fontSize    = `${(0.6*fs).toFixed(3)}rem`;
-  liveCard.querySelectorAll('.stat-label').forEach(el => el.style.fontSize = `${(0.52*fs).toFixed(3)}rem`);
-  liveCard.querySelectorAll('.side-stat-label').forEach(el => el.style.fontSize = `${(0.52*fs).toFixed(3)}rem`);
-  liveCard.querySelector('.card-description').style.fontSize  = `${(0.87*fs).toFixed(3)}rem`;
-  const attuneEl = $('previewAttunement');
-  attuneEl.style.fontSize = `${(0.75*fs).toFixed(3)}rem`;
-  const srcEl = $('previewSource');
-  if (srcEl) srcEl.style.fontSize = `${(0.55*fs).toFixed(3)}rem`;
-
   updateDefaultTypeImage();
 }
 
@@ -421,12 +396,6 @@ bindColor('circleBorderColor','circleBorderColorHex');
 
 $('bgOpacity').addEventListener('input', syncCard);
 $('circleSize').addEventListener('input', syncCard);
-$('fontScale').addEventListener('input', () => {
-  $('fontScaleLabel').textContent = Math.round($('fontScale').value * 100) + '%';
-  syncCard();
-});
-$('headingFont').addEventListener('change', syncCard);
-$('bodyFont').addEventListener('change', syncCard);
 
 $('resetCardColor').addEventListener('click', () => {
   $('cardColorHex').value = '#d4b87a';
@@ -780,9 +749,6 @@ function buildCardNode(s) {
   const rarityLabel = rarityLabels[s.rarity] || s.rarity || '';
   const rarityIcon  = rarityIcons[s.rarity]  || '◆';
   const inkCol      = s.inkColor || '#2c1a0e';
-  const fs      = s.fontScale ?? 1;
-  const hFont   = s.headingFont || 'Cinzel';
-  const bFont   = `'${s.bodyFont || 'Crimson Pro'}',Georgia,serif`;
 
   const bonus  = s.bonus  || '—';
   const damage = s.damage || '—';
@@ -828,8 +794,8 @@ function buildCardNode(s) {
   const imageWrapDisplay = (showImg || !!s.savingThrow || !!s.range) ? 'grid' : 'none';
 
   const sideStatStyle = `text-align:center;padding:0 6px;`;
-  const sideStatLabelStyle = `font-family:${hFont},serif;font-size:${(0.5*fs).toFixed(3)}rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;`;
-  const sideStatValueStyle = `font-family:${hFont},serif;font-size:${(0.72*fs).toFixed(3)}rem;font-weight:700;color:${inkCol};display:block;margin-top:3px;line-height:1.3;`;
+  const sideStatLabelStyle = `font-family:Cinzel,serif;font-size:0.5rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;`;
+  const sideStatValueStyle = `font-family:Cinzel,serif;font-size:0.72rem;font-weight:700;color:${inkCol};display:block;margin-top:3px;line-height:1.3;`;
 
   const saveHtml  = s.savingThrow
     ? `<div style="${sideStatStyle}"><span style="${sideStatLabelStyle}">${saveLbl}</span><span class="side-stat-value" style="${sideStatValueStyle}">${s.savingThrow}</span></div>`
@@ -846,9 +812,9 @@ function buildCardNode(s) {
   content.style.cssText = `position:relative;z-index:2;padding:0;display:flex;flex-direction:column;min-height:580px;${contentOverride}`;
   content.innerHTML = `
     <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
-      <div class="card-item-name" style="font-family:${hFont},serif;font-size:${(1.15*fs).toFixed(3)}rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
-      <div class="card-subtype" style="font-family:${hFont},serif;font-size:${(0.65*fs).toFixed(3)}rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
-      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:${hFont},serif;font-size:${(0.6*fs).toFixed(3)}rem;line-height:1;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
+      <div class="card-item-name" style="font-family:Cinzel,serif;font-size:1.15rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
+      <div class="card-subtype" style="font-family:Cinzel,serif;font-size:0.65rem;color:${inkCol};letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;opacity:0.85;">${s.type ? (s.subtype ? `${s.type} • ${s.subtype}` : s.type) : (s.subtype || '')}</div>
+      <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:Cinzel,serif;font-size:0.6rem;line-height:1;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
     <div class="card-divider"><span class="divider-gem"></span></div>
     <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
@@ -860,25 +826,25 @@ function buildCardNode(s) {
     </div>
     <div class="card-stats" style="display:${statsDisplay};justify-content:center;gap:0;padding:4px 20px;">
       <div class="card-stat" style="text-align:center;padding:3px 12px;border-right:1px solid rgba(90,60,30,0.3);flex:1;">
-        <span class="stat-label" style="font-family:${hFont},serif;font-size:${(0.52*fs).toFixed(3)}rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${bonusLbl}</span>
-        <span class="stat-value" style="font-family:${hFont},serif;font-size:${(0.82*fs).toFixed(3)}rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${bonus}</span>
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${bonusLbl}</span>
+        <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${bonus}</span>
       </div>
       <div class="card-stat" style="text-align:center;padding:3px 12px;border-right:1px solid rgba(90,60,30,0.3);flex:1;">
-        <span class="stat-label" style="font-family:${hFont},serif;font-size:${(0.52*fs).toFixed(3)}rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${damageLbl}</span>
-        <span class="stat-value" style="font-family:${hFont},serif;font-size:${(0.82*fs).toFixed(3)}rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${damage}</span>
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${damageLbl}</span>
+        <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${damage}</span>
       </div>
       <div class="card-stat" style="text-align:center;padding:3px 12px;flex:1;">
-        <span class="stat-label" style="font-family:${hFont},serif;font-size:${(0.52*fs).toFixed(3)}rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${weightLbl}</span>
-        <span class="stat-value" style="font-family:${hFont},serif;font-size:${(0.82*fs).toFixed(3)}rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${weight}</span>
+        <span class="stat-label" style="font-family:Cinzel,serif;font-size:0.52rem;letter-spacing:0.12em;color:${inkCol};opacity:0.75;text-transform:uppercase;display:block;">${weightLbl}</span>
+        <span class="stat-value" style="font-family:Cinzel,serif;font-size:0.82rem;font-weight:700;color:${inkCol};display:block;margin-top:1px;">${weight}</span>
       </div>
     </div>
     <div class="card-divider"><span class="divider-gem"></span></div>
     <div class="card-body" style="padding:8px 20px 16px;${s.allowOversized ? 'flex:none;height:auto;overflow:visible;' : 'flex:1;'}">
-      <div class="card-description" style="font-family:${bFont};font-size:${(0.87*fs).toFixed(3)}rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
+      <div class="card-description" style="font-family:'Crimson Pro',Georgia,serif;font-size:0.87rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
     </div>
-    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:${bFont};font-style:italic;font-size:${(0.75*fs).toFixed(3)}rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">${attuneText}</div>` : ''}
+    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:'Crimson Pro',serif;font-style:italic;font-size:0.75rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">${attuneText}</div>` : ''}
     <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
-      <div style="font-family:${hFont},serif;font-size:${(0.55*fs).toFixed(3)}rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.showCollection !== false ? (getCollectionById(s.collectionId)?.name || '') : ''}</div>
+      <div style="font-family:Cinzel,serif;font-size:0.55rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.showCollection !== false ? (getCollectionById(s.collectionId)?.name || '') : ''}</div>
     </div>
   `;
 
@@ -897,7 +863,7 @@ async function renderStateToCanvas(s) {
   const node = buildCardNode(s);
   // Must be visible in the DOM for html2canvas — opacity:0 wrapper hides it from user
   offscreen.appendChild(node);
-  _applyStatShrink(node, s.fontScale ?? 1);
+  _applyStatShrink(node);
 
   // Wait for all images inside the node to fully load/decode
   const imgs = Array.from(node.querySelectorAll('img'));
@@ -1533,7 +1499,6 @@ const BLANK_STATE = {
   attunement: '', attunementCustom: '',
   cardColor: '#d4b87a', inkColor: '#2c1a0e',
   rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
-  fontScale: 1, headingFont: 'Cinzel', bodyFont: 'Crimson Pro',
   showImage: true, showStats: true, showCollection: false, showFrame: true, squareCorners: false,
   bgImage: null, itemImage: null,
   imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
@@ -2372,9 +2337,6 @@ function collectCurrentState() {
     circleSize:  parseInt($('circleSize').value) || 110,
     circleBorderColor: $('circleBorderColorHex').value || null,
     bgOpacity:   parseFloat($('bgOpacity').value) ?? 1,
-    fontScale:   parseFloat($('fontScale').value) || 1,
-    headingFont: $('headingFont').value || 'Cinzel',
-    bodyFont:    $('bodyFont').value    || 'Crimson Pro',
     showImage:     $('showImage').checked,
     showStats:     $('showStats').checked,
     showFrame:     $('showFrame').checked,
@@ -2517,11 +2479,6 @@ function applyState(s) {
   $('circleBorderColor').value    = /^#[0-9a-fA-F]{6}$/.test(cbc) ? cbc : '#5a3c1e';
   $('circleSize').value      = s.circleSize  ?? 110;
   $('bgOpacity').value       = s.bgOpacity   ?? 1;
-  const fs = s.fontScale ?? 1;
-  $('fontScale').value       = fs;
-  $('fontScaleLabel').textContent = Math.round(fs * 100) + '%';
-  $('headingFont').value     = s.headingFont || 'Cinzel';
-  $('bodyFont').value        = s.bodyFont    || 'Crimson Pro';
   $('showImage').checked      = s.showImage     !== false;
   $('showStats').checked      = s.showStats     !== false;
   $('showFrame').checked      = s.showFrame     !== false;
