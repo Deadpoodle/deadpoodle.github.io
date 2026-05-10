@@ -17,7 +17,7 @@
     --input-border: rgba(180, 130, 60, 0.35);
     --label-color: #dabb80;
     --card-w: 380px;
-    --card-h: 580px;
+    --card-h: 531px;
   }
 
   body {
@@ -330,6 +330,25 @@
 
   .upload-placeholder span { display: block; font-size: 1.4rem; margin-bottom: 0.2rem; }
 
+  /* ── Image picker list (Appearance tab) ── */
+  .img-picker-list { display: flex; flex-direction: column; gap: 0.55rem; }
+  .img-picker-row  { display: flex; align-items: center; gap: 0.65rem; }
+  .img-picker-labels { flex: 1; min-width: 0; }
+  .img-picker-labels label { display: block; margin-bottom: 0.1rem; }
+  .img-picker-labels small { color: rgba(180,130,60,0.55); font-size: 0.72rem; line-height: 1.3; }
+  .upload-zone-sm {
+    width: 58px; height: 58px;
+    padding: 0.3rem;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .upload-zone-sm .upload-preview { width: 100%; height: 100%; max-height: none; object-fit: cover; }
+  .upload-zone-sm .upload-placeholder { display: flex; align-items: center; justify-content: center; }
+  .upload-zone-sm .upload-placeholder span { font-size: 1.3rem; margin: 0; }
+  .img-picker-clear { font-size: 0.62rem; padding: 0.25rem 0.55rem; white-space: nowrap; flex-shrink: 0; }
+
+  body.light .img-picker-labels small { color: rgba(80,50,15,0.5); }
+
   /* Editable stat-label rename inputs */
   input.stat-label-rename {
     font-family: 'Cinzel', serif;
@@ -451,8 +470,7 @@
     position: absolute;
     inset: 0;
     background:
-      repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px),
-      linear-gradient(to bottom, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%);
+      repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px);
     z-index: 0;
     pointer-events: none;
   }
@@ -472,7 +490,7 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    height: 580px;
+    height: 531px;
     overflow: hidden;
   }
 
@@ -565,8 +583,8 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     align-items: center;
-    padding: 10px 20px;
-    min-height: 130px;
+    padding: 8px 20px 4px;
+    min-height: 120px;
   }
 
   .card-side-stat {
@@ -839,6 +857,73 @@
 
   .scale-control input[type="range"] {
     width: 100px;
+  }
+
+  /* ── Card flip (scaleX fold — avoids GPU compositing layer that blurs child images) ── */
+  .card-flip-container {
+    position: relative;
+    transition: transform 0.18s ease-in;
+  }
+  .card-flip-container.folding {
+    transform: scaleX(0);
+  }
+  .card-flip-back {
+    position: absolute;
+    inset: 0;
+    width: var(--card-w);
+    height: var(--card-h);
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+    pointer-events: none;
+  }
+  .card-flip-back.visible {
+    display: block;
+  }
+  .card-flip-back img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+  }
+
+  /* Scale reset + flip buttons */
+  .scale-reset-btn {
+    font-size: 0.9rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: rgba(180,130,60,0.5);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .scale-reset-btn:hover {
+    color: var(--gold-light);
+    border-color: rgba(180,130,60,0.3);
+  }
+  .scale-flip-btn {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid rgba(180,130,60,0.3);
+    background: transparent;
+    color: #c9a96e;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .scale-flip-btn:hover {
+    border-color: rgba(180,130,60,0.6);
+    color: var(--gold-light);
+  }
+  .scale-flip-btn[aria-pressed="true"] {
+    background: rgba(180,130,60,0.15);
+    border-color: rgba(180,130,60,0.5);
+    color: var(--gold-light);
   }
 
   /* ── Range slider theme ── */
@@ -1741,6 +1826,74 @@
     color: #6b4418;
   }
 
+  /* ── PRINT OPTIONS SECTION ── */
+  .print-opts-section {
+    border: 1px solid rgba(180,130,60,0.18);
+    border-radius: 5px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .print-opts-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.07em;
+    color: rgba(180,130,60,0.65);
+    text-transform: uppercase;
+  }
+  .print-opt-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #c9a96e;
+    cursor: pointer;
+    user-select: none;
+  }
+  .print-opt-row input[type="checkbox"] {
+    accent-color: var(--gold);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .print-opt-back-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    padding-top: 0.3rem;
+    border-top: 1px solid rgba(180,130,60,0.12);
+    margin-top: 0.2rem;
+  }
+  .print-opt-back-label {
+    font-size: 0.8rem;
+    color: rgba(180,130,60,0.7);
+    width: 100%;
+  }
+  .print-opt-upload-btn {
+    cursor: pointer;
+  }
+  .print-opt-back-preview-wrap {
+    width: 100%;
+    margin-top: 0.35rem;
+  }
+  .print-opt-back-preview-wrap img {
+    height: 44mm;
+    width: auto;
+    border-radius: 3px;
+    border: 1px solid rgba(180,130,60,0.25);
+    display: block;
+  }
+
+  body.light .print-opts-section   { border-color: rgba(120,80,30,0.2); }
+  body.light .print-opts-title     { color: rgba(80,50,15,0.6); }
+  body.light .print-opt-row        { color: #3a2008; }
+  body.light .print-opt-back-label { color: rgba(80,50,15,0.7); }
+  body.light .print-opt-back-row   { border-top-color: rgba(120,80,30,0.15); }
+
   /* ── PROGRESS OVERLAY ── */
   .progress-overlay {
     position: fixed;
@@ -2158,6 +2311,11 @@
   }
   body.light .preview-area { background: #e4d0a5; }
   body.light .scale-control { color: #5a3810; }
+  body.light .scale-reset-btn { color: rgba(80,50,15,0.5); }
+  body.light .scale-reset-btn:hover { color: #3a2008; border-color: rgba(120,80,30,0.3); }
+  body.light .scale-flip-btn { border-color: rgba(120,80,30,0.3); color: #6b4418; }
+  body.light .scale-flip-btn:hover { border-color: rgba(120,80,30,0.6); color: #3a2008; }
+  body.light .scale-flip-btn[aria-pressed="true"] { background: rgba(120,80,30,0.12); border-color: rgba(120,80,30,0.5); color: #3a2008; }
   body.light .export-hint   { color: #5a3810; }
   body.light .char-count    { color: #5a3810; }
   body.light .char-count.warn { color: #9a6e00; }
