@@ -1,11 +1,11 @@
 // Cloudflare Worker — artifex-arcanum.joefahey87.workers.dev
 //
 // Proxies requests that Firefox Enhanced Tracking Protection blocks when made
-// directly from the browser. Currently handles:
+// directly from the browser, and proxies token endpoints that have no CORS headers.
+// Currently handles:
+//   - Dropbox PKCE token exchange / refresh  (POST /dropbox-token)
+//   - Google Drive PKCE token exchange / refresh (POST /google-token)
 //   - Dropbox recipient fetch (GET dl.dropboxusercontent.com)
-//
-// www.googleapis.com and drive.google.com are allowed for future use but are
-// not currently routed through the proxy (Google Drive API calls are made directly).
 //
 // Usage: fetch(`${WORKER_URL}?url=${encodeURIComponent(targetUrl)}`, options)
 
@@ -31,6 +31,14 @@ async function handle(request) {
   // No secrets are needed — PKCE uses code_verifier instead of a client secret.
   if (request.method === 'POST' && new URL(request.url).pathname === '/dropbox-token') {
     return handleDropboxToken(request);
+  }
+
+  // Route: POST /google-token — proxies PKCE code exchange and token refresh.
+  // Google's token endpoint has no CORS headers, and the exchange requires a
+  // client_secret. GOOGLE_CLIENT_SECRET is a Cloudflare Worker secret (set via
+  // wrangler secret put GOOGLE_CLIENT_SECRET); in Service Worker format it's a global.
+  if (request.method === 'POST' && new URL(request.url).pathname === '/google-token') {
+    return handleGoogleToken(request);
   }
 
   const target = new URL(request.url).searchParams.get('url');
@@ -62,6 +70,25 @@ async function handleDropboxToken(request) {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
+  });
+  return new Response(await upstream.text(), {
+    status: upstream.status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      ...corsHeaders(),
+    },
+  });
+}
+
+async function handleGoogleToken(request) {
+  const params = new URLSearchParams(await request.text());
+  // Inject client_secret server-side — the browser never sends or sees it.
+  params.set('client_secret', GOOGLE_CLIENT_SECRET);
+  const upstream = await fetch('https://oauth2.googleapis.com/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    params.toString(),
   });
   return new Response(await upstream.text(), {
     status: upstream.status,

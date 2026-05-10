@@ -2061,18 +2061,26 @@ async function _dbx(url, options) {
 const GDRIVE_CLIENT_ID = '33952755898-n2ce7raec9995di0s0coplgrbn4d3g49.apps.googleusercontent.com';
 const GDRIVE_REDIRECT  = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
+const GDRIVE_PROXY     = 'https://artifex-arcanum.joefahey87.workers.dev';
 
-// ── Google Drive OAuth — implicit flow (Step 13) ──
-// Google's "Web application" client type requires a client_secret for the code exchange,
-// which cannot be embedded in client-side JS. Implicit flow (response_type=token) returns
-// the access token directly in the redirect fragment, bypassing the exchange entirely.
-// Tokens expire after 1 hour; the _gdrive() wrapper handles 401s by prompting reconnect.
+// ── Google Drive OAuth — authorization code + PKCE flow ──
+// Switched from implicit flow: PKCE + access_type=offline + prompt=consent
+// ensures a refresh token is issued. The client_secret is injected server-side
+// by the Cloudflare Worker's POST /google-token route.
 async function connectGoogleDrive() {
+  const verifier  = _pkceVerifier();
+  const challenge = await _pkceChallenge(verifier);
+  sessionStorage.setItem('dnd_gdrive_oauth_verifier', verifier);
+
   const params = new URLSearchParams({
-    client_id:     GDRIVE_CLIENT_ID,
-    redirect_uri:  GDRIVE_REDIRECT,
-    response_type: 'token',
-    scope:         GDRIVE_SCOPE,
+    client_id:             GDRIVE_CLIENT_ID,
+    redirect_uri:          GDRIVE_REDIRECT,
+    response_type:         'code',
+    scope:                 GDRIVE_SCOPE,
+    access_type:           'offline',
+    prompt:                'consent',
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
   });
 
   const popup = window.open(
@@ -2081,6 +2089,7 @@ async function connectGoogleDrive() {
   );
   if (!popup) {
     showInfoModal('Popup Blocked', 'Please allow pop-ups for this page and try again.');
+    sessionStorage.removeItem('dnd_gdrive_oauth_verifier');
     return;
   }
 
@@ -2092,11 +2101,34 @@ async function connectGoogleDrive() {
         window.removeEventListener('message', onMsg);
         clearInterval(poll);
         done = true;
-        const { access_token, error } = e.data.payload;
-        if (error)         { reject(new Error(error));     return; }
-        if (!access_token) { reject(new Error('no_token')); return; }
-        setShareConnection('gdrive', access_token, null);
-        resolve();
+        const { code, error } = e.data.payload;
+        if (error)  { reject(new Error(error));    return; }
+        if (!code)  { reject(new Error('no_code')); return; }
+
+        const storedVerifier = sessionStorage.getItem('dnd_gdrive_oauth_verifier');
+        sessionStorage.removeItem('dnd_gdrive_oauth_verifier');
+
+        fetch(`${GDRIVE_PROXY}/google-token`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body:    new URLSearchParams({
+            grant_type:    'authorization_code',
+            code,
+            code_verifier: storedVerifier,
+            client_id:     GDRIVE_CLIENT_ID,
+            redirect_uri:  GDRIVE_REDIRECT,
+          }).toString(),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.error || !data.access_token) {
+              reject(new Error(data.error || 'no_token'));
+              return;
+            }
+            setShareConnection('gdrive', data.access_token, data.refresh_token || null);
+            resolve();
+          })
+          .catch(reject);
       }
       window.addEventListener('message', onMsg);
       const poll = setInterval(() => {
@@ -2113,6 +2145,7 @@ async function connectGoogleDrive() {
     });
     updateShareUI();
   } catch (err) {
+    sessionStorage.removeItem('dnd_gdrive_oauth_verifier');
     if (err.message !== 'closed') {
       showInfoModal('Connection Failed', 'Could not connect to Google Drive — please try again.');
       console.error('[gdrive] connect error:', err);
@@ -2120,18 +2153,48 @@ async function connectGoogleDrive() {
   }
 }
 
-// ── Google Drive fetch wrapper — prompts reconnect on 401 ──
+async function _refreshGoogleToken() {
+  const refreshToken = localStorage.getItem('dnd_share_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const resp = await fetch(`${GDRIVE_PROXY}/google-token`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams({
+        grant_type:    'refresh_token',
+        refresh_token: refreshToken,
+        client_id:     GDRIVE_CLIENT_ID,
+      }).toString(),
+    });
+    const data = await resp.json();
+    if (data.error || !data.access_token) return false;
+    localStorage.setItem('dnd_share_token', data.access_token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── Google Drive fetch wrapper — auto-refreshes on 401, then prompts reconnect ──
 async function _gdrive(url, options) {
-  const token = getShareToken();
-  const resp  = await fetch(url, {
+  const doFetch = token => fetch(url, {
     ...options,
     headers: { ...options.headers, Authorization: 'Bearer ' + token },
   });
+
+  let resp = await doFetch(getShareToken());
+
   if (resp.status === 401) {
+    const refreshed = await _refreshGoogleToken();
+    if (refreshed) {
+      resp = await doFetch(getShareToken());
+      if (resp.status !== 401) return resp;
+    }
     clearShareConnection();
-    showInfoModal('Google Drive Disconnected', 'Your session has expired (tokens last 1 hour). Please reconnect in Settings → Share Provider.');
+    showInfoModal('Google Drive Disconnected', 'Your Google Drive session has expired or been revoked. Please reconnect in Settings → Share Provider.');
     throw new Error('auth_expired');
   }
+
   return resp;
 }
 
