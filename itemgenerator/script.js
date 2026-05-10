@@ -203,7 +203,8 @@ function _applyStatShrink(node, fontScale = 1) {
 // ── LIVE SYNC ──
 function syncCard() {
   if (!_applyingState) setDirty(true);
-  const fs    = parseFloat($('fontScale').value)  || 1;
+  const fs     = parseFloat($('fontScale').value)     || 1;
+  const descFs = parseFloat($('descFontScale').value) || 1;
   const hFont = $('headingFont').value || 'Cinzel';
   const bFont = `'${$('bodyFont').value || 'Crimson Pro'}',Georgia,serif`;
   const name    = $('itemName').value || 'Unnamed Item';
@@ -272,7 +273,7 @@ function syncCard() {
 
   // ── CHAR COUNTER + OVERFLOW CONTROL ──
   // CHAR_LIMIT is used only for the counter display and the "warn" colour.
-  // Calculated: card 580px − header/divider/image-wrap/stats/footer ≈ 275px available,
+  // Calculated: card 531px − header/divider/image-wrap/stats/footer ≈ 226px available,
   // at 0.87rem Crimson Pro (line-height 1.5 ≈ 20.9px) ≈ 13 lines × ~43 chars ≈ 560 chars.
   const CHAR_LIMIT = 560;
   const len = desc.length;
@@ -285,11 +286,11 @@ function syncCard() {
   const cardContent = $('itemCard').querySelector('.card-content');
   if (oversized) {
     cardContent.style.height    = 'auto';
-    cardContent.style.minHeight = '580px';
+    cardContent.style.minHeight = '531px';
     cardContent.style.overflow  = 'visible';
     $('itemCard').style.minHeight = cardContent.scrollHeight + 'px';
   } else {
-    cardContent.style.height    = '580px';
+    cardContent.style.height    = '531px';
     cardContent.style.minHeight = '';
     cardContent.style.overflow  = 'hidden';
     $('itemCard').style.minHeight = '';
@@ -382,10 +383,10 @@ function syncCard() {
   liveCard.querySelector('.card-rarity').style.fontSize    = `${(0.6*fs).toFixed(3)}rem`;
   liveCard.querySelectorAll('.stat-label').forEach(el => el.style.fontSize = `${(0.52*fs).toFixed(3)}rem`);
   liveCard.querySelectorAll('.side-stat-label').forEach(el => el.style.fontSize = `${(0.52*fs).toFixed(3)}rem`);
-  liveCard.querySelector('.card-description').style.fontSize  = `${(0.87*fs).toFixed(3)}rem`;
-  $('previewAttunement').style.fontSize = `${(0.75*fs).toFixed(3)}rem`;
+  liveCard.querySelector('.card-description').style.fontSize  = `${(0.87*descFs).toFixed(3)}rem`;
+  $('previewAttunement').style.fontSize = `${(0.75*descFs).toFixed(3)}rem`;
   const srcEl = $('previewSource');
-  if (srcEl) srcEl.style.fontSize = `${(0.55*fs).toFixed(3)}rem`;
+  if (srcEl) srcEl.style.fontSize = `${(0.55*descFs).toFixed(3)}rem`;
 
   updateDefaultTypeImage();
 }
@@ -422,6 +423,10 @@ $('bgOpacity').addEventListener('input', syncCard);
 $('circleSize').addEventListener('input', syncCard);
 $('fontScale').addEventListener('input', () => {
   $('fontScaleLabel').textContent = Math.round($('fontScale').value * 100) + '%';
+  syncCard();
+});
+$('descFontScale').addEventListener('input', () => {
+  $('descFontScaleLabel').textContent = Math.round($('descFontScale').value * 100) + '%';
   syncCard();
 });
 $('headingFont').addEventListener('change', syncCard);
@@ -661,11 +666,24 @@ bindUpload('itemImgUpload','itemImgPreview','itemImgZone','clearItem', src => {
   }
 }, { warnKb: 2000 });
 
+bindUpload('cardBackUpload', 'cardBackPreview', 'cardBackZone', 'clearCardBack', src => {
+  setCardBack(src);
+}, { warnKb: 2000, imageType: 'bg' });
+
 // ── SCALE SLIDER ──
 function applyCardScale(val) {
   $('scaleLabel').textContent = val + '%';
-  $('itemCard').style.transform = `scale(${val/100})`;
-  $('itemCard').style.transformOrigin = 'top center';
+  // Scale the outer wrapper (#cardScaleInner) rather than #itemCard directly.
+  // #itemCard has backface-visibility:hidden inside a preserve-3d context, which
+  // causes the browser to rasterise it at 1× and scale up (blurry). Applying the
+  // scale one level above the 3D context keeps rasterisation sharp.
+  const scaleEl = $('cardScaleInner') || $('itemCard');
+  scaleEl.style.transform = `scale(${val/100})`;
+  scaleEl.style.transformOrigin = 'top center';
+  if (scaleEl !== $('itemCard')) {
+    $('itemCard').style.transform = '';
+    $('itemCard').style.transformOrigin = '';
+  }
   // Use the card's actual rendered height so oversized text is always accounted for.
   // transform: scale() doesn't affect layout flow, so we must set the wrapper height
   // explicitly to (cardHeight × scale) to keep content below the card in position.
@@ -675,6 +693,56 @@ function applyCardScale(val) {
   if (persistEl && persistEl.checked) localStorage.setItem('dnd_card_scale', val);
 }
 $('scaleSlider').addEventListener('input', () => applyCardScale($('scaleSlider').value));
+
+function resetFlip() {
+  const fc = $('cardFlipContainer');
+  if (!fc) return;
+  fc.classList.remove('folding');
+  fc.style.transition = '';
+  fc.dataset.flipped = 'false';
+  $('itemCard').style.visibility = '';
+  const back = document.querySelector('.card-flip-back');
+  if (back) back.classList.remove('visible');
+  $('cardFlipBtn').setAttribute('aria-pressed', 'false');
+}
+
+$('scaleReset').addEventListener('click', () => {
+  $('scaleSlider').value = 100;
+  $('scaleSlider').dispatchEvent(new Event('input'));
+  resetFlip();
+});
+
+$('cardFlipBtn').addEventListener('click', () => {
+  const container = $('cardFlipContainer');
+  const back = document.querySelector('.card-flip-back');
+  const isFlipped = container.dataset.flipped === 'true';
+  const FOLD_MS = 180;
+
+  // Phase 1: fold to edge (scaleX 1→0, ease-in)
+  container.style.transition = `transform ${FOLD_MS}ms ease-in`;
+  container.classList.add('folding');
+
+  setTimeout(() => {
+    // Swap face at the invisible edge midpoint
+    if (isFlipped) {
+      $('itemCard').style.visibility = '';
+      if (back) back.classList.remove('visible');
+      container.dataset.flipped = 'false';
+      $('cardFlipBtn').setAttribute('aria-pressed', 'false');
+    } else {
+      $('itemCard').style.visibility = 'hidden';
+      if (back) back.classList.add('visible');
+      container.dataset.flipped = 'true';
+      $('cardFlipBtn').setAttribute('aria-pressed', 'true');
+    }
+
+    // Phase 2: unfold from edge (scaleX 0→1, ease-out)
+    container.style.transition = `transform ${FOLD_MS}ms ease-out`;
+    container.classList.remove('folding');
+
+    setTimeout(() => { container.style.transition = ''; }, FOLD_MS);
+  }, FOLD_MS);
+});
 
 // Keep the wrapper height in sync whenever the card's content changes height
 // (e.g. oversized text toggle causes the card to grow/shrink).
@@ -723,18 +791,82 @@ $('exportPngInline').addEventListener('click', async () => {
   catch(e) { showInfoModal('Export Failed', 'Export failed. If you used external images, try uploading them directly.'); }
 });
 
+// ── PRINT OPTIONS (shared state for the current print run) ──
+const printOptions = {
+  squareCorners: false,
+  bleed:         true,
+  doubleSided:   false,
+  cardBackUrl:   'img/card_back_v2.png',
+};
+
+// ── CARD BACK IMAGE — single source of truth ──
+// url: data URL for a custom back, or null/falsy to restore the default.
+// Updates printOptions, the print dialog preview, the flip-back face, and localStorage.
+function setCardBack(url) {
+  const resolved = url || 'img/card_back_v2.png';
+  printOptions.cardBackUrl = resolved;
+  const flipImg = document.querySelector('.card-flip-back img');
+  if (flipImg) flipImg.src = resolved;
+  // Sync the Appearance-tab picker zone (needed on initial load / JSON import)
+  const zone     = document.getElementById('cardBackZone');
+  const zoneImg  = document.getElementById('cardBackPreview');
+  const clearBtn = document.getElementById('clearCardBack');
+  if (zone && zoneImg) {
+    if (url) {
+      zoneImg.src = resolved;
+      zone.classList.add('has-image');
+      if (clearBtn) clearBtn.style.display = 'inline-block';
+    } else {
+      zoneImg.src = '';
+      zone.classList.remove('has-image');
+      if (clearBtn) clearBtn.style.display = 'none';
+    }
+  }
+  if (url) {
+    localStorage.setItem('dnd_card_back_image', url);
+  } else {
+    localStorage.removeItem('dnd_card_back_image');
+  }
+}
+
+// Restore persisted card back on load
+(function () {
+  const saved = localStorage.getItem('dnd_card_back_image');
+  if (saved) setCardBack(saved);
+})();
+
 // ── PRINT (single current item) ──
-$('exportPrint').addEventListener('click', async () => {
+$('exportPrint').addEventListener('click', () => {
+  $('singlePrintModal').classList.add('active');
+});
+
+$('singlePrintCancel').addEventListener('click', () => {
+  $('singlePrintModal').classList.remove('active');
+});
+
+$('singlePrintConfirm').addEventListener('click', async () => {
+  $('singlePrintModal').classList.remove('active');
+  const opts = {
+    squareCorners: $('singlePrintOptSquareCorners').checked,
+    bleed:         $('singlePrintOptBleed').checked,
+    doubleSided:   false,
+    cardBackUrl:   printOptions.cardBackUrl,
+  };
   showProgress('Preparing print…');
   updateProgress(0, 1, 'Rendering card…');
   try {
     const state = collectCurrentState();
-    const canvas = await renderStateToCanvas(state);
+    const stateForPrint = opts.squareCorners ? { ...state, squareCorners: true } : state;
+    const canvas = await renderStateToCanvas(stateForPrint);
     const dataUrl = canvas.toDataURL('image/png');
     updateProgress(1, 1, 'Opening print dialog…');
     await new Promise(r => setTimeout(r, 150));
     hideProgress();
-    printImagesInPopup([{ url: dataUrl, oversized: !!state.allowOversized }], 'single');
+    printImagesInPopup([{
+      url:       dataUrl,
+      oversized: !!state.allowOversized,
+      cardColor: state.cardColor || '#d4b87a',
+    }], 'single', opts);
   } catch(e) {
     hideProgress();
     showInfoModal('Print Failed', 'Print failed: ' + e.message);
@@ -747,7 +879,7 @@ function buildCardNode(s) {
   wrap.className = 'item-card';
   const radius = s.squareCorners ? '0' : '8px';
   const wrapOverflow = s.allowOversized ? 'visible' : 'hidden';
-  wrap.style.cssText = `width:380px;min-height:580px;position:relative;border-radius:${radius};overflow:${wrapOverflow};flex-shrink:0;`;
+  wrap.style.cssText = `width:380px;min-height:531px;position:relative;border-radius:${radius};overflow:${wrapOverflow};flex-shrink:0;`;
 
   // bg colour layer
   const bg = document.createElement('div');
@@ -779,7 +911,8 @@ function buildCardNode(s) {
   const rarityLabel = rarityLabels[s.rarity] || s.rarity || '';
   const rarityIcon  = rarityIcons[s.rarity]  || '◆';
   const inkCol      = s.inkColor || '#2c1a0e';
-  const fs      = s.fontScale ?? 1;
+  const fs      = s.fontScale     ?? 1;
+  const descFs  = s.descFontScale ?? 1;
   const hFont   = s.headingFont || 'Cinzel';
   const bFont   = `'${s.bodyFont || 'Crimson Pro'}',Georgia,serif`;
 
@@ -841,8 +974,8 @@ function buildCardNode(s) {
 
   const content = document.createElement('div');
   content.className = 'card-content';
-  const contentOverride = s.allowOversized ? 'height:auto;overflow:visible;' : 'height:580px;overflow:hidden;';
-  content.style.cssText = `position:relative;z-index:2;padding:0;display:flex;flex-direction:column;min-height:580px;${contentOverride}`;
+  const contentOverride = s.allowOversized ? 'height:auto;overflow:visible;' : 'height:531px;overflow:hidden;';
+  content.style.cssText = `position:relative;z-index:2;padding:0;display:flex;flex-direction:column;min-height:531px;${contentOverride}`;
   content.innerHTML = `
     <div class="card-header" style="padding:18px 20px 10px;text-align:center;">
       <div class="card-item-name" style="font-family:${hFont},serif;font-size:${(1.15*fs).toFixed(3)}rem;font-weight:700;line-height:1.2;color:${inkCol};letter-spacing:0.04em;">${s.name || 'Unnamed Item'}</div>
@@ -850,7 +983,7 @@ function buildCardNode(s) {
       <div class="card-rarity rarity-${s.rarity}" style="display:block;text-align:center;font-family:${hFont},serif;font-size:${(0.6*fs).toFixed(3)}rem;line-height:1;letter-spacing:0.14em;text-transform:uppercase;padding:2px 0;${rarityColorStyle}">${rarityIcon} ${rarityLabel} ${rarityIcon}</div>
     </div>
     <div class="card-divider"><span class="divider-gem"></span></div>
-    <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:10px 20px;min-height:130px;">
+    <div class="card-image-wrap" style="display:${imageWrapDisplay};grid-template-columns:1fr 1fr 1fr;align-items:center;padding:8px 20px 4px;min-height:120px;">
       ${saveHtml}
       <div class="card-image-container" style="width:${C}px;height:${C}px;border-radius:50%;border:2px solid ${circleBorder};overflow:hidden;background:rgba(90,60,30,0.12);display:${imageDisplay};align-items:center;justify-content:center;grid-column:2;">
         ${itemImgHtml}
@@ -873,11 +1006,11 @@ function buildCardNode(s) {
     </div>
     <div class="card-divider"><span class="divider-gem"></span></div>
     <div class="card-body" style="padding:8px 20px 16px;${s.allowOversized ? 'flex:none;height:auto;overflow:visible;' : 'flex:1;'}">
-      <div class="card-description" style="font-family:${bFont};font-size:${(0.87*fs).toFixed(3)}rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
+      <div class="card-description" style="font-family:${bFont};font-size:${(0.87*descFs).toFixed(3)}rem;line-height:1.5;color:${inkCol};">${descHtml}</div>
     </div>
-    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:${bFont};font-style:italic;font-size:${(0.75*fs).toFixed(3)}rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">${attuneText}</div>` : ''}
+    ${attuneText ? `<div class="card-attunement" style="margin:0 16px 4px;text-align:center;font-family:${bFont};font-style:italic;font-size:${(0.75*descFs).toFixed(3)}rem;color:${inkCol};opacity:0.85;padding-top:4px;border-top:1px solid rgba(90,60,30,0.2);">${attuneText}</div>` : ''}
     <div class="card-footer" style="padding:8px 18px 14px;text-align:center;">
-      <div style="font-family:${hFont},serif;font-size:${(0.55*fs).toFixed(3)}rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.showCollection !== false ? (getCollectionById(s.collectionId)?.name || '') : ''}</div>
+      <div style="font-family:${hFont},serif;font-size:${(0.55*descFs).toFixed(3)}rem;letter-spacing:0.1em;color:rgba(44,26,14,0.45);text-transform:uppercase;">${s.showCollection !== false ? (getCollectionById(s.collectionId)?.name || '') : ''}</div>
     </div>
   `;
 
@@ -934,7 +1067,6 @@ async function renderStateToCanvas(s) {
       });
     }
   });
-  applyCardVignette(canvas);
   offscreen.removeChild(node);
   return canvas;
 }
@@ -966,19 +1098,26 @@ function hideProgress() {
 // Because the popup contains nothing but <img> tags on a white page,
 // no browser CSS stripping can affect the output — colours are baked into the PNGs.
 //
-// entries: array of { url, oversized } objects.
-// Normal cards: A4 portrait 3×3 grid, each cell 63mm × 88mm.
+// entries: array of { url, oversized, cardColor } objects.
+// Normal cards: A4 portrait 3×3 grid, each cell 63mm × 88mm (or 69×94mm with bleed).
 // If any card is oversized: one card per page, 63mm wide, full height — no grid.
-function printImagesInPopup(entries, mode) {
+// opts: { bleed, doubleSided, cardBackUrl, squareCorners }
+function printImagesInPopup(entries, mode, opts = {}) {
+  const {
+    bleed       = false,
+    doubleSided = false,
+    cardBackUrl = 'img/card_back_v2.png',
+  } = opts;
+
   // A4 portrait = 210mm × 297mm
-  // 3 cols × 63mm + 2 × 1mm gap = 191mm  →  side margin = (210 - 191) / 2 = 9.5mm
-  // 3 rows × 88mm + 2 × 1mm gap = 266mm  →  top margin  = (297 - 266) / 2 = 15.5mm
+  // No bleed: 3×63 + 2×1 = 191mm wide, 3×88 + 2×1 = 266mm tall → margins 9.5mm / 15.5mm
+  // With bleed: 3×69 + 2×1 = 209mm wide, 3×94 + 2×1 = 284mm tall → margins 0.5mm / 6.5mm
   const hasOversized = entries.some(e => e.oversized);
 
   let pagesHTML, css;
 
   if (hasOversized) {
-    // One card per page, full height — no grid constraint
+    // One card per page, full height — bleed/double-sided not applied to oversized layout
     pagesHTML = entries.map(({ url }, i) => {
       const pageLabel = entries.length > 1 ? ` &bull; Card ${i + 1} of ${entries.length}` : '';
       return `<div class="page">
@@ -1013,21 +1152,60 @@ function printImagesInPopup(entries, mode) {
   } else {
     // Normal 3×3 grid layout
     const PER_PAGE = 9;
-    const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE));
+    const totalFrontPages = Math.max(1, Math.ceil(entries.length / PER_PAGE));
 
-    pagesHTML = Array.from({ length: totalPages }, (_, p) => {
+    const CELL_W   = bleed ? '69mm' : '63mm';
+    const CELL_H   = bleed ? '94mm' : '88mm';
+    const GRID_W   = bleed ? '209mm' : '191mm';
+    const GRID_H   = bleed ? '284mm' : '266mm';
+    const SIDE_MAR = bleed ? '0.5mm' : '9.5mm';
+    const TOP_MAR  = bleed ? '6.5mm' : '15.5mm';
+
+    // Build a grid of 9 card-wrap cells for a given page of entries.
+    // front=true uses entry images; front=false uses the card back image.
+    function buildGrid(pageEntries, front) {
+      return Array.from({ length: PER_PAGE }, (_, i) => {
+        const entry = pageEntries[i];
+        const bleedBg = bleed
+          ? `background:${entry ? (front ? (entry.cardColor || '#d4b87a') : '#1b180f') : 'transparent'};`
+          : '';
+        const imgSrc = front
+          ? (entry ? entry.url : '')
+          : (entry ? cardBackUrl : '');
+        // Back images need scaleX(-1) to counter the grid-level mirror that repositions
+        // cells correctly for double-sided printing without inverting the image content.
+        const imgStyle = (!front && imgSrc) ? ' style="transform:scaleX(-1)"' : '';
+        const img = imgSrc ? `<img src="${imgSrc}" width="63mm" height="88mm"${imgStyle}>` : '';
+        return `<div class="card-wrap" style="${bleedBg}">${img}</div>`;
+      }).join('');
+    }
+
+    const cutSvg = '';
+
+    // Front pages
+    pagesHTML = Array.from({ length: totalFrontPages }, (_, p) => {
       const pageEntries = entries.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
-      const slots = Array.from({ length: PER_PAGE }, (_, i) =>
-        pageEntries[i]
-          ? `<div class="card-cell"><img src="${pageEntries[i].url}"></div>`
-          : `<div class="card-cell"></div>`
-      ).join('');
-      const pageLabel = totalPages > 1 ? ` &bull; Page ${p + 1} of ${totalPages}` : '';
+      const pageLabel = totalFrontPages > 1 ? ` &bull; Page ${p + 1} of ${totalFrontPages}` : '';
       return `<div class="page">
   <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
-  <div class="grid">${slots}</div>
+  <div class="grid">${buildGrid(pageEntries, true)}${cutSvg}</div>
 </div>`;
     }).join('\n');
+
+    // Back pages (mirrored horizontally so backs align with fronts when sheet is flipped)
+    if (doubleSided) {
+      const backPages = Array.from({ length: totalFrontPages }, (_, p) => {
+        const pageEntries = entries.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+        const pageLabel = totalFrontPages > 1 ? ` &bull; Back ${p + 1} of ${totalFrontPages}` : ' &bull; Back';
+        return `<div class="page">
+  <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
+  <div class="grid" style="transform:scaleX(-1)">${buildGrid(pageEntries, false)}${cutSvg}</div>
+</div>`;
+      }).join('\n');
+      pagesHTML += '\n' + backPages;
+    }
+
+    const cutMarkCss = '';
 
     css = `
     @page { size: A4 portrait; margin: 0; }
@@ -1047,33 +1225,35 @@ function printImagesInPopup(entries, mode) {
       font-size: 7pt;
       color: #aaa;
       text-align: center;
-      padding: 6mm 0 2mm;
+      padding: ${TOP_MAR} 0 2mm;
       width: 100%;
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 63mm);
-      grid-template-rows: repeat(3, 88mm);
+      grid-template-columns: repeat(3, ${CELL_W});
+      grid-template-rows: repeat(3, ${CELL_H});
       gap: 1mm;
-      width: 191mm;
-      height: 266mm;
-      margin: auto;
+      width: ${GRID_W};
+      height: ${GRID_H};
+      margin: 0 ${SIDE_MAR};
     }
-    .card-cell {
-      width: 63mm;
-      height: 88mm;
+    .card-wrap {
+      width: ${CELL_W};
+      height: ${CELL_H};
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
       overflow: hidden;
-      background: white;
+      ${bleed ? 'padding: 3mm; box-sizing: border-box;' : ''}
     }
-    .card-cell img {
-      width: 100%;
-      height: 100%;
+    .card-wrap img {
+      width: 63mm;
+      height: 88mm;
       display: block;
-      object-fit: contain;
+      flex-shrink: 0;
     }
+    ${cutMarkCss}
   `;
   }
 
@@ -1196,11 +1376,13 @@ ${pagesHTML}
 (function () {
   function updatePrintSelectUI() {
     const checked = $('printSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
-    const pages = Math.max(1, Math.ceil(checked / 9));
+    const frontPages = Math.max(1, Math.ceil(checked / 9));
+    const doubleSided = $('printOptDoubleSided') && $('printOptDoubleSided').checked;
+    const totalPages = doubleSided ? frontPages * 2 : frontPages;
     $('printSelectConfirm').textContent = `🖨 Print Selected (${checked})`;
     $('printSelectConfirm').disabled = checked === 0;
     $('printSelectPageHint').textContent = checked > 0
-      ? `${pages} page${pages !== 1 ? 's' : ''}`
+      ? `${totalPages} page${totalPages !== 1 ? 's' : ''}`
       : '';
   }
 
@@ -1225,8 +1407,14 @@ ${pagesHTML}
     $('printSelectModal').classList.remove('active');
   });
 
+  $('printOptDoubleSided').addEventListener('change', updatePrintSelectUI);
+
   $('printSelectConfirm').addEventListener('click', async () => {
     $('printSelectModal').classList.remove('active');
+
+    printOptions.squareCorners = $('printOptSquareCorners').checked;
+    printOptions.bleed         = $('printOptBleed').checked;
+    printOptions.doubleSided   = $('printOptDoubleSided').checked;
 
     const selectedIds = new Set(
       [...$('printSelectList').querySelectorAll('input[type="checkbox"]:checked')]
@@ -1242,9 +1430,16 @@ ${pagesHTML}
       if (_exportCancelled) break;
       updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i + 1}/${items.length})…`);
       try {
-        const canvas = await renderStateToCanvas(items[i]);
+        const stateForPrint = printOptions.squareCorners
+          ? { ...items[i], squareCorners: true }
+          : items[i];
+        const canvas = await renderStateToCanvas(stateForPrint);
         if (_exportCancelled) break;
-        printEntries.push({ url: canvas.toDataURL('image/png'), oversized: !!items[i].allowOversized });
+        printEntries.push({
+          url:       canvas.toDataURL('image/png'),
+          oversized: !!items[i].allowOversized,
+          cardColor: items[i].cardColor || '#d4b87a',
+        });
       } catch (e) {
         console.error('Failed to render', items[i].name, e);
       }
@@ -1258,7 +1453,7 @@ ${pagesHTML}
       updateProgress(items.length, items.length, 'Opening print dialog…');
       await new Promise(r => setTimeout(r, 200));
       hideProgress();
-      printImagesInPopup(printEntries, 'all');
+      printImagesInPopup(printEntries, 'all', { ...printOptions });
     }
   });
 })();
@@ -1267,6 +1462,8 @@ ${pagesHTML}
 $('exportJsonBtn').addEventListener('click', () => {
   const saved   = getHistory();
   const payload = { version: 2, collections: collectionsForCards(saved), items: saved };
+  const customBack = localStorage.getItem('dnd_card_back_image');
+  if (customBack) payload.cardBack = customBack;
   const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url     = URL.createObjectURL(blob);
   const a       = document.createElement('a');
@@ -1322,6 +1519,7 @@ $('importJsonFile').addEventListener('change', e => {
                          .filter(item => item && typeof item === 'object');
       const sharedCollections = Array.isArray(data) ? [] : (data.collections || []);
       if (!incoming.length) { showInfoModal('Nothing to Import', 'No items found in that JSON file.'); return; }
+      if (data.cardBack) setCardBack(data.cardBack);
 
       const existing = getHistory();
 
@@ -1528,7 +1726,7 @@ const BLANK_STATE = {
   attunement: '', attunementCustom: '',
   cardColor: '#d4b87a', inkColor: '#2c1a0e',
   rarityColor: null, circleSize: 110, circleBorderColor: null, bgOpacity: 1,
-  fontScale: 1, headingFont: 'Cinzel', bodyFont: 'Crimson Pro',
+  fontScale: 1, descFontScale: 1, headingFont: 'Cinzel', bodyFont: 'Crimson Pro',
   showImage: true, showStats: true, showCollection: false, showFrame: true, squareCorners: false,
   bgImage: null, itemImage: null,
   imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
@@ -2429,7 +2627,8 @@ function collectCurrentState() {
     circleSize:  parseInt($('circleSize').value) || 110,
     circleBorderColor: $('circleBorderColorHex').value || null,
     bgOpacity:   parseFloat($('bgOpacity').value) ?? 1,
-    fontScale:   parseFloat($('fontScale').value) || 1,
+    fontScale:     parseFloat($('fontScale').value)     || 1,
+    descFontScale: parseFloat($('descFontScale').value) || 1,
     headingFont: $('headingFont').value || 'Cinzel',
     bodyFont:    $('bodyFont').value    || 'Crimson Pro',
     showImage:     $('showImage').checked,
@@ -2577,6 +2776,9 @@ function applyState(s) {
   const fs = s.fontScale ?? 1;
   $('fontScale').value       = fs;
   $('fontScaleLabel').textContent = Math.round(fs * 100) + '%';
+  const dfs = s.descFontScale ?? 1;
+  $('descFontScale').value       = dfs;
+  $('descFontScaleLabel').textContent = Math.round(dfs * 100) + '%';
   $('headingFont').value     = s.headingFont || 'Cinzel';
   $('bodyFont').value        = s.bodyFont    || 'Crimson Pro';
   $('showImage').checked      = s.showImage     !== false;
@@ -3310,6 +3512,7 @@ function scrollHistoryActiveToCenter() {
     let idx = items.findIndex(h => h.id === activeHistoryId);
     if (idx === -1) idx = dir === 1 ? -1 : items.length;
     const targetIdx = ((idx + dir) + items.length) % items.length;
+    resetFlip();
     tryLoadItem(items[targetIdx]);
     // applyState (called synchronously inside tryLoadItem for the common case) sets
     // .history-active before returning, so one rAF is enough to read layout.
