@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Connecting…</title>
+<style>
+  body {
+    margin: 0; padding: 2rem;
+    font-family: Georgia, serif;
+    background: #1a0e04;
+    color: #d4a84b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+  }
+  p { font-size: 1rem; opacity: 0.8; }
+</style>
+</head>
+<body>
+<p>Connecting… this window will close automatically.</p>
+<p style="margin-top:2rem;font-size:0.8rem;opacity:0.5;"><a href="privacy.html" style="color:#d4a84b;">Privacy Policy</a></p>
+<script>
+(function () {
+  // Parse both the query string and hash fragment (providers use both).
+  // Use URLSearchParams so values containing '=' or '+' are handled correctly.
+  function fromSearch(str) {
+    var result = {};
+    try { new URLSearchParams(str).forEach(function(v,k){ result[k]=v; }); } catch(e){}
+    return result;
+  }
+
+  var params = Object.assign({}, fromSearch(window.location.search), fromSearch(window.location.hash.replace(/^#/,'?')));
+
+  var payload = {
+    code:         params.code         || null,
+    access_token: params.access_token || null,
+    expires_in:   params.expires_in   ? parseInt(params.expires_in, 10) : null,
+    token_type:   params.token_type   || null,
+    error:        params.error        || null,
+    state:        params.state        || null
+  };
+
+  if (window.opener) {
+    window.opener.postMessage({ type: 'oauth_callback', payload: payload }, window.location.origin);
+  }
+
+  window.close();
+})();
+</script>
+</body>
+</html>

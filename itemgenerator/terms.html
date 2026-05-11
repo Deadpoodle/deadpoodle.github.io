@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service — Artifex Arcanum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --parchment: #f4e8c1;
+      --gold: #b8860b;
+      --gold-light: #d4a017;
+      --border-ornate: #7a5c2e;
+      --bg-dark: #1a0f07;
+      --ink: #2c1a0e;
+      --ink-light: #5a3e28;
+
+      --bg: var(--bg-dark);
+      --surface: rgba(30, 16, 5, 0.95);
+      --text: #ead898;
+      --text-muted: rgba(180, 130, 60, 0.7);
+      --border: rgba(180, 130, 60, 0.25);
+      --link: var(--gold-light);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 1.05rem;
+      line-height: 1.75;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px),
+        repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.4rem, 4vw, 2.2rem);
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 40px rgba(212,160,23,0.3);
+    }
+
+    header .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.4rem;
+      letter-spacing: 0.04em;
+    }
+
+    header .back-link {
+      display: inline-block;
+      margin-top: 0.75rem;
+      color: var(--link);
+      font-size: 0.85rem;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      opacity: 0.8;
+      transition: opacity 0.15s;
+    }
+    header .back-link:hover { opacity: 1; }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    section {
+      margin-bottom: 2.5rem;
+    }
+
+    h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold-light);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    p { margin-bottom: 0.9rem; }
+    p:last-child { margin-bottom: 0; }
+
+    ul {
+      margin: 0.5rem 0 0.9rem 1.4rem;
+    }
+    ul li { margin-bottom: 0.3rem; }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    .updated {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .highlight-box {
+      background: rgba(180, 130, 60, 0.08);
+      border: 1px solid rgba(180, 130, 60, 0.2);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin: 0.5rem 0 1rem;
+      font-size: 0.95rem;
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--link); }
+    footer a + a::before { content: ' · '; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Terms of Service</h1>
+    <p class="subtitle">Artifex Arcanum — Magic Item Card Creator</p>
+    <a class="back-link" href="index.html">← Back to the App</a>
+  </header>
+
+  <main>
+    <p class="updated">Last updated: May 11, 2025</p>
+
+    <section>
+      <h2>Acceptance of Terms</h2>
+      <p>
+        By accessing or using Artifex Arcanum (the "Service"), you agree to be bound by these Terms of Service.
+        If you do not agree, please do not use the Service.
+      </p>
+      <p>
+        These terms are governed by the laws of Ireland. Any disputes arising from use of the Service shall be
+        subject to the exclusive jurisdiction of the Irish courts.
+      </p>
+    </section>
+
+    <section>
+      <h2>Description of Service</h2>
+      <p>
+        Artifex Arcanum is a free, browser-based tool that lets you create, customise, and export custom
+        Dungeons &amp; Dragons magic item cards. It is provided as a personal hobby project, hosted as a
+        static site on GitHub Pages, with no guarantee of continued availability.
+      </p>
+      <p>
+        The Service is provided free of charge and "as-is." We reserve the right to modify, suspend, or
+        discontinue the Service at any time without notice.
+      </p>
+    </section>
+
+    <section>
+      <h2>Your Content</h2>
+      <p>
+        You retain full ownership of all content you create using Artifex Arcanum — including item names,
+        descriptions, images, and exported card files. We claim no rights over your creations.
+      </p>
+      <p>
+        You may use your cards for any purpose, including commercial use such as selling homebrew supplements
+        or using them in paid campaigns, subject to any third-party rights in content you incorporate
+        (for example, artwork you do not own).
+      </p>
+      <p>
+        Because all data is stored in your own browser and any cloud uploads go directly to your own Google Drive
+        or Dropbox account, we never have access to your content and cannot be responsible for its loss or misuse.
+      </p>
+    </section>
+
+    <section>
+      <h2>Acceptable Use</h2>
+      <p>You agree not to use the Service to create, store, or share content that:</p>
+      <ul>
+        <li>Violates any applicable law or regulation.</li>
+        <li>Infringes the intellectual property rights of any third party.</li>
+        <li>Is defamatory, harassing, or abusive toward any person.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Third-Party Services</h2>
+      <p>
+        The Service optionally integrates with Google Drive and Dropbox. Your use of those services is governed
+        by their respective terms:
+      </p>
+      <ul>
+        <li><a href="https://policies.google.com/terms" target="_blank" rel="noopener">Google Terms of Service</a></li>
+        <li><a href="https://www.dropbox.com/terms" target="_blank" rel="noopener">Dropbox Terms of Service</a></li>
+      </ul>
+      <p>
+        We are not responsible for the availability, conduct, or policies of these third-party services.
+      </p>
+    </section>
+
+    <section>
+      <h2>Intellectual Property</h2>
+      <p>
+        The source code for Artifex Arcanum is available on
+        <a href="https://github.com/Deadpoodle" target="_blank" rel="noopener">GitHub</a>.
+        The app's interface, design, and original assets remain the property of the developer.
+      </p>
+      <p>
+        Dungeons &amp; Dragons and related terms are trademarks of Wizards of the Coast LLC. Artifex Arcanum
+        is an unofficial fan tool and is not affiliated with, endorsed by, or sponsored by Wizards of the Coast.
+      </p>
+      <p>
+        Item type icons used in the app are sourced from
+        <a href="https://github.com/Gwillewyn/dnd-item-icons-by-gwill/" target="_blank" rel="noopener">dnd-item-icons-by-gwill</a>
+        by Gwillewyn and are used in accordance with their respective licence.
+      </p>
+    </section>
+
+    <section>
+      <h2>Disclaimer of Warranties</h2>
+      <div class="highlight-box">
+        The Service is provided <strong>"as-is"</strong> and <strong>"as-available"</strong> without warranty of
+        any kind, express or implied. We make no guarantees regarding uptime, data retention, accuracy, or
+        fitness for any particular purpose.
+      </div>
+      <p>
+        Because all card data is stored in your browser's local storage, data loss can occur if you clear your
+        browser data, switch devices, or use the browser's private/incognito mode. We strongly recommend using
+        the JSON export feature to back up items you care about.
+      </p>
+    </section>
+
+    <section>
+      <h2>Limitation of Liability</h2>
+      <p>
+        To the fullest extent permitted by Irish and EU law, the developer shall not be liable for any indirect,
+        incidental, special, consequential, or punitive damages arising out of or in connection with your use of
+        the Service, including but not limited to loss of data or any other losses.
+      </p>
+    </section>
+
+    <section>
+      <h2>Changes to These Terms</h2>
+      <p>
+        We may update these Terms of Service from time to time. When we do, the "Last updated" date at the top
+        of this page will be revised. Continued use of the Service after changes are posted constitutes your
+        acceptance of the revised terms.
+      </p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>
+        Questions about these terms can be sent to
+        <a href="mailto:artifexarcanuminfo@gmail.com">artifexarcanuminfo@gmail.com</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <a href="index.html">← Back to Artifex Arcanum</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </footer>
+</body>
+</html>

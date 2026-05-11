@@ -1,0 +1,1067 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="img/favicon.ico" type="image/x-icon">
+<link rel="icon" href="img/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="icon" href="img/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="icon" href="img/android-chrome-192x192.png" sizes="192x192" type="image/png">
+<link rel="icon" href="img/android-chrome-512x512.png" sizes="512x512" type="image/png">
+<title>Artifex Arcanum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English+SC&family=Uncial+Antiqua&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IM+Fell+English:ital@0;1&family=Lora:ital,wght@0,400;0,600;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+<script src="utils.js" defer></script>
+<script src="script.js" defer></script>
+</head>
+<body>
+
+<header>
+  <h1><span class="ornament">✦</span> Artifex Arcanum <span class="ornament">✦</span></h1>
+  <p>Homebrew Magic Item Creator</p>
+</header>
+
+<!-- PROGRESS OVERLAY -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-title" id="progressTitle">Rendering items…</div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
+  <div class="progress-label" id="progressLabel">Preparing…</div>
+  <button class="btn btn-secondary" id="progressCancelBtn" style="margin-top:1.2rem;font-size:0.72rem;padding:0.35rem 1.2rem;border-color:rgba(139,26,26,0.5);color:rgba(200,90,90,0.9);display:none;">✕ Cancel</button>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Unsaved Changes</div>
+    <p class="confirm-modal-msg">You have unsaved changes. What would you like to do?</p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="confirmModalSave">Save &amp; Load</button>
+      <button class="btn btn-secondary" id="confirmModalOk">Discard &amp; Load</button>
+      <button class="btn-cancel" id="confirmModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PNG SELECTION MODAL -->
+<div class="confirm-modal" id="pngSelectModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Select Cards to Download</div>
+    <div class="png-quality-row">
+      <span class="png-quality-heading">Quality:</span>
+      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="draft"> Draft (1.5×)</label>
+      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="standard"> Standard (2×)</label>
+      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="high"> High (3×)</label>
+    </div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="pngSelectAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="pngSelectNone">Select None</button>
+    </div>
+    <div id="pngSelectList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="pngSelectConfirm">⬇ Download Selected (0)</button>
+      <button class="btn-cancel" id="pngSelectCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT SELECTION MODAL -->
+<div class="confirm-modal" id="printSelectModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Select Cards to Print</div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="printSelectAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="printSelectNone">Select None</button>
+      <span class="print-select-page-hint" id="printSelectPageHint"></span>
+    </div>
+    <div id="printSelectList" class="print-select-list"></div>
+    <div class="print-opts-section" id="printOptsSection">
+      <div class="print-opts-title">Print Options</div>
+      <label class="print-opt-row">
+        <input type="checkbox" id="printOptSquareCorners">
+        <span>Square corners</span>
+      </label>
+      <label class="print-opt-row">
+        <input type="checkbox" id="printOptBleed" checked>
+        <span>Print bleed</span>
+      </label>
+      <label class="print-opt-row">
+        <input type="checkbox" id="printOptDoubleSided">
+        <span>Double-sided</span>
+      </label>
+    </div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="printSelectConfirm">🖨 Print Selected (0)</button>
+      <button class="btn-cancel" id="printSelectCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SINGLE-CARD PRINT OPTIONS MODAL -->
+<div class="confirm-modal" id="singlePrintModal">
+  <div class="confirm-modal-box" style="max-width:340px;width:92%;">
+    <div class="confirm-modal-title">Print Card</div>
+    <div class="print-opts-section" style="border:none;padding:0;margin:0;">
+      <label class="print-opt-row">
+        <input type="checkbox" id="singlePrintOptSquareCorners">
+        <span>Square corners</span>
+      </label>
+      <label class="print-opt-row">
+        <input type="checkbox" id="singlePrintOptBleed" checked>
+        <span>Print bleed</span>
+      </label>
+    </div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="singlePrintConfirm">🖨 Print</button>
+      <button class="btn-cancel" id="singlePrintCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE SELECTION MODAL -->
+<div class="confirm-modal" id="shareSelectModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Share Cards to Dropbox</div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="shareSelectAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="shareSelectNone">Select None</button>
+    </div>
+    <div id="shareSelectList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="shareSelectConfirm">🔗 Share Selected (0)</button>
+      <button class="btn-cancel" id="shareSelectCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE DISCOVERY MODAL -->
+<div class="confirm-modal" id="shareDiscoveryModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Browse Shared JSON</div>
+    <div id="shareDiscoveryStatus" class="field-note-legend" style="margin-bottom:0.6rem;">Loading shared JSON files…</div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="shareDiscoveryAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="shareDiscoveryNone">Select None</button>
+    </div>
+    <div id="shareDiscoveryList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="shareDiscoveryImport">⬆ Import Selected</button>
+      <button class="btn btn-secondary" id="shareDiscoveryDownload">⬇ Download Selected</button>
+      <button class="btn-cancel" id="shareDiscoveryCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRIM HISTORY MODAL -->
+<div class="confirm-modal" id="trimHistoryModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Remove Saved Cards?</div>
+    <p class="confirm-modal-msg" id="trimHistoryMsg"></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-secondary" id="trimHistoryConfirm" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);"></button>
+      <button class="btn-cancel" id="trimHistoryCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC INFO MODAL -->
+<div class="confirm-modal" id="infoModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title" id="infoModalTitle"></div>
+    <p class="confirm-modal-msg" id="infoModalMsg"></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="infoModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC CONFIRM MODAL -->
+<div class="confirm-modal" id="genericConfirmModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title" id="genericConfirmTitle"></div>
+    <p class="confirm-modal-msg" id="genericConfirmMsg"></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="genericConfirmOk"></button>
+      <button class="btn-cancel" id="genericConfirmCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR ALL DATA MODAL -->
+<div class="confirm-modal" id="clearAllDataModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Clear All Stored Data</div>
+    <p class="confirm-modal-msg">This will permanently delete all saved items, history, and preferences stored by this app in your browser. <strong>This cannot be undone.</strong></p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-secondary" id="clearAllDataConfirm" style="border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Delete Everything</button>
+      <button class="btn-cancel" id="clearAllDataCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LARGE IMAGE WARNING MODAL -->
+<div class="confirm-modal" id="largeImageModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Large Image</div>
+    <p class="confirm-modal-msg" id="largeImageMsg"></p>
+    <div class="confirm-modal-btns" style="flex-direction:column;">
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button class="btn btn-primary" id="largeImageEnable"></button>
+        <button class="btn btn-secondary" id="largeImageRaw">Upload Anyway</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn-cancel" id="largeImageCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT OVERFLOW MODAL -->
+<div class="confirm-modal" id="importOverflowModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Storage Limit Reached</div>
+    <p class="confirm-modal-msg" id="importOverflowMsg"></p>
+    <div class="confirm-modal-btns" style="flex-direction:column;">
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button class="btn btn-primary" id="importOverflowExpand"></button>
+        <button class="btn btn-secondary" id="importOverflowContinue"></button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn-cancel" id="importOverflowCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE IMPORT MODAL -->
+<div class="confirm-modal" id="shareImportModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-modal-title">Card Shared With You</div>
+    <p class="confirm-modal-msg" id="shareImportMsg">Someone shared a card with you. Would you like to import it?</p>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="shareImportOk">Import Card</button>
+      <button class="btn-cancel" id="shareImportDismiss">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTIONS MANAGEMENT MODAL -->
+<div class="confirm-modal" id="collectionsModal">
+  <div class="confirm-modal-box collections-modal-box">
+    <div class="confirm-modal-title">Collections</div>
+    <div id="collectionsList" class="collections-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="collectionsAddNew">＋ New Collection</button>
+      <button class="btn btn-secondary" id="collectionsClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTION CREATE / EDIT MODAL -->
+<div class="confirm-modal" id="collectionEditModal">
+  <div class="confirm-modal-box collection-edit-box">
+    <div class="confirm-modal-title" id="collectionEditTitle">New Collection</div>
+    <div class="collection-edit-fields">
+      <div class="field-group">
+        <label>Name</label>
+        <input type="text" id="collectionEditName" placeholder="e.g. The Breaking Campaign" maxlength="60" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label>Description <span class="field-note">*</span></label>
+        <input type="text" id="collectionEditDesc" placeholder="Optional description" maxlength="120" autocomplete="off">
+      </div>
+    </div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="collectionEditSave">Save</button>
+      <button class="btn btn-secondary" id="collectionEditCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFF-SCREEN RENDER AREA -->
+<div id="offscreenRender"></div>
+
+<!-- HISTORY BAR -->
+<div class="history-bar" id="historyBar">
+  <!-- Collections dropdown -->
+  <div class="history-label-wrap" id="collectionLabelWrap">
+    <button class="history-label" id="collectionDropdownBtn"><span>📁</span> <span id="collectionDropdownLabel">Collections</span> <span class="dropdown-caret">▼</span></button>
+    <div class="history-dropdown collection-dropdown" id="collectionDropdown">
+      <div class="history-dropdown-new" id="collectionFilterAll">All Cards</div>
+      <div class="collection-dropdown-divider"></div>
+      <div id="collectionDropdownItems"></div>
+      <div class="collection-dropdown-divider" id="collectionDropdownDivider2"></div>
+      <div class="history-dropdown-new" id="collectionDropdownNew">＋ New Collection</div>
+      <div class="history-dropdown-new" id="collectionDropdownManage">⚙ Manage</div>
+    </div>
+  </div>
+  <!-- Cards in collection dropdown -->
+  <div class="history-label-wrap">
+    <button class="history-label" id="historyDropdownBtn"><span>📜</span> <span class="history-label-text">Cards</span> <span class="dropdown-caret">▼</span></button>
+    <div class="history-dropdown" id="historyDropdown">
+      <div class="history-dropdown-new" id="historyDropdownNew">＋ New Card</div>
+      <div class="history-dropdown-empty" id="historyDropdownEmpty">No saved cards yet</div>
+      <div id="historyDropdownItems"></div>
+    </div>
+  </div>
+  <div class="mobile-dirty-msg" id="mobileDirtyMsg"><span class="dirty-dot"></span> Unsaved changes</div>
+  <button class="history-arrow" id="historyPrev" title="Previous item" aria-label="Previous item">&#171; Prev</button>
+  <div class="history-track" id="historyTrack">
+    <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
+    <div id="historyItems"></div>
+  </div>
+  <button class="history-arrow" id="historyNext" title="Next item" aria-label="Next item">Next &#187;</button>
+  <div class="history-search-wrap">
+    <input type="text" id="historySearch" class="history-search-input" placeholder="Search…" autocomplete="off" spellcheck="false">
+    <button class="history-search-clear" id="historySearchClear" title="Clear search">✕</button>
+    <div id="historySearchResults" class="history-search-results"></div>
+  </div>
+  <!-- Type filter -->
+  <div class="history-type-filter" id="historyTypeFilter">
+    <button class="type-filter-btn active" data-type="all">All</button>
+    <button class="type-filter-btn" data-type="item">Item</button>
+    <button class="type-filter-btn type-filter-disabled" data-type="spell" title="Spell cards coming soon">Spell</button>
+    <button class="type-filter-btn type-filter-disabled" data-type="monster" title="Monster cards coming soon">Monster</button>
+  </div>
+  <div class="history-label-wrap" id="newCardWrap" style="border-left:1px solid rgba(180,130,60,0.15);">
+    <button id="newCardBtn" class="history-save-btn" title="Start a new card" style="border-radius:0;border:none;">＋ New</button>
+    <div class="history-dropdown new-card-dropdown" id="newCardDropdown">
+      <div class="history-dropdown-new" id="newCardClean">＋ New (Clean Slate)</div>
+      <div class="history-dropdown-new" id="newCardCopy">⧉ New (Copy Current)</div>
+    </div>
+  </div>
+  <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;"><span class="theme-icon">☀</span><span class="theme-label"> Light</span></button>
+</div>
+
+<div class="workspace">
+  <!-- LEFT: CONTROLS -->
+  <div class="controls">
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="identity">Details</button>
+      <button class="tab-btn" data-tab="appearance">Appearance</button>
+      <button class="tab-btn" data-tab="export">Share</button>
+      <button class="tab-btn tab-btn-icon" data-tab="settings" title="Settings">⚙</button>
+    </div>
+
+    <!-- TAB 1: IDENTITY -->
+    <div class="tab-panel active" id="tab-identity">
+
+      <div>
+        <div class="section-title">Identity</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div class="field-group">
+            <label>Item Name</label>
+            <input type="text" id="itemName" placeholder="e.g. Blade of Eternal Frost" value="The Artifex Arcanum">
+          </div>
+          <div class="row-2">
+            <div class="field-group">
+              <label>Item Type</label>
+              <select id="itemType">
+                <option value="">— None —</option>
+                <option>Weapon</option>
+                <option>Armour</option>
+                <option>Wand</option>
+                <option>Staff</option>
+                <option>Ring</option>
+                <option>Amulet</option>
+                <option>Cloak</option>
+                <option>Rod</option>
+                <option>Potion</option>
+                <option>Scroll</option>
+                <option>Shield</option>
+                <option>Boots</option>
+                <option>Gloves</option>
+                <option>Helm</option>
+                <option selected>Wondrous Item</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Subtype / Material <span class="field-note">*</span></label>
+              <input type="text" id="itemSubtype" placeholder="e.g. Longsword, Oak" value="The Master Forge">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Rarity</label>
+            <select id="itemRarity">
+              <option value="common">Common</option>
+              <option value="uncommon">Uncommon</option>
+              <option value="rare">Rare</option>
+              <option value="very-rare">Very Rare</option>
+              <option value="legendary" selected>Legendary</option>
+              <option value="artifact">Artifact</option>
+              <option value="unique">Unique</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Collection <span class="field-note">*</span></label>
+            <select id="itemCollection">
+              <option value="">— None —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Properties</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div>
+            <div class="row-3" style="margin-bottom:0.25rem;">
+              <div class="label-rename-wrap">
+                <input class="stat-label-rename" type="text" id="bonusLabel" value="Type" placeholder="Bonus">
+                <span class="label-rename-icon">✒</span>
+              </div>
+              <div class="label-rename-wrap">
+                <input class="stat-label-rename" type="text" id="damageLabel" value="Dice" placeholder="Damage">
+                <span class="label-rename-icon">✒</span>
+              </div>
+              <div class="label-rename-wrap">
+                <input class="stat-label-rename" type="text" id="weightLabel" value="Value" placeholder="Weight">
+                <span class="label-rename-icon">✒</span>
+              </div>
+            </div>
+            <div class="row-3">
+              <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="Utility">
+              <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="Unnecessary">
+              <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="Free">
+            </div>
+          </div>
+          <div>
+            <div class="row-2" style="margin-bottom:0.25rem;">
+              <div style="display:flex;align-items:center;gap:0.25rem;">
+                <div class="label-rename-wrap" style="flex:1;">
+                  <input class="stat-label-rename" type="text" id="saveLabel" value="Save" placeholder="Save">
+                  <span class="label-rename-icon">✒</span>
+                </div>
+                <span class="field-note">*</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.25rem;">
+                <div class="label-rename-wrap" style="flex:1;">
+                  <input class="stat-label-rename" type="text" id="rangeLabel" value="Range" placeholder="Range">
+                  <span class="label-rename-icon">✒</span>
+                </div>
+                <span class="field-note">*</span>
+              </div>
+            </div>
+            <div class="row-2">
+              <input type="text" id="itemSave" placeholder="e.g. DC 15 Dex">
+              <input type="text" id="itemRange" placeholder="e.g. 60 ft">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Requirements</label>
+            <select id="itemAttunement">
+              <option value="">None</option>
+              <option value="attunement" selected>Attunement</option>
+              <option value="craftsman">Craftsman</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="field-group" id="attunementCustomWrap">
+            <label>Custom Requirement Text</label>
+            <input type="text" id="attunementCustom" placeholder="e.g. an artificer or a bribe to the DM" value="a Master Craftsman">
+          </div>
+          <p class="field-note-legend"><span class="field-note">*</span> These fields are hidden on the card when left empty</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Description <span style="font-size:0.85rem;opacity:0.6;font-family:'Crimson Pro';text-transform:none;letter-spacing:0;">(Markdown supported)</span></div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <textarea id="itemDescription" rows="9" placeholder="Write the item's description here…
+Markdown is supported:
+
+**Bold text**, *italic*, ***bold italic***
+- Bullet list
+- Item two
+> Blockquote for flavour text
+---
+### Section heading">*A living codex of arcane craft — its pages take whatever form your imagination demands.*
+
+**Forge.** Craft any weapon, armour, or wondrous item. Names, colours, rarity, art, and lore are yours to define — most fields and labels can be renamed.
+
+**Illuminate.** Upload images and customise to taste; each card renders in ink that never fades.
+
+**Preserve.** Export as PNG or JSON, print, or share via the Share tab.
+
+---
+> Mom, can we have brew?
+> *No, we have brew at home.*</textarea>
+
+          <div class="char-counter-row">
+            <span class="char-count" id="charCount">0 / 560</span>
+            <label class="oversized-toggle-row">
+              <span class="toggle-wrap"><input type="checkbox" id="allowOversized"><span class="toggle-knob"></span></span>
+              <span>Allow oversized text <em style="font-size:0.85rem;opacity:0.75;">(may not print correctly)</em></span>
+            </label>
+          </div>
+
+          <div class="oversized-warning" id="oversizedWarning">
+            <span style="font-size:1.5em;line-height:1;vertical-align:middle;">⚠</span> Text may be clipped on a 63×88mm card
+          </div>
+
+          <div class="md-hint">
+            <code>**bold**</code> &nbsp;
+            <code>*italic*</code> &nbsp;
+            <code>### Heading</code> &nbsp;
+            <code>- list</code> &nbsp;
+            <code>> quote</code> &nbsp;
+            <code>---</code> (divider)
+          </div>
+        </div>
+      </div>
+
+      <div class="details-action-row">
+        <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
+        <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
+        <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo Changes</button>
+      </div>
+
+    </div><!-- /tab-identity -->
+
+    <!-- TAB 2: APPEARANCE -->
+    <div class="tab-panel" id="tab-appearance">
+
+      <div>
+        <div class="section-title">Images</div>
+        <div class="img-picker-list">
+          <div class="img-picker-row">
+            <div class="img-picker-labels">
+              <label>Background Image</label>
+              <small>Parchment / texture</small>
+            </div>
+            <div class="upload-zone upload-zone-sm" id="bgZone">
+              <input type="file" id="bgUpload" accept="image/*" title="Upload background image">
+              <img class="upload-preview" id="bgPreview" alt="Background preview">
+              <div class="upload-placeholder"><span>🖼</span></div>
+            </div>
+            <button class="btn btn-secondary img-picker-clear" id="clearBg" style="display:none;">Clear</button>
+          </div>
+          <div class="img-picker-row">
+            <div class="img-picker-labels">
+              <label>Item Image</label>
+              <small>PNG, JPG, WEBP</small>
+            </div>
+            <div class="upload-zone upload-zone-sm" id="itemImgZone">
+              <input type="file" id="itemImgUpload" accept="image/*" title="Upload item image">
+              <img class="upload-preview" id="itemImgPreview" alt="Item preview">
+              <div class="upload-placeholder"><span>⚔</span></div>
+            </div>
+            <button class="btn btn-secondary img-picker-clear" id="clearItem" style="display:none;">Clear</button>
+          </div>
+          <div id="itemImgCropControls" style="display:none;margin-top:0.1rem;">
+            <label style="display:block;margin-bottom:0.25rem;font-size:0.78rem;color:var(--label-color);">Image zoom</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="itemImgZoom" min="0.5" max="5" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <button class="btn btn-secondary" id="resetImgCrop" style="font-size:0.62rem;padding:0.2rem 0.55rem;white-space:nowrap;">Reset</button>
+            </div>
+          </div>
+          <div class="img-picker-row">
+            <div class="img-picker-labels">
+              <label>Card Back</label>
+              <small>Used in double-sided print</small>
+            </div>
+            <div class="upload-zone upload-zone-sm" id="cardBackZone">
+              <input type="file" id="cardBackUpload" accept="image/*" title="Upload card back image">
+              <img class="upload-preview" id="cardBackPreview" alt="Card back preview">
+              <div class="upload-placeholder"><span>🃏</span></div>
+            </div>
+            <button class="btn btn-secondary img-picker-clear" id="clearCardBack" style="display:none;">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Colours</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div class="row-2">
+            <div class="field-group">
+              <label>Card base colour <button id="resetCardColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+              <div class="color-row">
+                <input type="color" id="cardColor" value="#d4b87a">
+                <input type="text" id="cardColorHex" value="#d4b87a" placeholder="#d4b87a" maxlength="7">
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Ink colour <button id="resetInkColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+              <div class="color-row">
+                <input type="color" id="inkColor" value="#2c1a0e">
+                <input type="text" id="inkColorHex" value="#2c1a0e" placeholder="#2c1a0e" maxlength="7">
+              </div>
+            </div>
+          </div>
+          <div class="field-group" id="bgOpacityRow" style="display:none;">
+            <label>Background image opacity</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <span id="bgOpacityLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Rarity colour <button id="resetRarityColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="rarityColor" value="#1a3e8b">
+              <input type="text" id="rarityColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Circle border colour <button id="resetCircleBorderColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <div class="color-row">
+              <input type="color" id="circleBorderColor" value="#5a3c1e">
+              <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Typography</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div class="field-group">
+            <label>Details Font Size</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="fontScale" min="0.75" max="1.25" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <span id="fontScaleLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Description Font Size</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="descFontScale" min="0.65" max="1.25" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
+              <span id="descFontScaleLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Heading font</label>
+            <select id="headingFont">
+              <option value="Cinzel">Cinzel (default)</option>
+              <option value="Cinzel Decorative">Cinzel Decorative</option>
+              <option value="IM Fell English SC">IM Fell English SC</option>
+              <option value="Uncial Antiqua">Uncial Antiqua</option>
+              <option value="Cormorant Garamond">Cormorant Garamond</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Body font</label>
+            <select id="bodyFont">
+              <option value="Crimson Pro">Crimson Pro (default)</option>
+              <option value="IM Fell English">IM Fell English</option>
+              <option value="Lora">Lora</option>
+              <option value="Libre Baskerville">Libre Baskerville</option>
+              <option value="Cormorant">Cormorant</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Card Elements</div>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <label class="toggle-row">
+            <span class="toggle-wrap"><input type="checkbox" id="showImage" checked><span class="toggle-knob"></span></span>
+            Show item image circle
+          </label>
+          <div class="field-group">
+            <label>Circle size</label>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="range" id="circleSize" min="70" max="160" step="5" value="110" style="flex:1;accent-color:var(--gold);">
+              <span id="circleSizeLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">110px</span>
+            </div>
+          </div>
+          <label class="toggle-row">
+            <span class="toggle-wrap"><input type="checkbox" id="showStats" checked><span class="toggle-knob"></span></span>
+            Show stats strip (damage / weight / bonus)
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-wrap"><input type="checkbox" id="showCollection"><span class="toggle-knob"></span></span>
+            Show collection name in card footer
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-wrap"><input type="checkbox" id="showFrame" checked><span class="toggle-knob"></span></span>
+            Show ornate border frame
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-wrap"><input type="checkbox" id="squareCorners"><span class="toggle-knob"></span></span>
+            Square card corners
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Reset</div>
+        <button class="btn btn-secondary" id="resetAppearanceBtn" style="width:100%;">↺ Reset Appearance</button>
+      </div>
+
+    </div><!-- /tab-appearance -->
+
+    <!-- TAB 3: EXPORT -->
+    <div class="tab-panel" id="tab-export">
+
+      <div>
+        <div class="section-title">Current Item</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="exportPng">⬇ Save as PNG</button>
+          <button class="btn btn-secondary" id="exportPrint">🖨 Print This</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">All Saved Items</div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="pngSelectionBtn">⬇ Download Selection</button>
+          <button class="btn btn-secondary" id="printSelectionBtn">🖨 Print Selection</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Export Quality</div>
+        <div class="png-quality-row" style="flex-wrap:nowrap;">
+          <label class="png-quality-option"><input type="radio" name="shareQuality" value="draft"> Draft (1.5×)</label>
+          <label class="png-quality-option"><input type="radio" name="shareQuality" value="standard"> Standard (2×)</label>
+          <label class="png-quality-option"><input type="radio" name="shareQuality" value="high"> High (3×)</label>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Share Link</div>
+        <div id="shareNoProviderMsg" style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.55);line-height:1.5;margin-bottom:0.4rem;">
+          Connect a cloud provider in <strong style="color:rgba(180,130,60,0.8);">Settings</strong> to share cards via link.
+        </div>
+        <div id="shareHasProviderUI" style="display:none;">
+          <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads your selected cards to your connected cloud provider and copies a single share link to your clipboard. Anyone with the link can import them.</p>
+          <button class="btn btn-primary" id="copyShareLinkBtn" style="gap:0.4rem;">🔗 Share Link to Selection</button>
+          <input type="text" id="shareLinkUrlBox" readonly
+            title="Click to copy link"
+            style="display:none;width:100%;margin-top:0.5rem;padding:0.4rem 0.6rem;box-sizing:border-box;
+                   background:rgba(0,0,0,0.35);border:1px solid rgba(180,130,60,0.35);border-radius:4px;
+                   color:#d4a84b;font-family:'Crimson Pro',serif;font-size:0.78rem;
+                   cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+            placeholder="Share link will appear here…" />
+          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.4rem;height:1.2em;transition:opacity 0.6s ease;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">JSON</div>
+        <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Export all items (including images) as a single JSON file. Share it with others — they can import it to load and edit your items.</p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="exportJsonBtn">⬇ Export JSON</button>
+          <button class="btn btn-secondary" id="importJsonBtn">⬆ Import JSON</button>
+          <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none;">
+        </div>
+      </div>
+
+    </div><!-- /tab-export -->
+
+    <!-- TAB 4: SETTINGS -->
+    <div class="tab-panel" id="tab-settings">
+
+      <div>
+        <div class="section-title">Preferences</div>
+        <label class="toggle-row" style="cursor:pointer;" id="themeSettingsRow">
+          <span class="toggle-wrap"><input type="checkbox" id="themeSettingsCheck"><span class="toggle-knob"></span></span>
+          <span id="themeSettingsLabel">Light mode</span>
+        </label>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="autoSave"><span class="toggle-knob"></span></span>
+          Auto-save changes
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Automatically saves edits to the current item a moment after you stop typing. Has no effect if no item is loaded from history.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="suppressConfirmToggle"><span class="toggle-knob"></span></span>
+          Skip confirmation dialogs
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Removes "Are you sure?" prompts when deleting, clearing, or resetting cards.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="persistScaleToggle"><span class="toggle-knob"></span></span>
+          Remember card scale
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Restores your preferred card preview scale the next time you open the app.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;">
+          <span class="toggle-wrap"><input type="checkbox" id="compressImagesToggle"><span class="toggle-knob"></span></span>
+          Compress uploaded images
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Scales and converts images to JPEG before saving, reducing storage usage significantly. Recommended when uploading photos. Note: PNGs with transparent backgrounds will lose transparency.</p>
+        <div id="compressLevelRow" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem;padding:0.45rem 0.75rem;background:rgba(180,130,60,0.07);border:1px solid rgba(180,130,60,0.18);border-radius:5px;">
+          <div style="display:flex;flex-direction:column;gap:0.3rem;">
+            <span class="png-quality-heading" style="margin-bottom:0.15rem;">Background</span>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressBgLevel" value="mild" id="compressBgMild" style="accent-color:var(--gold);"> Mild — 1600px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressBgLevel" value="standard" id="compressBgStandard" checked style="accent-color:var(--gold);"> Standard — 1000px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressBgLevel" value="aggressive" id="compressBgAggressive" style="accent-color:var(--gold);"> Aggressive — 700px
+            </label>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.3rem;">
+            <span class="png-quality-heading" style="margin-bottom:0.15rem;">Item Image</span>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressItemLevel" value="mild" id="compressItemMild" style="accent-color:var(--gold);"> Mild — 800px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressItemLevel" value="standard" id="compressItemStandard" checked style="accent-color:var(--gold);"> Standard — 500px
+            </label>
+            <label class="png-quality-option" style="opacity:var(--compress-opt-opacity,0.4);pointer-events:var(--compress-opt-events,none);">
+              <input type="radio" name="compressItemLevel" value="aggressive" id="compressItemAggressive" style="accent-color:var(--gold);"> Aggressive — 300px
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">History</div>
+        <div id="maxHistorySliderRow">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+            <label class="field-label" for="maxHistorySetting" style="margin-bottom:0;">Max saved cards</label>
+            <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold-light);min-width:1.5rem;text-align:right;">9</span>
+          </div>
+          <input type="range" id="maxHistorySetting" min="1" max="50" step="1"
+            style="width:100%;" title="Maximum number of cards to keep in history (1–50)">
+        </div>
+        <div id="maxHistoryUnlockedRow" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+            <label class="field-label" for="maxHistoryUnlockedInput" style="margin-bottom:0;">Max saved cards</label>
+          </div>
+          <input type="number" id="maxHistoryUnlockedInput" min="1" step="1"
+            style="width:100%;padding:0.35rem 0.5rem;" title="Maximum number of cards to keep in history">
+        </div>
+        <p class="field-note-legend" style="margin-top:0.4rem;" id="maxHistoryNote">Max 50. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.</p>
+        <label class="toggle-row" style="margin-top:0.6rem;cursor:pointer;" title="Go beyond, Plus Ultra!">
+          <span class="toggle-wrap"><input type="checkbox" id="unlockMaxHistory"><span class="toggle-knob"></span></span>
+          <span id="unlockMaxHistoryLabel">Unlock card history</span>
+        </label>
+      </div>
+
+      <div>
+        <div class="section-title">Defaults</div>
+        <label class="toggle-row">
+          <span class="toggle-wrap"><input type="checkbox" id="defaultTypeImgToggle"><span class="toggle-knob"></span></span>
+          Use default type image
+        </label>
+        <p class="field-note-legend" style="margin-top:0.4rem;">Shows a default image in the item circle based on the selected item type, when no image has been uploaded.</p>
+        <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.45rem;">
+          <p class="field-note-legend" style="margin-bottom:0.1rem;">Pre-fill new cards with these values:</p>
+          <div class="field-group" style="margin:0;">
+            <label>Default type</label>
+            <select id="defaultType" style="width:100%;">
+              <option value="">— no default —</option>
+              <option>Weapon</option>
+              <option>Armour</option>
+              <option>Wand</option>
+              <option>Staff</option>
+              <option>Ring</option>
+              <option>Amulet</option>
+              <option>Cloak</option>
+              <option>Rod</option>
+              <option>Potion</option>
+              <option>Scroll</option>
+              <option>Shield</option>
+              <option>Boots</option>
+              <option>Gloves</option>
+              <option>Helm</option>
+              <option>Wondrous Item</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin:0;">
+            <label>Default rarity</label>
+            <select id="defaultRarity" style="width:100%;">
+              <option value="">— no default —</option>
+              <option value="common">Common</option>
+              <option value="uncommon">Uncommon</option>
+              <option value="rare">Rare</option>
+              <option value="very-rare">Very Rare</option>
+              <option value="legendary">Legendary</option>
+              <option value="artifact">Artifact</option>
+              <option value="unique">Unique</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Export Quality</div>
+        <p class="field-note-legend" style="margin-bottom:0.5rem;">Higher quality produces sharper PNGs but takes longer to render.</p>
+        <div style="display:flex;flex-direction:column;gap:0.35rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+            <input type="radio" name="exportQuality" value="draft" id="qualityDraft" style="accent-color:var(--gold);"> Draft (1.5×) — faster, smaller file
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+            <input type="radio" name="exportQuality" value="standard" id="qualityStandard" checked style="accent-color:var(--gold);"> Standard (2×)
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+            <input type="radio" name="exportQuality" value="high" id="qualityHigh" style="accent-color:var(--gold);"> High (3×) — sharper for print
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Share Provider</div>
+        <p class="field-note-legend" style="margin-bottom:0.7rem;">Connect a cloud storage account to share cards via link. Your files are stored in your own account — only you can delete them.</p>
+        <div id="shareProviderConnected" style="display:none;margin-bottom:0.6rem;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <span id="shareProviderIcon" style="font-size:1.1rem;"></span>
+            <span id="shareProviderName" style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold-light);letter-spacing:0.06em;"></span>
+            <span style="font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(100,200,100,0.8);letter-spacing:0.06em;">✓ Connected</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn btn-secondary" id="disconnectShareBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;">Disconnect</button>
+            <button class="btn btn-secondary" id="discoverShareFilesBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;justify-content:flex-start;gap:0.4rem;">🔎 Discover shared JSON</button>
+            <a id="shareProviderBrowseLink" href="#" target="_blank" rel="noopener"
+               style="font-family:'Crimson Pro',serif;font-size:0.8rem;color:rgba(180,130,60,0.75);text-decoration:none;line-height:1;"
+               onmouseover="this.style.color='var(--gold-light)'" onmouseout="this.style.color='rgba(180,130,60,0.75)'">Browse files ↗</a>
+          </div>
+        </div>
+        <div id="shareProviderBtns" style="display:flex;flex-direction:column;gap:0.4rem;">
+          <button class="btn btn-secondary" id="connectDropboxBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>📦</span> Connect Dropbox</button>
+          <button class="btn btn-secondary" id="connectGdriveBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>📂</span> Connect Google Drive</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Data</div>
+        <p class="field-note-legend" style="margin-bottom:0.6rem;">Remove all data this app has stored in your browser, including saved item history and preferences. See the <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold-light);">Privacy Policy</a> and <a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold-light);">Terms of Service</a> for details on what is stored and how it is used.</p>
+        <button class="btn btn-secondary" id="clearAllDataBtnSettings" style="width:100%;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
+      </div>
+
+      <div style="border-top:1px solid rgba(180,130,60,0.2);padding-top:1rem;margin-top:auto;">
+        <div class="section-title">About</div>
+        <p style="font-family:'Crimson Pro',serif;font-size:0.85rem;color:rgba(180,130,60,0.7);line-height:1.65;">
+          Made with the help of
+          <a href="https://claude.ai" target="_blank" rel="noopener" style="color:var(--gold-light);">Claude</a> by Anthropic.
+          Hosted on <a href="https://github.com/Deadpoodle" target="_blank" rel="noopener" style="color:var(--gold-light);">GitHub Pages</a>.
+          Item type icons sourced from
+          <a href="https://github.com/Gwillewyn/dnd-item-icons-by-gwill/" target="_blank" rel="noopener" style="color:var(--gold-light);">dnd-item-icons-by-gwill</a>
+          by Gwillewyn. If you enjoy using this tool, consider supporting my slop with a coffee below!
+        </p>        <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:0.85rem;padding:0.45rem 1rem;background:#FFDD00;border-radius:6px;text-decoration:none;font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;color:#000;letter-spacing:0.04em;transition:opacity 0.15s;">
+          ☕ Buy Me a Coffee
+        </a>
+      </div>
+
+    </div><!-- /tab-settings -->
+
+  </div>
+
+  <!-- MOBILE DRAG HANDLE (hidden on desktop) -->
+  <div class="mobile-drag-handle" id="mobileDragHandle" role="separator" aria-label="Drag to resize preview">
+    <div class="mobile-drag-pill"></div>
+    <span class="mobile-drag-label">drag to resize</span>
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="preview-area">
+    <div class="scale-control">
+      <button class="btn-cancel scale-reset-btn" id="scaleReset" title="Reset scale to 100%">↺ Reset</button>
+      <input type="range" id="scaleSlider" min="60" max="150" value="100" step="5">
+      <span id="scaleLabel">100%</span>
+      <button class="btn-cancel scale-flip-btn" id="cardFlipBtn" title="Flip card" aria-pressed="false">↻ Flip</button>
+    </div>
+
+    <!-- THE CARD -->
+    <div id="cardScaleWrap" style="width:100%;display:flex;justify-content:center;align-items:flex-start;">
+    <div id="cardScaleInner">
+    <div class="card-flip-container" id="cardFlipContainer">
+    <div id="itemCard" class="item-card">
+      <div class="card-bg" id="cardBg"></div>
+      <div class="card-bg-img" id="cardBgImg"></div>
+      <div class="card-texture"></div>
+      <div class="card-vignette"></div>
+      <div class="card-frame" id="cardFrame">
+        <div class="card-frame-inner"></div>
+        <div class="card-frame-ornament"></div>
+      </div>
+
+      <div class="card-content">
+        <div class="card-header">
+          <div class="card-item-name" id="previewName">The Artifex Arcanum</div>
+          <div class="card-subtype" id="previewSubtype">Wondrous Item • The Master Forge</div>
+          <div class="card-rarity rarity-legendary" id="previewRarity">◆ Legendary ◆</div>
+        </div>
+
+        <div class="card-divider"><span class="divider-gem"></span></div>
+
+        <div class="card-image-wrap" id="imageWrap">
+          <div class="card-side-stat" id="saveStat" style="display:none;">
+            <span class="side-stat-label" id="previewSaveLabel">Save</span>
+            <span class="side-stat-value" id="previewSave"></span>
+          </div>
+          <div class="card-image-container" id="cardImgContainer">
+            <img id="cardItemImg" src="" alt="Item image" style="display:none;">
+            <div class="card-image-placeholder" id="imgPlaceholder">⚔</div>
+            <div class="img-upload-hint" id="imgUploadHint">
+              <span class="hint-icon">⬆</span>
+              <span class="hint-text">Click to<br>add image</span>
+            </div>
+            <div class="img-drag-hint" id="imgDragHint">
+              <span class="hint-icon">✥</span>
+              <span class="hint-text">Drag to reposition<br>Scroll to zoom<br>Drag outside to remove</span>
+            </div>
+          </div>
+          <div class="card-side-stat" id="rangeStat" style="display:none;">
+            <span class="side-stat-label" id="previewRangeLabel">Range</span>
+            <span class="side-stat-value" id="previewRange"></span>
+          </div>
+        </div>
+
+        <div class="card-stats" id="statsStrip">
+          <div class="card-stat">
+            <span class="stat-label" id="previewBonusLabel">Bonus</span>
+            <span class="stat-value" id="previewBonus">+2</span>
+          </div>
+          <div class="card-stat">
+            <span class="stat-label" id="previewDamageLabel">Damage</span>
+            <span class="stat-value" id="previewDamage">1d6 force</span>
+          </div>
+          <div class="card-stat">
+            <span class="stat-label" id="previewWeightLabel">Weight</span>
+            <span class="stat-value" id="previewWeight">4 lb</span>
+          </div>
+        </div>
+
+        <div class="card-divider" style="margin-top:4px;"><span class="divider-gem"></span></div>
+
+        <div class="card-body">
+          <div class="card-description" id="previewDesc"></div>
+        </div>
+
+        <div class="card-attunement" id="previewAttunement">
+          Requires by a spellcaster
+        </div>
+
+        <div class="card-footer">
+          <div class="card-source" id="previewSource">Homebrew</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="card-flip-back">
+      <img src="img/card_back_v2.png" alt="Card back" draggable="false">
+    </div>
+    </div><!-- /cardFlipContainer -->
+    </div><!-- /cardScaleInner -->
+    </div><!-- /cardScaleWrap -->
+
+      <!-- Swipe hint overlay — sized to .preview-area so it's always visible regardless of card scale -->
+      <div id="swipeHint" class="swipe-hint">
+        <div class="swipe-hint-content">
+          <span class="swipe-hint-icon" id="swipeHintIcon"></span>
+          <span class="swipe-hint-label" id="swipeHintLabel"></span>
+        </div>
+      </div>
+
+    <div class="export-hint">
+      Use the <strong>Share</strong> tab to save as PNG, print, or share your card.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
