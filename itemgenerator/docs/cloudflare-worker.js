@@ -10,9 +10,11 @@
 // Usage: fetch(`${WORKER_URL}?url=${encodeURIComponent(targetUrl)}`, options)
 
 const ALLOW_ORIGIN = 'https://deadpoodle.github.io';
+const ALLOWED_ORIGINS = new Set([ALLOW_ORIGIN]);
 
 const ALLOWED_HOSTS = new Set([
   'dl.dropboxusercontent.com',   // Dropbox recipient fetch
+  'api.dropboxapi.com',          // Dropbox API endpoints
   'www.googleapis.com',          // Google Drive API (future use)
   'drive.google.com',            // Google Drive recipient fetch (future use)
 ]);
@@ -23,7 +25,7 @@ addEventListener('fetch', event => {
 
 async function handle(request) {
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders() });
+    return new Response(null, { headers: corsHeaders(request) });
   }
 
   // Route: POST /dropbox-token — proxies PKCE code exchange and token refresh.
@@ -51,6 +53,10 @@ async function handle(request) {
   const init = { method: request.method, headers: {} };
   const ct = request.headers.get('Content-Type');
   if (ct) init.headers['Content-Type'] = ct;
+  const auth = request.headers.get('Authorization');
+  if (auth) init.headers['Authorization'] = auth;
+  const accept = request.headers.get('Accept');
+  if (accept) init.headers['Accept'] = accept;
   if (request.method === 'POST') init.body = await request.text();
 
   const upstream = await fetch(target, init);
@@ -59,7 +65,7 @@ async function handle(request) {
     headers: {
       'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
       'Cache-Control': 'no-store',
-      ...corsHeaders(),
+      ...corsHeaders(request),
     },
   });
 }
@@ -76,7 +82,7 @@ async function handleDropboxToken(request) {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
-      ...corsHeaders(),
+      ...corsHeaders(request),
     },
   });
 }
@@ -95,16 +101,22 @@ async function handleGoogleToken(request) {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
-      ...corsHeaders(),
+      ...corsHeaders(request),
     },
   });
 }
 
-function corsHeaders() {
+function getCorsOrigin(request) {
+  const origin = request.headers.get('Origin');
+  return ALLOWED_ORIGINS.has(origin) ? origin : ALLOW_ORIGIN;
+}
+
+function corsHeaders(request) {
   return {
-    'Access-Control-Allow-Origin':  ALLOW_ORIGIN,
+    'Access-Control-Allow-Origin':  getCorsOrigin(request),
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
 }

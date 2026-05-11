@@ -2514,7 +2514,8 @@ async function _refreshDropboxToken() {
 
 // ── Dropbox fetch wrapper — auto-refreshes on 401, then prompts reconnect ──
 async function _dbx(url, options) {
-  const doFetch = token => fetch(url, {
+  const proxyUrl = `${DROPBOX_PROXY}?url=${encodeURIComponent(url)}`;
+  const doFetch = token => fetch(proxyUrl, {
     ...options,
     headers: { ...options.headers, Authorization: 'Bearer ' + token },
   });
@@ -2663,7 +2664,8 @@ async function _refreshGoogleToken() {
 
 // ── Google Drive fetch wrapper — auto-refreshes on 401, then prompts reconnect ──
 async function _gdrive(url, options) {
-  const doFetch = token => fetch(url, {
+  const proxyUrl = `${GDRIVE_PROXY}?url=${encodeURIComponent(url)}`;
+  const doFetch = token => fetch(proxyUrl, {
     ...options,
     headers: { ...options.headers, Authorization: 'Bearer ' + token },
   });
