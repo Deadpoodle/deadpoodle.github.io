@@ -2352,7 +2352,7 @@ function updateShareUI() {
       if (provider === 'dropbox') {
         discoverBtn.textContent = '⬇ Import from Dropbox';
       } else if (provider === 'gdrive') {
-        discoverBtn.textContent = '⬇ Import from Google Drive';
+        discoverBtn.textContent = '⬇ Import from Drive';
       } else {
         discoverBtn.textContent = '🔎 Discover shared JSON';
       }
