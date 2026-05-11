@@ -15,6 +15,7 @@ const ALLOWED_ORIGINS = new Set([ALLOW_ORIGIN]);
 const ALLOWED_HOSTS = new Set([
   'dl.dropboxusercontent.com',   // Dropbox recipient fetch
   'api.dropboxapi.com',          // Dropbox API endpoints
+  'content.dropboxapi.com',      // Dropbox download endpoint
   'www.googleapis.com',          // Google Drive API (future use)
   'drive.google.com',            // Google Drive recipient fetch (future use)
 ]);
@@ -48,15 +49,18 @@ async function handle(request) {
 
   let parsed;
   try { parsed = new URL(target); } catch { return new Response('Invalid URL', { status: 400 }); }
-  if (!ALLOWED_HOSTS.has(parsed.hostname)) return new Response('Forbidden', { status: 403 });
+  if (!ALLOWED_HOSTS.has(parsed.hostname)) {
+    return new Response('Forbidden', {
+      status: 403,
+      headers: corsHeaders(request),
+    });
+  }
 
   const init = { method: request.method, headers: {} };
-  const ct = request.headers.get('Content-Type');
-  if (ct) init.headers['Content-Type'] = ct;
-  const auth = request.headers.get('Authorization');
-  if (auth) init.headers['Authorization'] = auth;
-  const accept = request.headers.get('Accept');
-  if (accept) init.headers['Accept'] = accept;
+  for (const [name, value] of request.headers.entries()) {
+    if (name.toLowerCase() === 'host') continue;
+    init.headers[name] = value;
+  }
   if (request.method === 'POST') init.body = await request.text();
 
   const upstream = await fetch(target, init);
