@@ -112,10 +112,11 @@ function getCorsOrigin(request) {
 }
 
 function corsHeaders(request) {
+  const requestedHeaders = request.headers.get('Access-Control-Request-Headers');
   return {
     'Access-Control-Allow-Origin':  getCorsOrigin(request),
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': requestedHeaders || 'Content-Type, Authorization, Dropbox-API-Arg, Accept',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
