@@ -45,7 +45,9 @@ TL;DR: Add a settings toggle visible when a cloud provider is connected that aut
 **Decisions**
 - Use current-card sync only, per your preference.
 - Ask before replacing local data with newer cloud versions.
-- Use one cloud file per card (recommended), rather than trying to sync a single big list file.
+- Use one cloud file per card, with a stable filename based on the local history ID (`card-${historyId}.json`).
+- Store cloud sync metadata on every card object rather than using a separate sync lookup table.
+- Unify folder structure across providers: use "Artifex Arcanum" as the top-level folder, with subfolders `cards` for auto-sync files and `shared-bundles` for explicit shares.
 
 **Why one file per card is better**
 - It gives stable identity for each card and makes version checks easy.
@@ -53,10 +55,10 @@ TL;DR: Add a settings toggle visible when a cloud provider is connected that aut
 - The current share flow already works with separate JSON files, so this extends the same pattern.
 - A single file could still work, but it would require full-file reconciliation, which is more fragile and less efficient.
 
-**Further considerations**
-1. Should the sync file use the local history ID in its filename, or a neutral `card-${historyId}.json` pattern? This will affect file lookup and rename behavior.
-2. Should there be a separate managed folder inside `Artifex Arcanum` specifically for auto-sync files? That would keep sync files distinct from shared export files.
-3. Should the sync state be stored on every card object, or in a separate lookup table keyed by card ID? The latter is more flexible but more code.
+**Why sync state belongs on each card**
+- It keeps implementation simple and avoids a separate lookup layer.
+- Each card carries its own sync metadata, so state is available whenever the card is loaded.
+- This is easier to maintain for the current scope and avoids unnecessary complexity.
 
 **Next step**
 - Once you approve, I can add it as a new phase at the end of `itemgenerator/docs/IMPLEMENTATION_PLAN.md`.
