@@ -1470,7 +1470,7 @@ $('exportJsonBtn').addEventListener('click', () => {
   a.href        = url;
   const now     = new Date();
   const stamp   = now.toISOString().slice(0,19).replace('T','-').replace(/:/g,'-');
-  a.download    = `dnd-items-${stamp}.json`;
+  a.download    = `artifex-arcanum-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
 });
