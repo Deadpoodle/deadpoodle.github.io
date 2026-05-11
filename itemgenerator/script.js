@@ -2346,6 +2346,18 @@ function updateShareUI() {
         browseLink.href = '#';
       }
     }
+
+    const discoverBtn = $('discoverShareFilesBtn');
+    if (discoverBtn) {
+      if (provider === 'dropbox') {
+        discoverBtn.textContent = '⬇ Import from Dropbox';
+      } else if (provider === 'gdrive') {
+        discoverBtn.textContent = '⬇ Import from Google Drive';
+      } else {
+        discoverBtn.textContent = '🔎 Discover shared JSON';
+      }
+    }
+
     connectedEl.style.display  = 'block';
     btnsEl.style.display       = 'none';
     noProviderEl.style.display = 'none';
