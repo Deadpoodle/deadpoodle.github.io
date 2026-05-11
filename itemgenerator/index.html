@@ -138,6 +138,24 @@
   </div>
 </div>
 
+<!-- SHARE DISCOVERY MODAL -->
+<div class="confirm-modal" id="shareDiscoveryModal">
+  <div class="confirm-modal-box print-select-box">
+    <div class="confirm-modal-title">Browse Shared JSON</div>
+    <div id="shareDiscoveryStatus" class="field-note-legend" style="margin-bottom:0.6rem;">Loading shared JSON files…</div>
+    <div class="print-select-controls">
+      <button class="btn-cancel print-select-meta-btn" id="shareDiscoveryAll">Select All</button>
+      <button class="btn-cancel print-select-meta-btn" id="shareDiscoveryNone">Select None</button>
+    </div>
+    <div id="shareDiscoveryList" class="print-select-list"></div>
+    <div class="confirm-modal-btns">
+      <button class="btn btn-primary" id="shareDiscoveryImport">⬆ Import Selected</button>
+      <button class="btn btn-secondary" id="shareDiscoveryDownload">⬇ Download Selected</button>
+      <button class="btn-cancel" id="shareDiscoveryCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- TRIM HISTORY MODAL -->
 <div class="confirm-modal" id="trimHistoryModal">
   <div class="confirm-modal-box">
@@ -895,6 +913,7 @@ Markdown is supported:
           </div>
           <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
             <button class="btn btn-secondary" id="disconnectShareBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;">Disconnect</button>
+            <button class="btn btn-secondary" id="discoverShareFilesBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;justify-content:flex-start;gap:0.4rem;">🔎 Discover shared JSON</button>
             <a id="shareProviderBrowseLink" href="#" target="_blank" rel="noopener"
                style="font-family:'Crimson Pro',serif;font-size:0.8rem;color:rgba(180,130,60,0.75);text-decoration:none;line-height:1;"
                onmouseover="this.style.color='var(--gold-light)'" onmouseout="this.style.color='rgba(180,130,60,0.75)'">Browse files ↗</a>

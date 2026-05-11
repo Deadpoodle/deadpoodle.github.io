@@ -1588,6 +1588,7 @@ $('connectGdriveBtn').addEventListener('click', () => connectGoogleDrive());
 $('disconnectShareBtn').addEventListener('click', () => {
   clearShareConnection();
 });
+$('discoverShareFilesBtn').addEventListener('click', () => openShareDiscoveryModal());
 
 // ── Share selection modal ──
 
@@ -1595,6 +1596,280 @@ function updateShareSelectUI() {
   const checked = $('shareSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
   $('shareSelectConfirm').textContent = `🔗 Share Selected (${checked})`;
   $('shareSelectConfirm').disabled = checked === 0;
+}
+
+function updateShareDiscoveryUI() {
+  const checked = $('shareDiscoveryList').querySelectorAll('input[type="checkbox"]:checked').length;
+  $('shareDiscoveryImport').disabled = checked === 0;
+  $('shareDiscoveryDownload').disabled = checked === 0;
+}
+
+function formatShareFileDetails(file) {
+  const parts = [];
+  if (file.modifiedTime) {
+    const dt = new Date(file.modifiedTime);
+    if (!Number.isNaN(dt)) {
+      parts.push(dt.toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+    }
+  }
+  if (file.size != null) {
+    const size = Number(file.size);
+    if (!Number.isNaN(size)) {
+      const units = ['B','KB','MB'];
+      let value = size;
+      let index = 0;
+      while (value >= 1024 && index < units.length - 1) {
+        value /= 1024;
+        index += 1;
+      }
+      parts.push(`${value.toFixed(index ? 1 : 0)} ${units[index]}`);
+    }
+  }
+  return parts.join(' • ');
+}
+
+function buildShareDiscoveryList(files) {
+  const listEl = $('shareDiscoveryList');
+  listEl.innerHTML = '';
+  if (!files.length) {
+    listEl.innerHTML = '<p style="color:var(--text-muted);font-style:italic;text-align:center;margin:0.5rem 0;">No JSON exports found.</p>';
+    return;
+  }
+
+  files.forEach(file => {
+    const row = document.createElement('label');
+    row.className = 'print-select-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.fileId = file.id || '';
+    if (file.path) checkbox.dataset.filePath = file.path;
+    checkbox.addEventListener('change', updateShareDiscoveryUI);
+
+    const name = document.createElement('span');
+    name.className = 'print-select-name';
+    name.textContent = file.name;
+
+    const meta = document.createElement('span');
+    meta.className = 'print-select-rarity';
+    meta.textContent = formatShareFileDetails(file);
+
+    row.appendChild(checkbox);
+    row.appendChild(name);
+    row.appendChild(meta);
+    listEl.appendChild(row);
+  });
+
+  updateShareDiscoveryUI();
+}
+
+async function listSharedJsonFiles() {
+  const provider = getShareProvider();
+  if (!provider || !getShareToken()) throw new Error('Not connected');
+  if (provider === 'dropbox') return _listDropboxShareFiles();
+  if (provider === 'gdrive') return _listGDriveShareFiles();
+  return [];
+}
+
+async function _listDropboxShareFiles() {
+  const files = [];
+  let cursor = null;
+  while (true) {
+    const url = cursor
+      ? 'https://api.dropboxapi.com/2/files/list_folder/continue'
+      : 'https://api.dropboxapi.com/2/files/list_folder';
+    const resp = await _dbx(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: DROPBOX_FOLDER, recursive: false, include_media_info: false, include_deleted: false, include_non_downloadable_files: false }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      if (err.error && err.error['.tag'] === 'path' && err.error.path['.tag'] === 'not_found') return [];
+      throw new Error('Dropbox file list failed');
+    }
+    const data = await resp.json();
+    data.entries.filter(entry => entry['.tag'] === 'file' && entry.name.toLowerCase().endsWith('.json')).forEach(entry => {
+      files.push({
+        id: entry.id,
+        path: entry.path_lower || entry.path_display,
+        name: entry.name,
+        modifiedTime: entry.server_modified,
+        size: entry.size,
+      });
+    });
+    if (!data.has_more) break;
+    cursor = data.cursor;
+  }
+  return files.sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
+}
+
+async function _downloadDropboxJson(path) {
+  const resp = await _dbx('https://content.dropboxapi.com/2/files/download', {
+    method: 'POST',
+    headers: { 'Dropbox-API-Arg': JSON.stringify({ path }) },
+  });
+  if (!resp.ok) throw new Error('Dropbox download failed');
+  return resp.json();
+}
+
+async function _listGDriveShareFiles() {
+  const folderId = await _gdriveGetOrCreateFolder();
+  if (!folderId) return [];
+  const q = encodeURIComponent(`'${folderId}' in parents and trashed=false and mimeType='application/json'`);
+  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=100`;
+  const resp = await _gdrive(url, { method: 'GET', headers: {} });
+  if (!resp.ok) throw new Error('Google Drive file list failed');
+  const data = await resp.json();
+  return (data.files || []).map(file => ({
+    id: file.id,
+    name: file.name,
+    modifiedTime: file.modifiedTime,
+    size: file.size,
+  }));
+}
+
+async function _downloadGDriveJson(fileId) {
+  const resp = await _gdrive(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, { method: 'GET', headers: {} });
+  if (!resp.ok) throw new Error('Google Drive download failed');
+  return resp.json();
+}
+
+function _normalizeImportSource(data) {
+  const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+  const collections = Array.isArray(data) ? [] : (Array.isArray(data.collections) ? data.collections : []);
+  return { items: items.filter(item => item && typeof item === 'object'), collections, cardBack: data.cardBack };
+}
+
+function importJsonObject(data) {
+  const parsed = _normalizeImportSource(data);
+  if (!parsed.items.length) {
+    showInfoModal('Nothing to Import', 'No items found in that JSON export.');
+    return;
+  }
+  if (parsed.cardBack) setCardBack(parsed.cardBack);
+
+  const existing = getHistory();
+  const { newCards, skipCount } = _deduplicateCards(parsed.items, existing);
+  if (!newCards.length) {
+    const s = parsed.items.length !== 1 ? 's' : '';
+    showInfoModal('Nothing New to Import', `All ${parsed.items.length} card${s} in this file are already in your collection.`);
+    return;
+  }
+
+  const newNames = new Set(newCards.map(c => c.name));
+  const existingToKeep = existing.filter(e => !newNames.has(e.name));
+  const totalMerged = newCards.length + existingToKeep.length;
+  const s = n => n !== 1 ? 's' : '';
+  const skipNote = skipCount > 0 ? ` (${skipCount} duplicate${s(skipCount)} skipped)` : '';
+
+  function doImport(limit) {
+    const remapped = mergeImportedCollections(parsed.collections, newCards);
+    saveHistory([...remapped, ...existingToKeep].slice(0, limit));
+    renderCollectionDropdown();
+    renderHistoryBar();
+    applyState(remapped[0]);
+    showInfoModal('Import Complete', `Imported ${remapped.length} card${s(remapped.length)}${skipNote}.`);
+  }
+
+  const wouldDrop = Math.max(0, totalMerged - getMaxHistory());
+  if (wouldDrop > 0) {
+    const currentMax = getMaxHistory();
+    const newMax = totalMerged;
+    $('importOverflowMsg').innerHTML =
+      `You're importing <strong>${newCards.length} card${s(newCards.length)}</strong>${skipNote}, but your current storage limit is <strong>${currentMax}</strong>. ` +
+      `Keeping everything would need a limit of <strong>${newMax}</strong> — or continue as-is and the oldest <strong>${wouldDrop} card${s(wouldDrop)}</strong> will be removed.`;
+    $('importOverflowExpand').textContent = `↑ Increase limit to ${newMax}`;
+    $('importOverflowContinue').textContent = `Import anyway (drop ${wouldDrop})`;
+    $('importOverflowExpand').onclick = () => {
+      hideImportOverflowModal();
+      window._setMaxHistoryFromImport(newMax);
+      doImport(newMax);
+    };
+    $('importOverflowContinue').onclick = () => {
+      hideImportOverflowModal();
+      doImport(currentMax);
+    };
+    $('importOverflowModal').classList.add('active');
+  } else {
+    doImport(getMaxHistory());
+  }
+}
+
+async function importSelectedDiscoveryFiles() {
+  const checked = [...$('shareDiscoveryList').querySelectorAll('input[type="checkbox"]:checked')];
+  if (!checked.length) return;
+  try {
+    const provider = getShareProvider();
+    const payloads = await Promise.all(checked.map(async cb => {
+      const id = cb.dataset.fileId;
+      const path = cb.dataset.filePath;
+      return provider === 'dropbox' ? await _downloadDropboxJson(path) : await _downloadGDriveJson(id);
+    }));
+    const merged = payloads.reduce((acc, data) => {
+      if (Array.isArray(data)) {
+        acc.items.push(...data);
+      } else {
+        if (Array.isArray(data.items)) acc.items.push(...data.items);
+        if (Array.isArray(data.collections)) acc.collections.push(...data.collections);
+        if (data.cardBack && !acc.cardBack) acc.cardBack = data.cardBack;
+      }
+      return acc;
+    }, { items: [], collections: [], cardBack: null });
+    $('shareDiscoveryModal').classList.remove('active');
+    importJsonObject(merged);
+  } catch (err) {
+    console.error('[share] discovery import failed', err);
+    showInfoModal('Import Failed', 'Unable to download or import the selected shared JSON files.');
+  }
+}
+
+async function downloadSelectedDiscoveryFiles() {
+  const checked = [...$('shareDiscoveryList').querySelectorAll('input[type="checkbox"]:checked')];
+  if (!checked.length) return;
+  try {
+    const provider = getShareProvider();
+    await Promise.all(checked.map(async cb => {
+      const id = cb.dataset.fileId;
+      const path = cb.dataset.filePath;
+      const data = provider === 'dropbox' ? await _downloadDropboxJson(path) : await _downloadGDriveJson(id);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${cb.nextSibling?.textContent || 'shared'}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }));
+  } catch (err) {
+    console.error('[share] discovery download failed', err);
+    showInfoModal('Download Failed', 'Unable to download the selected shared JSON files.');
+  }
+}
+
+async function openShareDiscoveryModal() {
+  const modal = $('shareDiscoveryModal');
+  const status = $('shareDiscoveryStatus');
+  const listEl = $('shareDiscoveryList');
+  status.textContent = 'Loading shared JSON files…';
+  listEl.innerHTML = '';
+  $('shareDiscoveryImport').disabled = true;
+  $('shareDiscoveryDownload').disabled = true;
+  modal.classList.add('active');
+  try {
+    const files = await listSharedJsonFiles();
+    if (!files.length) {
+      status.textContent = 'No shared JSON files were found in your connected cloud storage.';
+      buildShareDiscoveryList([]);
+      return;
+    }
+    status.textContent = `${files.length} file${files.length === 1 ? '' : 's'} found. Select one or more to import or download.`;
+    buildShareDiscoveryList(files);
+  } catch (err) {
+    modal.classList.remove('active');
+    console.error('[share] discovery failed', err);
+    showInfoModal('Unable to Browse Files', err.message || 'Could not retrieve shared JSON files.');
+  }
 }
 
 // "Share Dropbox Link to Selection" button — opens the selection modal
@@ -1615,6 +1890,24 @@ $('shareSelectNone').addEventListener('click', () => {
 });
 $('shareSelectCancel').addEventListener('click', () => {
   $('shareSelectModal').classList.remove('active');
+});
+
+$('shareDiscoveryAll').addEventListener('click', () => {
+  $('shareDiscoveryList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+  updateShareDiscoveryUI();
+});
+$('shareDiscoveryNone').addEventListener('click', () => {
+  $('shareDiscoveryList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+  updateShareDiscoveryUI();
+});
+$('shareDiscoveryCancel').addEventListener('click', () => {
+  $('shareDiscoveryModal').classList.remove('active');
+});
+$('shareDiscoveryImport').addEventListener('click', async () => {
+  await importSelectedDiscoveryFiles();
+});
+$('shareDiscoveryDownload').addEventListener('click', async () => {
+  await downloadSelectedDiscoveryFiles();
 });
 
 // Confirm — upload selected cards to Dropbox and copy the share link
