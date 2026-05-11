@@ -562,7 +562,11 @@ function compressImage(dataUrl, type) {
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      try {
+        resolve(canvas.toDataURL('image/webp', quality));
+      } catch (err) {
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      }
     };
     img.src = dataUrl;
   });
@@ -574,7 +578,7 @@ function showLargeImageModal(sizeKb) {
     const close = val => { $('largeImageModal').classList.remove('active'); resolve(val); };
     $('largeImageMsg').innerHTML =
       `This image is <strong>${mb} MB</strong>. Large images can fill up your browser\'s storage quickly — a few cards at this size may hit the limit.<br><br>` +
-      `<strong>Enable & Upload</strong> will turn on image compression, scale this image down to 500px, and convert it to JPEG. Note: transparent backgrounds in PNGs will be lost.`;
+      `<strong>Enable & Upload</strong> will turn on image compression, scale this image down to 500px, and convert it to WebP. This preserves transparency while still reducing file size.`;
     $('largeImageEnable').textContent = 'Enable & Upload';
     $('largeImageEnable').onclick = () => close('compress');
     $('largeImageRaw').onclick    = () => close('raw');
