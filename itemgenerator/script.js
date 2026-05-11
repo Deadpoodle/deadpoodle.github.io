@@ -4243,6 +4243,11 @@ const DEFAULT_STATE = collectCurrentState();
 renderCollectionDropdown();
 populateCollectionSelect(null);
 renderHistoryBar();
+// Set default card scale based on screen size
+if (window.innerWidth >= 861) {
+  $('scaleSlider').value = 150;
+  applyCardScale(150);
+}
 const _initialHistory = getHistory();
 if (_initialHistory.length > 0) {
   applyState(_initialHistory[0]);
@@ -4278,37 +4283,40 @@ document.fonts.ready.then(() => {
 
     // Convert to data URL via canvas (same-origin PNG — no CORS issue).
     // This ensures the image is embedded when saved to history or exported.
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width  = itemImgNaturalW;
-      canvas.height = itemImgNaturalH;
-      canvas.getContext('2d').drawImage(cardImg, 0, 0);
-      const dataUrl = canvas.toDataURL('image/png');
+    // Skip on file:// protocol due to browser security restrictions.
+    if (location.protocol !== 'file:') {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width  = itemImgNaturalW;
+        canvas.height = itemImgNaturalH;
+        canvas.getContext('2d').drawImage(cardImg, 0, 0);
+        const dataUrl = canvas.toDataURL('image/png');
 
-      cardImg.src = dataUrl;
-      $('itemImgPreview').src = dataUrl;
+        cardImg.src = dataUrl;
+        $('itemImgPreview').src = dataUrl;
 
-      DEFAULT_STATE.itemImage   = dataUrl;
-      DEFAULT_STATE.imgNaturalW = itemImgNaturalW;
-      DEFAULT_STATE.imgNaturalH = itemImgNaturalH;
+        DEFAULT_STATE.itemImage   = dataUrl;
+        DEFAULT_STATE.imgNaturalW = itemImgNaturalW;
+        DEFAULT_STATE.imgNaturalH = itemImgNaturalH;
 
-      // Patch the history entry registerNewCard() already saved without the image
-      if (activeHistoryId) {
-        const hist = getHistory();
-        const idx  = hist.findIndex(h => h.id === activeHistoryId);
-        if (idx >= 0) {
-          hist[idx].itemImage   = dataUrl;
-          hist[idx].imgNaturalW = itemImgNaturalW;
-          hist[idx].imgNaturalH = itemImgNaturalH;
-          saveHistory(hist);
+        // Patch the history entry registerNewCard() already saved without the image
+        if (activeHistoryId) {
+          const hist = getHistory();
+          const idx  = hist.findIndex(h => h.id === activeHistoryId);
+          if (idx >= 0) {
+            hist[idx].itemImage   = dataUrl;
+            hist[idx].imgNaturalW = itemImgNaturalW;
+            hist[idx].imgNaturalH = itemImgNaturalH;
+            saveHistory(hist);
+          }
         }
+      } catch (e) {
+        // canvas.toDataURL() is blocked in some browsers when served from file://
+        // (Firefox private-mode security restriction). The image stays visible on
+        // screen. The export onclone handler strips non-data-URL images from the
+        // render clone so export still works — it just omits the logo in that case.
+        console.warn('[init] could not convert logo to data URL:', e);
       }
-    } catch (e) {
-      // canvas.toDataURL() is blocked in some browsers when served from file://
-      // (Firefox private-mode security restriction). The image stays visible on
-      // screen. The export onclone handler strips non-data-URL images from the
-      // render clone so export still works — it just omits the logo in that case.
-      console.warn('[init] could not convert logo to data URL:', e);
     }
   };
 
