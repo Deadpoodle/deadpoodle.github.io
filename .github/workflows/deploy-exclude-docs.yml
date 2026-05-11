@@ -1,0 +1,29 @@
+name: Deploy site excluding docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Copy site files excluding docs
+        run: |
+          mkdir site
+          rsync -av --exclude='itemgenerator/docs' --exclude='.git' --exclude='.github' --exclude='.claude' ./ site/
+          find site -maxdepth 1 -mindepth 1 -print
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          keep_files: false
