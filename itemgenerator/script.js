@@ -1518,12 +1518,11 @@ $('importJsonFile').addEventListener('change', e => {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      // Accept either the { version, items } envelope or a bare array
-      const incoming = (Array.isArray(data) ? data : (data.items || []))
-                         .filter(item => item && typeof item === 'object');
-      const sharedCollections = Array.isArray(data) ? [] : (data.collections || []);
+      const parsed = _normalizeImportSource(data);
+      const incoming = parsed.items;
+      const sharedCollections = parsed.collections;
       if (!incoming.length) { showInfoModal('Nothing to Import', 'No items found in that JSON file.'); return; }
-      if (data.cardBack) setCardBack(data.cardBack);
+      if (parsed.cardBack) setCardBack(parsed.cardBack);
 
       const existing = getHistory();
 
@@ -1740,7 +1739,9 @@ async function _downloadGDriveJson(fileId) {
 }
 
 function _normalizeImportSource(data) {
-  const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+  const items = Array.isArray(data)
+    ? data
+    : (Array.isArray(data.items) ? data.items : (Array.isArray(data.cards) ? data.cards : []));
   const collections = Array.isArray(data) ? [] : (Array.isArray(data.collections) ? data.collections : []);
   return { items: items.filter(item => item && typeof item === 'object'), collections, cardBack: data.cardBack };
 }
@@ -1811,13 +1812,10 @@ async function importSelectedDiscoveryFiles() {
       return provider === 'dropbox' ? await _downloadDropboxJson(path) : await _downloadGDriveJson(id);
     }));
     const merged = payloads.reduce((acc, data) => {
-      if (Array.isArray(data)) {
-        acc.items.push(...data);
-      } else {
-        if (Array.isArray(data.items)) acc.items.push(...data.items);
-        if (Array.isArray(data.collections)) acc.collections.push(...data.collections);
-        if (data.cardBack && !acc.cardBack) acc.cardBack = data.cardBack;
-      }
+      const normalized = _normalizeImportSource(data);
+      acc.items.push(...normalized.items);
+      acc.collections.push(...normalized.collections);
+      if (normalized.cardBack && !acc.cardBack) acc.cardBack = normalized.cardBack;
       return acc;
     }, { items: [], collections: [], cardBack: null });
     $('shareDiscoveryModal').classList.remove('active');
