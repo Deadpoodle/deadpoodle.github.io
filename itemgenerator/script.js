@@ -2770,7 +2770,7 @@ async function _shareGDrive(states, hash) {
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'anyone' }) }
   ).catch(err => { console.error('[gdrive] permission fetch error:', err); throw new Error('network_error'); });
 
-  if (!permResp.ok) throw new Error('permission_failed: ' + permResp.status);
+  if (!permResp.ok) throw new Error('permission_failed: ' + permResp.status + '. permissionsResponse: ' + JSON.stringify(await permResp.json().catch(() => ({}))));
 
   const shareUrl = `${location.origin}${location.pathname}#share=gdrive:${fileId}`;
   _setShareCache(hash, shareUrl);
