@@ -2893,9 +2893,10 @@ async function fetchSharedCard(provider, id) {
     try { return await resp.json(); } catch { throw new Error('not_found'); }
   }
   if (provider === 'gdrive') {
-    const downloadUrl = `https://drive.google.com/uc?export=download&id=${id}`;
-    // Route through the Cloudflare Worker proxy — drive.google.com/uc returns no CORS headers,
-    // which blocks the fetch in Firefox and Edge.
+    const downloadUrl = `https://drive.usercontent.google.com/download?id=${id}&export=download`;
+    // Route through the Cloudflare Worker proxy — drive.usercontent.google.com returns no CORS
+    // headers, which blocks the fetch in Firefox and Edge. The legacy drive.google.com/uc endpoint
+    // now returns 403 for unauthenticated requests.
     let fetchUrl = downloadUrl;
     if (DROPBOX_PROXY && !DROPBOX_PROXY.includes('YOUR-WORKER')) {
       fetchUrl = `${DROPBOX_PROXY}?url=${encodeURIComponent(downloadUrl)}`;

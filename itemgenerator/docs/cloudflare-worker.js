@@ -17,7 +17,8 @@ const ALLOWED_HOSTS = new Set([
   'api.dropboxapi.com',          // Dropbox API endpoints
   'content.dropboxapi.com',      // Dropbox download endpoint
   'www.googleapis.com',          // Google Drive API (future use)
-  'drive.google.com',            // Google Drive recipient fetch (future use)
+  'drive.google.com',            // Google Drive legacy download (kept for existing share links)
+  'drive.usercontent.google.com', // Google Drive download endpoint (current)
 ]);
 
 addEventListener('fetch', event => {
