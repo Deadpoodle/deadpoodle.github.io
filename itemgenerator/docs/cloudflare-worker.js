@@ -9,7 +9,7 @@
 //
 // Usage: fetch(`${WORKER_URL}?url=${encodeURIComponent(targetUrl)}`, options)
 
-const ALLOW_ORIGIN = 'https://deadpoodle.github.io';
+const ALLOW_ORIGIN = 'https://www.artifexarcanum.ie';
 const ALLOWED_ORIGINS = new Set([ALLOW_ORIGIN]);
 
 const ALLOWED_HOSTS = new Set([
