@@ -1125,7 +1125,7 @@ function printImagesInPopup(entries, mode, opts = {}) {
     pagesHTML = entries.map(({ url }, i) => {
       const pageLabel = entries.length > 1 ? ` &bull; Card ${i + 1} of ${entries.length}` : '';
       return `<div class="page">
-  <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
+  <div class="print-header">Made with the Artifex Arcanum &bull; https://www.artifexarcanum.ie${pageLabel}</div>
   <div class="card-wrap"><img src="${url}"></div>
 </div>`;
     }).join('\n');
@@ -1191,7 +1191,7 @@ function printImagesInPopup(entries, mode, opts = {}) {
       const pageEntries = entries.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
       const pageLabel = totalFrontPages > 1 ? ` &bull; Page ${p + 1} of ${totalFrontPages}` : '';
       return `<div class="page">
-  <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
+  <div class="print-header">Made with the Artifex Arcanum &bull; https://www.artifexarcanum.ie${pageLabel}</div>
   <div class="grid">${buildGrid(pageEntries, true)}${cutSvg}</div>
 </div>`;
     }).join('\n');
@@ -1202,7 +1202,7 @@ function printImagesInPopup(entries, mode, opts = {}) {
         const pageEntries = entries.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
         const pageLabel = totalFrontPages > 1 ? ` &bull; Back ${p + 1} of ${totalFrontPages}` : ' &bull; Back';
         return `<div class="page">
-  <div class="print-header">Made with the Artifex Arcanum &bull; https://deadpoodle.github.io/itemgenerator${pageLabel}</div>
+  <div class="print-header">Made with the Artifex Arcanum &bull; https://www.artifexarcanum.ie${pageLabel}</div>
   <div class="grid" style="transform:scaleX(-1)">${buildGrid(pageEntries, false)}${cutSvg}</div>
 </div>`;
       }).join('\n');
@@ -2385,7 +2385,7 @@ function collectShareState() {
 // ══════════════════════════════════════════════════════
 
 const DROPBOX_APP_KEY    = 'wkyp9ljfobrkt85';
-const DROPBOX_REDIRECT   = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
+const DROPBOX_REDIRECT   = 'https://www.artifexarcanum.ie/oauth.html';
 const DROPBOX_FOLDER     = '/Artifex Arcanum Cards';
 // Cloudflare Worker proxy — routes recipient fetches through a non-tracked domain so
 // Firefox Enhanced Tracking Protection doesn't block dl.dropboxusercontent.com.
@@ -2560,7 +2560,7 @@ async function _dbx(url, options) {
 // ══════════════════════════════════════════════════════
 
 const GDRIVE_CLIENT_ID = '33952755898-n2ce7raec9995di0s0coplgrbn4d3g49.apps.googleusercontent.com';
-const GDRIVE_REDIRECT  = 'https://deadpoodle.github.io/itemgenerator/oauth.html';
+const GDRIVE_REDIRECT  = 'https://www.artifexarcanum.ie/oauth.html';
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.file';
 const GDRIVE_PROXY     = 'https://artifex-arcanum.joefahey87.workers.dev';
 
