@@ -2272,7 +2272,7 @@ function deleteCollection(id) {
 
 // ── HISTORY ──
 const HISTORY_KEY = 'dnd_item_history';
-const MAX_HISTORY_DEFAULT = 25;
+const MAX_HISTORY_DEFAULT = 30;
 function getMaxHistory() {
   const v = parseInt(localStorage.getItem('dnd_max_history'), 10);
   return (isNaN(v) || v < 1) ? MAX_HISTORY_DEFAULT : v;
