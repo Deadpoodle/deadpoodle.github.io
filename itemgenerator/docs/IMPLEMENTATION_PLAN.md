@@ -13,6 +13,9 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 **Files:** `script.js`, `docs/cloudflare-worker.js`, `index.html`
 **Reference:** `docs/SHARE_UPGRADE.md` Steps 17–21 + Lessons Learned section
 
+<details>
+<summary>Steps</summary>
+
 - [x] **Step 17** — Azure Portal app registration (external, one-time): register SPA client type, set redirect URI to `oauth.html`, add `Files.ReadWrite` permission, note `ONEDRIVE_CLIENT_ID`
 - [x] **Step 18** — Implement `connectOneDrive()`: attempt PKCE flow first (`https://login.microsoftonline.com/common/oauth2/v2.0/authorize`); if token exchange fails with a network error, fall back to implicit flow (same pattern as Dropbox/GDrive); store token via `setShareConnection('onedrive', token, refreshToken)`
 - [x] **Step 19** — Implement `_shareOneDrive(states, hash)`: PUT to `/me/drive/root:/Artifex Arcanum/<filename>.json:/content`, POST to `.../createLink` (`type: 'view'`, `scope: 'anonymous'`), GET item metadata to retrieve `@microsoft.graph.downloadUrl`, encode as `#share=onedrive:<encodeURIComponent(downloadUrl)>`
@@ -20,6 +23,8 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 - [x] **Step 21** — Auto-refresh on 401 (if PKCE succeeded and refresh token exists); disconnect clears tokens; update `clearShareConnection()` for any cached OneDrive keys
 - [x] Add `onedrive:` case to `shareCurrentCard()` dispatch and `fetchSharedCard()` switch
 - [x] Redeploy Cloudflare Worker with updated `ALLOWED_HOSTS`
+
+</details>
 
 ---
 
@@ -29,8 +34,13 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 **Files:** `script.js`, `index.html`, `style.css`
 **Reference:** `docs/SHARE_UPGRADE.md` Phase 5 Steps 22–24
 
+<details>
+<summary>Steps</summary>
+
 - [x] **Step 22 — Shared file management**: add a link that opens the users connected cloud storage to the Artifex Arcanum directory so they can see the files stored by the app
 - [x] **Step 23 — Expired/deleted file handling**: show clear modal ("This shared card is no longer available — the owner may have deleted it.") on 404 or non-JSON recipient fetch, rather than a generic error
+
+</details>
 
 ---
 
@@ -39,10 +49,15 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 
 **Files:** `script.js`, `style.css`, `index.html`
 
+<details open>
+<summary>Steps</summary>
+
 - [x] **Dropbox token expiry fix**: investigate `localStorage.getItem('dnd_share_token')` token lifetime; verify `token_access_type=legacy` is being sent correctly in the auth URL; fix so users do not need to reconnect daily (known issue in `HANDOVER_V4.md`)
 - [x] **Text auto-resize for long field values**: fields like Type/Damage/Value should reduce font size when text overflows rather than shoving adjacent elements (e.g. "Type: Transmutation" → `0.65rem`)
 - [ ] **Font size preference in Appearance tab  ⏸ Deferred**: add Default (Auto) / slider or preset options; note that some fields already auto-resize — the preference should apply to the description area and override-able fields
 - [x] **Mobile swipe to change card**: swipe left/right on the card preview to navigate between saved cards; or ensure previous/next buttons are visible and tappable in the mobile top bar
+
+</details>
 
 ---
 
@@ -52,7 +67,12 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 **Files:** `script.js`, `index.html`, `style.css`
 **Reference:** `docs/SHARE_UPGRADE.md` Phase 5 Step 25; `TODO.md` Selective Sharing
 
+<details>
+<summary>Steps</summary>
+
 - [x] **Allow Print Selection and Download Selection across different collections** (prerequisite: Phase 5 Collections must exist; stub this step until then)
+
+</details>
 
 ---
 
@@ -62,11 +82,16 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 **Files:** `script.js`, `index.html`, `style.css`
 **Reference:** `TODO.md` — Collection System section
 
+<details>
+<summary>Steps</summary>
+
 - [x] **Collection data model**: add `collectionId` field to card state; collection objects stored in `localStorage` with `id`, `name`, `description`; flat storage, cards grouped by `collectionId`
 - [x] **Collection management UI**: create, rename, delete collections; assign cards to a collection
 - [x] **Bulk Actions**: update Share, Print, and Download selection modals to allow selecting an entire collection or drilling down to individual cards within it
 - [x] **Export filename convention**: exported filenames use `<CollectionName>_<CardType>_<CardName>` format (e.g. `The_Breaking_Items_Flashpoint.png`)
 - [x] **Advanced Filtering**: filter history bar by entry type (Item, Spell, Monster) — *requires Monster Card Mode to be partially complete for the Monster filter to be meaningful*
+
+</details>
 
 ---
 
@@ -76,9 +101,14 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 **Files:** `script.js`, `index.html`, `style.css`
 **Reference:** `TODO.md` — UI/UX Refactor section
 
+<details open>
+<summary>Steps</summary>
+
 - [ ] **Retire Carousel**: replace the carousel component with a scalable grid or list view to accommodate large libraries
 - [ ] **Navbar Overhaul**: redesign navigation to reflect the collection hierarchy (Collections → Types → Items)
 - [ ] **Cloud storage as primary store** *(exploratory — confirm scope before implementing)*: if cloud storage is connected, save/load cards directly from cloud (one file per card, folder per collection); use card `id` as the unique key; soft-delete via `toDelete=true` flag with 3-day grace period; must work for Google Drive and Dropbox; confirm whether new Dropbox/Google Drive permissions are needed
+
+</details>
 
 ---
 
@@ -87,6 +117,9 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 
 **Files:** `script.js`, `index.html`, `style.css`
 **Reference:** `docs/FUTURE_FEATURES.md` — full document
+
+<details open>
+<summary>Steps</summary>
 
 ### Phase 7a — Foundation & Mode Toggle
 *Scaffolding. No visible card changes.*
@@ -131,12 +164,17 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 - [ ] Add compact/full stat block toggle within monster mode; store in state
 - [ ] Print layout options for tall monster cards: A4 portrait (one per page), A5 (two per page)
 
+</details>
+
 ---
 
 ## Phase 8 — Spell Card Mode
 *Large standalone feature. Zero regression on item cards or monster cards throughout.*
 
 **Files:** `script.js`, `index.html`, `style.css`
+
+<details open>
+<summary>Steps</summary>
 
 ### Phase 8a — Foundation & Mode Toggle
 *Scaffolding. No visible card changes. Extends Phase 7a's toggle if Monster mode is implemented; lays the full 3-way foundation if Phase 7 has not yet shipped.*
@@ -199,20 +237,31 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 - [ ] *At Higher Levels* section: distinct italic style, separated from main description by a thin rule, with a small `✦ At Higher Levels` header label
 - [ ] Print layout: for text-heavy spell cards, add an "Allow Oversized" option mirroring the item card's existing `allowOversized` toggle so long descriptions are not clipped
 
+</details>
+
 ---
 
 ## Phase 9 — Collaborative Editing (Exploratory) ⏸ Deferred
 *Requires research before scoping. No implementation tasks defined yet.*
 
+<details open>
+<summary>Steps</summary>
+
 - [ ] Research whether cross-user collaboration is achievable using only the user's own cloud storage (e.g. shared Drive folder, OneDrive shared folder) without a central database
 - [ ] If cloud-storage-only isn't viable: evaluate minimal backend options (Cloudflare Workers KV, Supabase free tier) for shared collection state
 - [ ] Define scope and break into implementation tasks once research is complete
+
+</details>
 
 ---
 
 ## Phase 10 — Print Enhancements
 *Upgrades the print pipeline with bleed, cut marks, double-sided layout, and per-print-run options.*
+
 **Files:** `script.js`, `index.html`, `style.css`
+
+<details>
+<summary>Steps</summary>
 
 **Bleed colour strategy:** Bleed is a CSS padding border on each card slot — the card image is never stretched. Front card slots use each card's own `state.cardColor` (e.g. `#d4b87a`) as the inline background, so bleed matches the card's actual base colour. Back card slots use `#1b180f` (the dark border colour of the default back image). The `printEntries` array is extended to carry `cardColor` alongside `url` and `oversized`.
 
@@ -237,6 +286,8 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 - [x] Step 13 — Flip CSS (`style.css`)
 - [x] Step 14 — Flip JS (`script.js`): flip toggle, scale reset, flip-resets-on-navigation
 
+</details>
+
 ---
 
 ## Phase 11 — Auto Sync Cards
@@ -244,6 +295,9 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 
 **Files:** `script.js`, `index.html`
 **Reference:** `docs/cloud_sync.md`
+
+<details open>
+<summary>Steps</summary>
 
 - [ ] **Settings toggle** — add `Auto Sync Cards` control to the Settings tab, visible only when `getShareProvider()` reports a connected provider; persist to `localStorage` as `dnd_auto_sync_cards`
 - [ ] **Card metadata** — extend each saved card with cloud sync fields: `cloudSyncProvider`, `cloudSyncFileId` (or `cloudSyncPath`), and `cloudSyncModifiedAt`
@@ -280,3 +334,11 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 - Confirm newer cloud versions are detected and prompt before overwrite
 - Confirm Dropbox and Google Drive both use the worker proxy and CORS-safe routes
 - Confirm discovery modal filters work and bundle imports are limited to one at a time
+
+</details>
+
+
+## TODO
+* Definitely need to warn users theyre about to overwrite cards and prompt to increase max storage.
+* Need to look at how undo changes works, seems the autosave is very aggressive and makes it kinda useless.
+* If I have 1 card, and I import 26 cards, and my limit is 25 cards. If I click Yes to increase my limit to 26 cards, it still overwrites the 1 card I had. This feels like a way to lose cards, this needs a closer look. Need to determine how many cards are not in the import and will be lost, and account for that when increasing the max cards. If the import is so big that it would go above the 50 card limit, we should prompt to unlock max storage beyond 50.
