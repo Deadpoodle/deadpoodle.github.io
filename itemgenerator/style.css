@@ -110,7 +110,7 @@
     border-bottom: 2px solid transparent;
     color: rgba(210,160,70,0.75);
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: medium;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -119,7 +119,7 @@
     margin-bottom: -1px;
   }
   .tab-btn:hover { color: var(--gold-light); }
-  .tab-btn-icon { flex: none; padding: 0.7rem 0.9rem; font-size: 0.9rem; }
+  .tab-btn-icon { flex: none; padding: 0.7rem 0.9rem; font-size: medium; }
   .tab-btn.active {
     color: var(--gold);
     border-bottom-color: var(--gold);
@@ -146,7 +146,7 @@
     gap: 1rem;
   }
   .details-action-row button {
-    font-size: 0.62rem;
+    font-size: small;
     white-space: nowrap;
   }
   #historySaveBtn {
@@ -205,7 +205,7 @@
 
   .section-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.82rem;
+    font-size: medium;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--gold);
@@ -227,7 +227,7 @@
   .field-note-legend {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: 0.85rem;
+    font-size: small;
     color: rgba(210,160,70,0.85);
     margin-top: 0.15rem;
   }
@@ -247,7 +247,7 @@
   }
 
   label {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: var(--label-color);
     letter-spacing: 0.04em;
   }
@@ -335,7 +335,7 @@
   .img-picker-row  { display: flex; align-items: center; gap: 0.65rem; }
   .img-picker-labels { flex: 1; min-width: 0; }
   .img-picker-labels label { display: block; margin-bottom: 0.1rem; }
-  .img-picker-labels small { color: rgba(180,130,60,0.55); font-size: 0.72rem; line-height: 1.3; }
+  .img-picker-labels small { color: rgba(180,130,60,0.55); font-size: small; line-height: 1.3; }
   .upload-zone-sm {
     width: 58px; height: 58px;
     padding: 0.3rem;
@@ -352,7 +352,7 @@
   /* Editable stat-label rename inputs */
   input.stat-label-rename {
     font-family: 'Cinzel', serif;
-    font-size: 0.68rem;
+    font-size: small;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--label-color);
@@ -392,7 +392,7 @@
   /* Buttons */
   .btn {
     font-family: 'Cinzel', serif;
-    font-size: 0.86rem;
+    font-size: medium;
     letter-spacing: 0.12em;
     padding: 0.6rem 1.2rem;
     border-radius: 3px;
@@ -605,7 +605,7 @@
   .label-rename-icon {
     position: absolute;
     right: 4px;
-    font-size: 0.65rem;
+    font-size: small;
     color: rgba(210,160,70,0.6);
     pointer-events: none;
     line-height: 1;
@@ -1008,7 +1008,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 0.93rem;
+    font-size: medium;
     color: var(--label-color);
     cursor: pointer;
   }
@@ -1070,7 +1070,7 @@
   /* Fixed left label */
   .history-label {
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: medium;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #ffdeb9;
@@ -1090,7 +1090,7 @@
     border: none;
     border-right: 1px solid rgba(180,130,60,0.2);
     color: rgba(180,130,60,0.4);
-    font-size: 0.75rem;
+    font-size: medium;
     font-family: 'Cinzel', serif;
     letter-spacing: 0.06em;
     font-weight: 600;
@@ -1179,7 +1179,7 @@
 
   .history-name {
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: medium;
     font-weight: 700;
     color: #dabb80;
     white-space: nowrap;
@@ -1190,7 +1190,7 @@
   }
 
   .history-rarity {
-    font-size: 0.8rem;
+    font-size: small;
     font-family: 'Crimson Pro', serif;
     font-style: italic;
     color: #6a4e2e;
@@ -1289,7 +1289,7 @@
     border-bottom: 1px solid rgba(180,130,60,0.15);
     cursor: pointer;
     font-family: 'Cinzel', serif;
-    font-size: 0.65rem;
+    font-size: small;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--gold-light);
@@ -1320,7 +1320,8 @@
 
   .history-save-btn {
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: small;
+
     letter-spacing: 0.1em;
     padding: 0.3rem 0.8rem;
     background: transparent;
@@ -1413,7 +1414,7 @@
   .collection-dd-name {
     flex: 1;
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: small;
     color: var(--text-main);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1441,7 +1442,7 @@
     border-right: 1px solid rgba(180,130,60,0.12);
     color: rgba(210,160,70,0.5);
     font-family: 'Cinzel', serif;
-    font-size: 0.63rem;
+    font-size: small;
     letter-spacing: 0.04em;
     padding: 0 0.55rem;
     cursor: pointer;
@@ -1660,7 +1661,7 @@
   }
   .confirm-modal-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.95rem;
+    font-size: medium;
     font-weight: 700;
     color: var(--gold-light);
     letter-spacing: 0.06em;
@@ -1679,7 +1680,7 @@
     flex-wrap: wrap;
   }
   .confirm-modal-btns .btn {
-    font-size: 0.75rem;
+    font-size: small;
     padding: 0.4rem 0.85rem;
   }
   .confirm-modal-btns .btn-cancel {
@@ -1688,7 +1689,7 @@
     color: rgba(210,160,70,0.7);
     border-radius: 4px;
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: small;
     font-weight: 600;
     letter-spacing: 0.08em;
     padding: 0.4rem 0.85rem;
@@ -1706,7 +1707,7 @@
     margin-bottom: 0.6rem;
   }
   .print-select-meta-btn {
-    font-size: 0.68rem;
+    font-size: small;
     padding: 0.2rem 0.6rem;
     border: 1px solid rgba(180,130,60,0.3);
     border-radius: 3px;
@@ -1718,7 +1719,7 @@
   .print-select-meta-btn:hover { border-color: rgba(180,130,60,0.6); color: var(--gold-light); }
   .print-select-page-hint {
     margin-left: auto;
-    font-size: 0.7rem;
+    font-size: small;
     color: rgba(180,130,60,0.55);
     font-family: 'Crimson Pro', serif;
   }
@@ -1750,7 +1751,7 @@
   }
   .print-select-name {
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: small;
     color: #e8d898;
     flex: 1;
     min-width: 0;
@@ -1779,7 +1780,7 @@
   }
   .png-quality-heading {
     font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
+    font-size: small;
     letter-spacing: 0.06em;
     color: var(--gold-light);
     flex-shrink: 0;
@@ -1838,7 +1839,7 @@
   }
   .print-opts-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
+    font-size: medium;
     letter-spacing: 0.07em;
     color: rgba(180,130,60,0.65);
     text-transform: uppercase;
@@ -1847,7 +1848,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.85rem;
+    font-size: medium;
     color: #c9a96e;
     cursor: pointer;
     user-select: none;
@@ -1966,7 +1967,7 @@
 
   .oversized-warning {
     display: none;
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: #8b4a00;
     background: rgba(139,74,0,0.08);
     border: 1px solid rgba(139,74,0,0.25);
@@ -1981,7 +1982,7 @@
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    font-size: 0.85rem;
+    font-size: small;
     color: #8a6a3a;
     cursor: pointer;
     line-height: 1.4;

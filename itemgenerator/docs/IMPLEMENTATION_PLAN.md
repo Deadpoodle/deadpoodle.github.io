@@ -346,3 +346,4 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 * When the collections dropdown updates its name, it should not be changing size, its causing the items in the header bar to move around weirdly.
 * The "Cards" dropdown name should probably be much wider (3x?) and update to the name of the currently selected card, with the dropdown arrow still present. 
 * The carousel has to go, instead put more controls re. the card in that header bar (Delete, with confirmation) The small X can be accidentally clicked heh
+* For most fonts, i can just use "Medium", for the smaller font inside the groups in the tabs i can use 1rem. Makes it a lot more readable.

@@ -471,7 +471,7 @@
       </div>
 
       <div>
-        <div class="section-title">Description <span style="font-size:0.85rem;opacity:0.6;font-family:'Crimson Pro';text-transform:none;letter-spacing:0;">(Markdown supported)</span></div>
+        <div class="section-title">Description <span style="font-size:small;opacity:0.6;font-family:'Crimson Pro';text-transform:none;letter-spacing:0;">(Markdown supported)</span></div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
           <textarea id="itemDescription" rows="9" placeholder="Write the item's description here…
 Markdown is supported:
@@ -519,7 +519,7 @@ Markdown is supported:
       <div class="details-action-row">
         <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
         <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
-        <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo Changes</button>
+        <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo</button>
       </div>
 
     </div><!-- /tab-identity -->
@@ -729,7 +729,7 @@ Markdown is supported:
 
       <div>
         <div class="section-title">Share Link</div>
-        <div id="shareNoProviderMsg" style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.55);line-height:1.5;margin-bottom:0.4rem;">
+        <div id="shareNoProviderMsg" style="font-family:'Crimson Pro',serif;font-size:medium;color:rgba(180,130,60,0.55);line-height:1.5;margin-bottom:0.4rem;">
           Connect a cloud provider in <strong style="color:rgba(180,130,60,0.8);">Settings</strong> to share cards via link.
         </div>
         <div id="shareHasProviderUI" style="display:none;">
@@ -748,7 +748,7 @@ Markdown is supported:
 
       <div>
         <div class="section-title">JSON</div>
-        <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Export all items (including images) as a single JSON file. Share it with others — they can import it to load and edit your items.</p>
+        <p style="font-family:'Crimson Pro',serif;font-size:medium;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Export all items (including images) as a single JSON file. Share it with others — they can import it to load and edit your items.</p>
         <div class="btn-row">
           <button class="btn btn-secondary" id="exportJsonBtn">⬇ Export JSON</button>
           <button class="btn btn-secondary" id="importJsonBtn">⬆ Import JSON</button>
@@ -890,13 +890,13 @@ Markdown is supported:
         <div class="section-title">Export Quality</div>
         <p class="field-note-legend" style="margin-bottom:0.5rem;">Higher quality produces sharper PNGs but takes longer to render.</p>
         <div style="display:flex;flex-direction:column;gap:0.35rem;">
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:medium;color:var(--label-color);">
             <input type="radio" name="exportQuality" value="draft" id="qualityDraft" style="accent-color:var(--gold);"> Draft (1.5×) — faster, smaller file
           </label>
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:medium;color:var(--label-color);">
             <input type="radio" name="exportQuality" value="standard" id="qualityStandard" checked style="accent-color:var(--gold);"> Standard (2×)
           </label>
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--label-color);">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:medium;color:var(--label-color);">
             <input type="radio" name="exportQuality" value="high" id="qualityHigh" style="accent-color:var(--gold);"> High (3×) — sharper for print
           </label>
         </div>
@@ -920,8 +920,8 @@ Markdown is supported:
           </div>
         </div>
         <div id="shareProviderBtns" style="display:flex;flex-direction:column;gap:0.4rem;">
-          <button class="btn btn-secondary" id="connectDropboxBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>📦</span> Connect Dropbox</button>
-          <button class="btn btn-secondary" id="connectGdriveBtn" style="justify-content:flex-start;gap:0.5rem;font-size:0.72rem;"><span>📂</span> Connect Google Drive</button>
+          <button class="btn btn-secondary" id="connectDropboxBtn" style="justify-content:flex-start;gap:0.5rem;font-size:medium;"><span>📦</span> Connect Dropbox</button>
+          <button class="btn btn-secondary" id="connectGdriveBtn" style="justify-content:flex-start;gap:0.5rem;font-size:medium;"><span>📂</span> Connect Google Drive</button>
         </div>
       </div>
 
@@ -933,7 +933,7 @@ Markdown is supported:
 
       <div style="border-top:1px solid rgba(180,130,60,0.2);padding-top:1rem;margin-top:auto;">
         <div class="section-title">About</div>
-        <p style="font-family:'Crimson Pro',serif;font-size:0.85rem;color:rgba(180,130,60,0.7);line-height:1.65;">
+        <p style="font-family:'Crimson Pro',serif;font-size:medium;color:rgba(180,130,60,0.7);line-height:1.65;">
           Made with the help of
           <a href="https://claude.ai" target="_blank" rel="noopener" style="color:var(--gold-light);">Claude</a> by Anthropic.
           Hosted on <a href="https://github.com/Deadpoodle" target="_blank" rel="noopener" style="color:var(--gold-light);">GitHub Pages</a>.
@@ -941,7 +941,7 @@ Markdown is supported:
           <a href="https://github.com/Gwillewyn/dnd-item-icons-by-gwill/" target="_blank" rel="noopener" style="color:var(--gold-light);">dnd-item-icons-by-gwill</a>
           by Gwillewyn. If you enjoy using this tool, consider supporting my slop with a coffee below!
         </p>        <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:0.85rem;padding:0.45rem 1rem;background:#FFDD00;border-radius:6px;text-decoration:none;font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;color:#000;letter-spacing:0.04em;transition:opacity 0.15s;">
+          style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:0.85rem;padding:0.45rem 1rem;background:#FFDD00;border-radius:6px;text-decoration:none;font-family:'Cinzel',serif;font-size:medium;font-weight:700;color:#000;letter-spacing:0.04em;transition:opacity 0.15s;">
           ☕ Buy Me a Coffee
         </a>
       </div>
