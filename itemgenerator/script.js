@@ -3318,7 +3318,7 @@ function renderCollectionDropdown() {
   if (cols.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'history-dropdown-empty';
-    empty.style.cssText = 'padding:0.45rem 0.9rem;font-size:0.78rem;';
+    empty.style.cssText = 'padding:0.45rem 0.9rem;font-size:small;';
     empty.textContent = 'No collections yet';
     container.appendChild(empty);
     return;

@@ -31,7 +31,7 @@
   <div class="progress-title" id="progressTitle">Rendering items…</div>
   <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
   <div class="progress-label" id="progressLabel">Preparing…</div>
-  <button class="btn btn-secondary" id="progressCancelBtn" style="margin-top:1.2rem;font-size:0.72rem;padding:0.35rem 1.2rem;border-color:rgba(139,26,26,0.5);color:rgba(200,90,90,0.9);display:none;">✕ Cancel</button>
+  <button class="btn btn-secondary" id="progressCancelBtn" style="margin-top:1.2rem;font-size:small;padding:0.35rem 1.2rem;border-color:rgba(139,26,26,0.5);color:rgba(200,90,90,0.9);display:none;">✕ Cancel</button>
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -497,7 +497,7 @@ Markdown is supported:
             <span class="char-count" id="charCount">0 / 560</span>
             <label class="oversized-toggle-row">
               <span class="toggle-wrap"><input type="checkbox" id="allowOversized"><span class="toggle-knob"></span></span>
-              <span>Allow oversized text <em style="font-size:0.85rem;opacity:0.75;">(may not print correctly)</em></span>
+              <span>Allow oversized text <em style="font-size:small;opacity:0.75;">(may not print correctly)</em></span>
             </label>
           </div>
 
@@ -555,10 +555,10 @@ Markdown is supported:
             <button class="btn btn-secondary img-picker-clear" id="clearItem" style="display:none;">Clear</button>
           </div>
           <div id="itemImgCropControls" style="display:none;margin-top:0.1rem;">
-            <label style="display:block;margin-bottom:0.25rem;font-size:0.78rem;color:var(--label-color);">Image zoom</label>
+            <label style="display:block;margin-bottom:0.25rem;font-size:small;color:var(--label-color);">Image zoom</label>
             <div style="display:flex;align-items:center;gap:0.5rem;">
               <input type="range" id="itemImgZoom" min="0.5" max="5" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
-              <button class="btn btn-secondary" id="resetImgCrop" style="font-size:0.62rem;padding:0.2rem 0.55rem;white-space:nowrap;">Reset</button>
+              <button class="btn btn-secondary" id="resetImgCrop" style="font-size:small;padding:0.2rem 0.55rem;white-space:nowrap;">Reset</button>
             </div>
           </div>
           <div class="img-picker-row">
@@ -581,14 +581,14 @@ Markdown is supported:
         <div style="display:flex;flex-direction:column;gap:0.7rem;">
           <div class="row-2">
             <div class="field-group">
-              <label>Card base colour <button id="resetCardColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+              <label>Card base colour <button id="resetCardColor" style="font-size:small;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
               <div class="color-row">
                 <input type="color" id="cardColor" value="#d4b87a">
                 <input type="text" id="cardColorHex" value="#d4b87a" placeholder="#d4b87a" maxlength="7">
               </div>
             </div>
             <div class="field-group">
-              <label>Ink colour <button id="resetInkColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+              <label>Ink colour <button id="resetInkColor" style="font-size:small;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
               <div class="color-row">
                 <input type="color" id="inkColor" value="#2c1a0e">
                 <input type="text" id="inkColorHex" value="#2c1a0e" placeholder="#2c1a0e" maxlength="7">
@@ -599,18 +599,18 @@ Markdown is supported:
             <label>Background image opacity</label>
             <div style="display:flex;align-items:center;gap:0.5rem;">
               <input type="range" id="bgOpacity" min="0" max="1" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
-              <span id="bgOpacityLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+              <span id="bgOpacityLabel" style="font-size:small;min-width:2.5rem;text-align:right;">100%</span>
             </div>
           </div>
           <div class="field-group">
-            <label>Rarity colour <button id="resetRarityColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <label>Rarity colour <button id="resetRarityColor" style="font-size:small;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
             <div class="color-row">
               <input type="color" id="rarityColor" value="#1a3e8b">
               <input type="text" id="rarityColorHex" value="" placeholder="auto" maxlength="7">
             </div>
           </div>
           <div class="field-group">
-            <label>Circle border colour <button id="resetCircleBorderColor" style="font-size:0.6rem;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
+            <label>Circle border colour <button id="resetCircleBorderColor" style="font-size:small;padding:0.15rem 0.4rem;margin-left:0.4rem;background:transparent;border:1px solid rgba(180,130,60,0.35);border-radius:3px;color:rgba(180,130,60,0.7);cursor:pointer;">Reset</button></label>
             <div class="color-row">
               <input type="color" id="circleBorderColor" value="#5a3c1e">
               <input type="text" id="circleBorderColorHex" value="" placeholder="auto" maxlength="7">
@@ -626,14 +626,14 @@ Markdown is supported:
             <label>Details Font Size</label>
             <div style="display:flex;align-items:center;gap:0.5rem;">
               <input type="range" id="fontScale" min="0.75" max="1.25" step="0.05" value="1" style="flex:1;accent-color:var(--gold);">
-              <span id="fontScaleLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+              <span id="fontScaleLabel" style="font-size:small;min-width:2.5rem;text-align:right;">100%</span>
             </div>
           </div>
           <div class="field-group">
             <label>Description Font Size</label>
             <div style="display:flex;align-items:center;gap:0.5rem;">
               <input type="range" id="descFontScale" min="0.65" max="1.25" step="0.05" value="0.9" style="flex:1;accent-color:var(--gold);">
-              <span id="descFontScaleLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">100%</span>
+              <span id="descFontScaleLabel" style="font-size:small;min-width:2.5rem;text-align:right;">100%</span>
             </div>
           </div>
           <div class="field-group">
@@ -670,7 +670,7 @@ Markdown is supported:
             <label>Circle size</label>
             <div style="display:flex;align-items:center;gap:0.5rem;">
               <input type="range" id="circleSize" min="70" max="160" step="5" value="110" style="flex:1;accent-color:var(--gold);">
-              <span id="circleSizeLabel" style="font-size:0.72rem;min-width:2.5rem;text-align:right;">110px</span>
+              <span id="circleSizeLabel" style="font-size:small;min-width:2.5rem;text-align:right;">110px</span>
             </div>
           </div>
           <label class="toggle-row">
@@ -733,16 +733,16 @@ Markdown is supported:
           Connect a cloud provider in <strong style="color:rgba(180,130,60,0.8);">Settings</strong> to share cards via link.
         </div>
         <div id="shareHasProviderUI" style="display:none;">
-          <p style="font-family:'Crimson Pro',serif;font-size:0.82rem;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads your selected cards to your connected cloud provider and copies a single share link to your clipboard. Anyone with the link can import them.</p>
+          <p style="font-family:'Crimson Pro',serif;font-size:small;color:rgba(180,130,60,0.7);margin-bottom:0.6rem;line-height:1.5;">Uploads your selected cards to your connected cloud provider and copies a single share link to your clipboard. Anyone with the link can import them.</p>
           <button class="btn btn-primary" id="copyShareLinkBtn" style="gap:0.4rem;">🔗 Share Link to Selection</button>
           <input type="text" id="shareLinkUrlBox" readonly
             title="Click to copy link"
             style="display:none;width:100%;margin-top:0.5rem;padding:0.4rem 0.6rem;box-sizing:border-box;
                    background:rgba(0,0,0,0.35);border:1px solid rgba(180,130,60,0.35);border-radius:4px;
-                   color:#d4a84b;font-family:'Crimson Pro',serif;font-size:0.78rem;
+                   color:#d4a84b;font-family:'Crimson Pro',serif;font-size:small;
                    cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
             placeholder="Share link will appear here…" />
-          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:0.82rem;margin-top:0.4rem;height:1.2em;transition:opacity 0.6s ease;"></div>
+          <div id="shareLinkFeedback" style="font-family:'Crimson Pro',serif;font-size:small;margin-top:0.4rem;height:1.2em;transition:opacity 0.6s ease;"></div>
         </div>
       </div>
 
@@ -820,7 +820,7 @@ Markdown is supported:
         <div id="maxHistorySliderRow">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
             <label class="field-label" for="maxHistorySetting" style="margin-bottom:0;">Max saved cards</label>
-            <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold-light);min-width:1.5rem;text-align:right;">30</span>
+            <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:small;color:var(--gold-light);min-width:1.5rem;text-align:right;">30</span>
           </div>
           <input type="range" id="maxHistorySetting" min="1" max="50" step="1"
             style="width:100%;" title="Maximum number of cards to keep in history (1–50)">
@@ -908,14 +908,14 @@ Markdown is supported:
         <div id="shareProviderConnected" style="display:none;margin-bottom:0.6rem;">
           <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
             <span id="shareProviderIcon" style="font-size:1.1rem;"></span>
-            <span id="shareProviderName" style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold-light);letter-spacing:0.06em;"></span>
-            <span style="font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(100,200,100,0.8);letter-spacing:0.06em;">✓ Connected</span>
+            <span id="shareProviderName" style="font-family:'Cinzel',serif;font-size:small;color:var(--gold-light);letter-spacing:0.06em;"></span>
+            <span style="font-family:'Cinzel',serif;font-size:small;color:rgba(100,200,100,0.8);letter-spacing:0.06em;">✓ Connected</span>
           </div>
           <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-            <button class="btn btn-secondary" id="disconnectShareBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;">Disconnect</button>
-            <button class="btn btn-secondary" id="discoverShareFilesBtn" style="font-size:0.7rem;padding:0.35rem 0.8rem;justify-content:flex-start;gap:0.4rem;">🔎 Discover shared JSON</button>
+            <button class="btn btn-secondary" id="disconnectShareBtn" style="font-size:small;padding:0.35rem 0.8rem;">Disconnect</button>
+            <button class="btn btn-secondary" id="discoverShareFilesBtn" style="font-size:small;padding:0.35rem 0.8rem;justify-content:flex-start;gap:0.4rem;">🔎 Discover shared JSON</button>
             <a id="shareProviderBrowseLink" href="#" target="_blank" rel="noopener"
-               style="font-family:'Crimson Pro',serif;font-size:0.8rem;color:rgba(180,130,60,0.75);text-decoration:none;line-height:1;"
+               style="font-family:'Crimson Pro',serif;font-size:small;color:rgba(180,130,60,0.75);text-decoration:none;line-height:1;"
                onmouseover="this.style.color='var(--gold-light)'" onmouseout="this.style.color='rgba(180,130,60,0.75)'">Browse files ↗</a>
           </div>
         </div>
