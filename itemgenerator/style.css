@@ -1480,7 +1480,7 @@
   }
   .select-group-header:first-child { margin-top: 0; border-top: none; }
   .select-group-caret {
-    font-size: 0.7rem;
+    font-size: small;
     color: var(--text-muted);
     cursor: pointer;
     user-select: none;
@@ -1501,7 +1501,7 @@
   }
   .select-group-name {
     font-family: 'Cinzel', serif;
-    font-size: 0.72rem;
+    font-size: small;
     color: var(--gold-light);
     flex: 1;
     overflow: hidden;
@@ -1510,7 +1510,7 @@
   }
   .select-group-count {
     font-family: 'Crimson Pro', serif;
-    font-size: 0.7rem;
+    font-size: small;
     color: var(--text-muted);
     flex-shrink: 0;
   }
@@ -1546,7 +1546,7 @@
   }
   .collections-manage-name {
     font-family: 'Cinzel', serif;
-    font-size: 0.78rem;
+    font-size: small;
     color: #e8d898;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1554,7 +1554,7 @@
   }
   .collections-manage-count {
     font-family: 'Crimson Pro', serif;
-    font-size: 0.7rem;
+    font-size: small;
     color: var(--text-muted);
     font-style: italic;
   }
@@ -1573,7 +1573,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: small;
     cursor: pointer;
     transition: color 0.15s, background 0.15s, border-color 0.15s;
   }
