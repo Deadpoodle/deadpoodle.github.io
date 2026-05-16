@@ -51,7 +51,7 @@ async function handle(request) {
   let parsed;
   try { parsed = new URL(target); } catch { return new Response('Invalid URL', { status: 400 }); }
   if (!ALLOWED_HOSTS.has(parsed.hostname)) {
-    return new Response('Forbidden', {
+    return new Response(`Forbidden (hostname: ${parsed.hostname}; allowed: ${Array.from(ALLOWED_HOSTS).join(', ')})`, {
       status: 403,
       headers: corsHeaders(request),
     });
