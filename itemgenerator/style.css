@@ -1146,7 +1146,7 @@
     cursor: pointer;
     transition: background 0.15s;
     flex-shrink: 0;
-    max-width: 175px;
+    max-width: 300px;
     position: relative;
   }
 
@@ -1185,7 +1185,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100px;
+    max-width: 225px;
     display: block;
   }
 
