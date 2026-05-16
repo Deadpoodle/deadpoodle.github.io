@@ -338,11 +338,22 @@ This plan consolidates all remaining work from `SHARE_UPGRADE.md` (Phase 4 only 
 </details>
 
 
-## TODO
-* Definitely need to warn users theyre about to overwrite cards and prompt to increase max storage.
-* Need to look at how undo changes works, seems the autosave is very aggressive and makes it kinda useless.
-* If I have 1 card, and I import 26 cards, and my limit is 25 cards. If I click Yes to increase my limit to 26 cards, it still overwrites the 1 card I had. This feels like a way to lose cards, this needs a closer look. Need to determine how many cards are not in the import and will be lost, and account for that when increasing the max cards. If the import is so big that it would go above the 50 card limit, we should prompt to unlock max storage beyond 50.
-* If ive connected to gdrive and shared my list, then disconnect and connect to dropbox and try to share, it hits the cache and just copies the gdrive link. Instead if I disconnect it should clear that cache and cached url so if i share the exact same stuff again i still get a new dropbox link in this weird edgecase
-* When the collections dropdown updates its name, it should not be changing size, its causing the items in the header bar to move around weirdly.
-* The "Cards" dropdown name should probably be much wider (3x?) and update to the name of the currently selected card, with the dropdown arrow still present. 
-* The carousel has to go, instead put more controls re. the card in that header bar (Delete, with confirmation) The small X can be accidentally clicked heh
+---
+
+## Phase 12 — TODO List
+*Catch-all remaining work and UX polish items from the current `TODO` notes.*
+
+**Files:** `script.js`, `index.html`, `style.css`
+
+<details>
+<summary>Tasks</summary>
+
+- [ ] Warn users before overwrite: prompt clearly when an import or action would overwrite existing cards, and offer to increase max storage safely.
+- [ ] Investigate undo/autosave interaction: autosave is currently too aggressive and may make undo unreliable.
+- [ ] Fix import limit edge case: if importing cards increases the limit from 25 to 26, preserve existing cards correctly and avoid accidental overwrites; support prompts for unlocking storage beyond 50 when needed.
+- [ ] Clear share cache on provider change: disconnecting a cloud provider should clear cached share URLs so reconnecting with a different provider generates a fresh link.
+- [ ] Stabilise collections dropdown width: keep the collections selector from changing size when its label updates, preventing header bar layout shifts.
+- [ ] Widen the cards dropdown: make the current card name display wider (with the dropdown arrow still present) so long names do not truncate awkwardly.
+- [ ] Replace carousel with card controls: remove the carousel and add clearer per-card actions in the header bar, including a delete button with confirmation.
+
+</details>

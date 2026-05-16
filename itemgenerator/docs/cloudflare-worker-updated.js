@@ -1,5 +1,5 @@
 // Cloudflare Worker — artifex-arcanum.joefahey87.workers.dev
-// Proxies GDrive/Dropbox with improved filename and filetype preservation.
+// Proxies GDrive/Dropbox with full header support for Uploads and Permissions.
 
 // This worker updated by Gemini to resolve download issue where google download type headers were being stripped and so the site was receiving a file without any name or type and didnt know what to do with it.
 // need to merge this into the old one to preserve comments etc
@@ -52,39 +52,46 @@ async function handle(request) {
     });
   }
 
-  // Create clean headers for the outgoing request to Google/Dropbox
+  // --- HEADER HANDLING ---
   const upstreamHeaders = new Headers();
-  const auth = request.headers.get('Authorization');
-  if (auth) upstreamHeaders.set('Authorization', auth);
+  
+  // List of headers that MUST be passed through for the APIs to work
+  const headersToForward = [
+    'authorization',
+    'content-type',
+    'dropbox-api-arg', // Critical for Dropbox uploads
+    'x-goog-upload-protocol',
+    'x-goog-upload-command'
+  ];
+
+  for (const headerName of headersToForward) {
+    const val = request.headers.get(headerName);
+    if (val) upstreamHeaders.set(headerName, val);
+  }
+
+  // Set a generic User-Agent to avoid bot-blocking
   upstreamHeaders.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
   try {
     const upstream = await fetch(targetUrl, {
       method: request.method,
       headers: upstreamHeaders,
-      redirect: 'follow' 
+      // We pass the raw body (for JSON or Binary files)
+      body: request.method === 'GET' || request.method === 'HEAD' ? null : await request.arrayBuffer(),
+      redirect: 'follow'
     });
 
-    // Create a new Headers object for the response back to your browser
     const responseHeaders = new Headers(corsHeaders(request));
-
-    // List of headers we want to "pass through" from Google to the browser
-    const headersToPass = [
+    const headersToPassBack = [
       'content-type',
       'content-disposition',
       'content-length',
-      'cache-control',
-      'accept-ranges'
+      'cache-control'
     ];
 
-    headersToPass.forEach(h => {
+    for (const h of headersToPassBack) {
       const value = upstream.headers.get(h);
       if (value) responseHeaders.set(h, value);
-    });
-
-    // Fallback logic: If it's a JSON file but Google isn't saying so
-    if (targetUrl.includes('.json') && !responseHeaders.has('content-type')) {
-      responseHeaders.set('content-type', 'application/json');
     }
 
     return new Response(upstream.body, {
@@ -96,7 +103,7 @@ async function handle(request) {
   }
 }
 
-// --- Keep handleDropboxToken, handleGoogleToken, and corsHeaders exactly as they were ---
+// --- handleDropboxToken, handleGoogleToken, and corsHeaders remain the same ---
 
 async function handleDropboxToken(request) {
   const body = await request.text();
