@@ -3632,11 +3632,8 @@ function renderHistoryBar() {
     ddContainer.appendChild(ddEl);
   });
 
-  // Update arrow active states and selection highlight after DOM has updated
-  requestAnimationFrame(() => {
-    if (window._updateHistoryArrows) window._updateHistoryArrows();
-    updateHistoryActiveClass();
-  });
+  // Refresh the active-card highlight after the DOM has updated
+  requestAnimationFrame(updateHistoryActiveClass);
 }
 
 // ── COLLECTION DROPDOWN EVENTS ──
@@ -3803,20 +3800,10 @@ function scrollHistoryActiveToCenter() {
   track.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
 }
 
-// ── HISTORY BAR ARROWS ──
+// ── CARDS STRIP NAVIGATION ──
+// The « Prev / Next » buttons were replaced by the scrollable cards strip; navigateHistory
+// is kept because the mobile card-swipe gesture (below) drives it.
 (function() {
-  const track   = $('historyTrack');
-  const btnPrev = $('historyPrev');
-  const btnNext = $('historyNext');
-
-  // Arrows are active whenever there are 2+ items to navigate between.
-  // With looping there is no start/end boundary, so scroll position is irrelevant.
-  function updateArrows() {
-    const hasMultiple = getHistory().length > 1;
-    btnPrev.classList.toggle('active', hasMultiple);
-    btnNext.classList.toggle('active', hasMultiple);
-  }
-
   // Navigate to the adjacent history item with wraparound, then centre it in the track.
   function navigateHistory(dir) {
     const items = getHistory();
@@ -3831,11 +3818,6 @@ function scrollHistoryActiveToCenter() {
     requestAnimationFrame(scrollHistoryActiveToCenter);
   }
 
-  btnPrev.addEventListener('click', () => navigateHistory(-1));
-  btnNext.addEventListener('click', () => navigateHistory(1));
-
-  track.addEventListener('scroll', updateArrows, { passive: true });
-  window._updateHistoryArrows = updateArrows;
   window._navigateHistory = navigateHistory;
 })();
 

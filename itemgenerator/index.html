@@ -22,11 +22,6 @@
 </head>
 <body>
 
-<header>
-  <h1><span class="ornament">✦</span> Artifex Arcanum <span class="ornament">✦</span></h1>
-  <p>Homebrew Magic Item Creator</p>
-</header>
-
 <!-- PROGRESS OVERLAY -->
 <div class="progress-overlay" id="progressOverlay">
   <div class="progress-title" id="progressTitle">Rendering items…</div>
@@ -273,8 +268,10 @@
 <!-- OFF-SCREEN RENDER AREA -->
 <div id="offscreenRender"></div>
 
-<!-- HISTORY BAR -->
+<!-- TOP BAR -->
 <div class="history-bar" id="historyBar">
+  <!-- Wordmark (merged from the former page header) -->
+  <div class="bar-wordmark" id="barWordmark"><span class="ornament">✦</span> Artifex Arcanum</div>
   <!-- Collections dropdown -->
   <div class="history-label-wrap" id="collectionLabelWrap">
     <button class="history-label" id="collectionDropdownBtn"><span>📁</span> <span id="collectionDropdownLabel">Collections</span> <span class="dropdown-caret">▼</span></button>
@@ -300,12 +297,10 @@
     <span class="save-chip-dot"></span>
     <span class="save-chip-text">saved · the ink is dry</span>
   </div>
-  <button class="history-arrow" id="historyPrev" title="Previous item" aria-label="Previous item">&#171; Prev</button>
-  <div class="history-track" id="historyTrack">
+  <div class="history-track cards-strip" id="historyTrack">
     <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
     <div id="historyItems"></div>
   </div>
-  <button class="history-arrow" id="historyNext" title="Next item" aria-label="Next item">Next &#187;</button>
   <div class="history-search-wrap">
     <input type="text" id="historySearch" class="history-search-input" placeholder="Search…" autocomplete="off" spellcheck="false">
     <button class="history-search-clear" id="historySearchClear" title="Clear search">✕</button>

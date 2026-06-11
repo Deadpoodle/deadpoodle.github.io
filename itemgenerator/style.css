@@ -43,30 +43,22 @@
     z-index: 0;
   }
 
-  header {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: 1rem 1rem 0.75rem;
-    border-bottom: 1px solid rgba(180,130,60,0.25);
+  /* Wordmark — merged into the top bar (former page <header>) */
+  .bar-wordmark {
+    font-family: var(--arc-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--arc-gold);
+    padding: 0 0.95rem;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-right: 1px solid var(--arc-rule);
   }
-
-  header h1 {
-    font-family: 'Cinzel', serif;
-    font-size: clamp(1.6rem, 4vw, 2.6rem);
-    font-weight: 700;
-    color: var(--gold-light);
-    letter-spacing: 0.08em;
-    text-shadow: 0 0 40px rgba(212,160,23,0.3);
-  }
-
-  header p {
-    color: var(--ink-light);
-    color: #9a7a4a;
-    font-size: medium;
-    margin-top: 0.4rem;
-    letter-spacing: 0.04em;
-  }
+  .bar-wordmark .ornament { margin: 0 0.4rem 0 0; color: var(--arc-gold-hi); font-size: 0.72em; }
 
   .ornament {
     display: inline-block;
@@ -1082,32 +1074,7 @@
     gap: 0.4rem;
   }
 
-  /* Arrow scroll buttons */
-  .history-arrow {
-    flex-shrink: 0;
-    width: 72px;
-    background: rgba(30,15,4,0.98);
-    border: none;
-    border-right: 1px solid rgba(180,130,60,0.2);
-    color: rgba(180,130,60,0.4);
-    font-size: medium;
-    font-family: 'Cinzel', serif;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    transition: color 0.15s, background 0.15s;
-    pointer-events: none;
-    padding: 0;
-  }
-  .history-arrow:last-of-type { border-right: none; border-left: 1px solid rgba(180,130,60,0.2); }
-  .history-arrow:hover { color: var(--gold-light); background: rgba(180,130,60,0.1); }
-  .history-arrow.active { color: #dabb80; pointer-events: auto; }
-
-  /* Scrollable track — the only part that scrolls */
+  /* Scrollable track — the cards strip (formerly flanked by « Prev / Next » arrows) */
   .history-track {
     flex: 1;
     display: flex;
@@ -1151,7 +1118,13 @@
   }
 
   .history-item:hover { background: rgba(180,130,60,0.08); }
-  .history-item.history-active { background: rgba(180,130,60,0.14); border-right-color: rgba(180,130,60,0.35); }
+  /* Active card: gold outline "chip" highlight within the strip */
+  .history-item.history-active {
+    background: rgba(180,130,60,0.14);
+    box-shadow: inset 0 0 0 1.5px var(--arc-gold);
+    border-radius: var(--arc-r-surface);
+    border-right-color: transparent;
+  }
   .history-item.history-active .history-name { color: var(--gold-light); }
 
   .history-thumb {
@@ -2068,7 +2041,7 @@
 
   @media (max-width: 860px) {
     .history-track,
-    .history-arrow,
+    .bar-wordmark,
     .history-type-filter { display: none !important; }
     .history-label-wrap { border-right: none; }
     .history-label-text,
@@ -2190,11 +2163,6 @@
       repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(0,0,0,0.03) 60px, rgba(0,0,0,0.03) 61px),
       repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,0,0,0.03) 60px, rgba(0,0,0,0.03) 61px);
   }
-  body.light header {
-    border-bottom-color: rgba(120,80,30,0.25);
-  }
-  body.light header h1 { color: #6b4400; text-shadow: none; }
-  body.light header p   { color: #7a5828; }
   body.light .theme-toggle {
     border-color: rgba(100,65,20,0.35);
     color: #7a5020;
@@ -2209,14 +2177,6 @@
     border-bottom-color: rgba(120,80,30,0.2);
   }
   body.light .history-label { color: #5a3810; }
-  body.light .history-arrow {
-    background: rgba(160,110,40,0.15);
-    border-color: rgba(120,80,30,0.25) !important;
-    color: rgba(90,56,16,0.4);
-  }
-  body.light .history-arrow.active { color: #5a3810; }
-  body.light .history-arrow:hover  { background: rgba(120,80,30,0.12); color: #3a2008; }
-  body.light .history-arrow.active { color: #3a2008; }
   body.light .history-item          { border-right-color: rgba(120,80,30,0.15); }
   body.light .history-item:hover    { background: rgba(120,80,30,0.08); }
   body.light .history-name          { color: #2c1a0e; }
