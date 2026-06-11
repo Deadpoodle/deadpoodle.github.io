@@ -2154,7 +2154,6 @@ $('clearAllDataConfirm').addEventListener('click', () => {
   applyTheme(false);
 
   // Preferences
-  $('autoSave').checked = true;
   $('suppressConfirmToggle').checked = false;
   $('persistScaleToggle').checked = true;
   $('compressImagesToggle').checked = false;
@@ -2195,6 +2194,7 @@ let autoSaveTimer = null;
 function doAutoSave() {
   if (!isDirty || !activeHistoryId) return;
   clearTimeout(autoSaveTimer);
+  updateSaveChip('saving');
   const state = collectCurrentState();
   state.id = activeHistoryId;
   const hist = getHistory();
@@ -2207,16 +2207,17 @@ function doAutoSave() {
   setDirty(false);
 }
 
+// Always-on auto-save: fires 800 ms after the last edit. The chip is the only save indicator.
 function scheduleAutoSave() {
-  if (!$('autoSave').checked || !activeHistoryId) return;
+  if (!activeHistoryId) return;
   clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(doAutoSave, 1500);
+  autoSaveTimer = setTimeout(doAutoSave, 800);
 }
 
 // ── TABS ──
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    if ($('autoSave').checked) doAutoSave();
+    doAutoSave();
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
@@ -2996,17 +2997,37 @@ function registerNewCard() {
 function setDirty(val) {
   isDirty = val;
   if (val && activeHistoryId === null) registerNewCard();
-  const mob = $('mobileDirtyMsg');
-  if (mob) mob.style.display = val ? 'flex' : 'none';
+  updateSaveChip(val ? 'unsaved' : 'saved');
   updateHistoryActiveClass();
   if (val) scheduleAutoSave();
 }
 
-function hideConfirmModal() {
-  $('confirmModal').classList.remove('active');
-  $('confirmModalOk').onclick = null;
-  $('confirmModalSave').onclick = null;
-  $('confirmModalCancel').onclick = null;
+// ── SAVE CHIP (single save indicator — replaces the Unsaved Changes modal) ──
+// Number of card fields that differ from the snapshot taken when the card was loaded/saved.
+function computeChangeCount() {
+  if (!_undoBaseline) return null;
+  const cur = collectCurrentState();
+  let n = 0;
+  for (const k in cur) {
+    if (k === 'id') continue;
+    if (JSON.stringify(cur[k]) !== JSON.stringify(_undoBaseline[k])) n++;
+  }
+  return n;
+}
+
+function updateSaveChip(state) {
+  const chip = $('saveChip');
+  if (!chip) return;
+  chip.dataset.state = state;
+  const txt = chip.querySelector('.save-chip-text');
+  if (!txt) return;
+  if (state === 'saving') { txt.textContent = 'saving…'; return; }
+  if (state === 'unsaved') {
+    const n = computeChangeCount();
+    txt.textContent = (n && n > 0) ? `unsaved · ${n} change${n === 1 ? '' : 's'}` : 'unsaved changes';
+    return;
+  }
+  txt.textContent = 'saved · the ink is dry';
 }
 
 function switchToDetailsTab() {
@@ -3019,29 +3040,11 @@ function switchToDetailsTab() {
 
 function tryLoadItem(item) {
   const isDifferentItem = activeHistoryId !== item.id;
-  if (!isDirty || !isDifferentItem) {
-    if (isDifferentItem) switchToDetailsTab();
-    applyState(item);
-    return;
-  }
-
-  if ($('autoSave').checked) { doAutoSave(); switchToDetailsTab(); applyState(item); return; }
-
-  $('confirmModal').classList.add('active');
-  $('confirmModalOk').onclick = () => { hideConfirmModal(); switchToDetailsTab(); applyState(item); };
-  $('confirmModalSave').onclick = () => {
-    hideConfirmModal();
-    const state = collectCurrentState();
-    if (activeHistoryId) state.id = activeHistoryId;
-    const hist = getHistory().filter(h => h.id !== state.id && h.name !== state.name);
-    hist.unshift(state);
-    saveHistory(hist.slice(0, getMaxHistory()));
-    renderHistoryBar();
-    setDirty(false);
-    switchToDetailsTab();
-    applyState(item);
-  };
-  $('confirmModalCancel').onclick = () => hideConfirmModal();
+  // Always-on auto-save: commit any unsaved edits to the current card before switching away,
+  // then load the requested one. No modal, no data loss.
+  if (isDirty && isDifferentItem) doAutoSave();
+  if (isDifferentItem) switchToDetailsTab();
+  applyState(item);
 }
 
 function applyState(s) {
@@ -3920,10 +3923,6 @@ $('defaultTypeImgToggle').addEventListener('change', e => {
   localStorage.setItem('dnd_default_type_img', e.target.checked);
   updateDefaultTypeImage();
 });
-
-// ── AUTO-SAVE PERSISTENCE ──
-$('autoSave').checked = localStorage.getItem('dnd_autosave') !== 'false';
-$('autoSave').addEventListener('change', e => localStorage.setItem('dnd_autosave', e.target.checked));
 
 // ── SUPPRESS CONFIRMATIONS ──
 $('suppressConfirmToggle').checked = localStorage.getItem('dnd_no_confirm') === 'true';

@@ -1622,20 +1622,34 @@
     opacity: 0.9;
   }
 
-  /* Mobile unsaved message in history bar */
-  .mobile-dirty-msg {
+  /* Save chip — the single save-status indicator (replaces the Unsaved Changes modal) */
+  .save-chip {
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'Crimson Pro', serif;
-    font-style: italic;
-    font-size: small;
-    color: rgba(210,160,70,0.9);
-    padding: 0 0.75rem;
-    flex: 1;
+    padding: 0.28rem 0.7rem;
+    border-radius: var(--arc-r-pill);
+    border: 1px solid var(--arc-hairline);
+    background: var(--arc-ink-raised);
+    font-family: var(--arc-sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    color: var(--arc-muted);
     white-space: nowrap;
-    display: none;
+    flex-shrink: 0;
+    transition: color 0.2s ease, border-color 0.2s ease;
   }
-  @media (min-width: 861px) { .mobile-dirty-msg { display: none !important; } }
+  .save-chip-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--arc-good);
+    flex-shrink: 0;
+  }
+  .save-chip[data-state="saved"]   .save-chip-dot { background: var(--arc-good); }
+  .save-chip[data-state="saving"]  .save-chip-dot { background: var(--arc-gold); animation: saveChipPulse 1s ease-in-out infinite; }
+  .save-chip[data-state="unsaved"] .save-chip-dot { background: var(--arc-warn); }
+  .save-chip[data-state="unsaved"] { color: var(--arc-warn); }
+  @keyframes saveChipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
   /* Confirm modal */
   .confirm-modal {

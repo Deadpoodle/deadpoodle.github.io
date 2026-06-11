@@ -35,19 +35,6 @@
   <button class="btn btn-secondary" id="progressCancelBtn" style="margin-top:1.2rem;font-size:small;padding:0.35rem 1.2rem;border-color:rgba(139,26,26,0.5);color:rgba(200,90,90,0.9);display:none;">✕ Cancel</button>
 </div>
 
-<!-- CONFIRM MODAL -->
-<div class="confirm-modal" id="confirmModal">
-  <div class="confirm-modal-box">
-    <div class="confirm-modal-title">Unsaved Changes</div>
-    <p class="confirm-modal-msg">You have unsaved changes. What would you like to do?</p>
-    <div class="confirm-modal-btns">
-      <button class="btn btn-primary" id="confirmModalSave">Save &amp; Load</button>
-      <button class="btn btn-secondary" id="confirmModalOk">Discard &amp; Load</button>
-      <button class="btn-cancel" id="confirmModalCancel">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <!-- PNG SELECTION MODAL -->
 <div class="confirm-modal" id="pngSelectModal">
   <div class="confirm-modal-box print-select-box">
@@ -309,7 +296,10 @@
       <div id="historyDropdownItems"></div>
     </div>
   </div>
-  <div class="mobile-dirty-msg" id="mobileDirtyMsg"><span class="dirty-dot"></span> Unsaved changes</div>
+  <div class="save-chip" id="saveChip" data-state="saved" title="Save status">
+    <span class="save-chip-dot"></span>
+    <span class="save-chip-text">saved · the ink is dry</span>
+  </div>
   <button class="history-arrow" id="historyPrev" title="Previous item" aria-label="Previous item">&#171; Prev</button>
   <div class="history-track" id="historyTrack">
     <div class="history-empty" id="historyEmpty">No saved items yet — click Save to History below</div>
@@ -768,11 +758,6 @@ Markdown is supported:
           <span class="toggle-wrap"><input type="checkbox" id="themeSettingsCheck"><span class="toggle-knob"></span></span>
           <span id="themeSettingsLabel">Light mode</span>
         </label>
-        <label class="toggle-row" style="margin-top:0.6rem;">
-          <span class="toggle-wrap"><input type="checkbox" id="autoSave"><span class="toggle-knob"></span></span>
-          Auto-save changes
-        </label>
-        <p class="field-note-legend" style="margin-top:0.4rem;">Automatically saves edits to the current item a moment after you stop typing. Has no effect if no item is loaded from history.</p>
         <label class="toggle-row" style="margin-top:0.6rem;">
           <span class="toggle-wrap"><input type="checkbox" id="suppressConfirmToggle"><span class="toggle-knob"></span></span>
           Skip confirmation dialogs
