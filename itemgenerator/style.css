@@ -1261,7 +1261,6 @@
   }
 
   .history-dropdown.open { display: block; }
-  .new-card-dropdown { left: auto; right: 0; min-width: 200px; }
 
   .history-dropdown-empty {
     font-family: 'Crimson Pro', serif;

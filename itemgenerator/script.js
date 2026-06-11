@@ -3643,7 +3643,6 @@ function renderHistoryBar() {
 $('collectionDropdownBtn').addEventListener('click', e => {
   e.stopPropagation();
   $('historyDropdown').classList.remove('open');
-  $('newCardDropdown').classList.remove('open');
   $('collectionDropdown').classList.toggle('open');
   if ($('collectionDropdown').classList.contains('open')) renderCollectionDropdown();
 });
@@ -3714,7 +3713,6 @@ document.querySelectorAll('.type-filter-btn').forEach(btn => {
 $('historyDropdownBtn').addEventListener('click', e => {
   e.stopPropagation();
   $('collectionDropdown').classList.remove('open');
-  $('newCardDropdown').classList.remove('open');
   $('historyDropdown').classList.toggle('open');
 });
 
@@ -3723,21 +3721,9 @@ $('historyDropdownNew').addEventListener('click', () => {
   openNewCard();
 });
 
-$('newCardBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  $('collectionDropdown').classList.remove('open');
-  $('historyDropdown').classList.remove('open');
-  $('newCardDropdown').classList.toggle('open');
-});
-
-$('newCardClean').addEventListener('click', () => {
-  $('newCardDropdown').classList.remove('open');
-  openNewCard();
-});
-
-$('newCardCopy').addEventListener('click', () => {
-  $('newCardDropdown').classList.remove('open');
-  // Save current card if tracked
+// Duplicate the current card into a new, untracked card named "… - Copy".
+function duplicateCurrentCard() {
+  // Save current card first if it is tracked, so the original keeps its edits.
   if (activeHistoryId) {
     const current = collectCurrentState();
     current.id = activeHistoryId;
@@ -3750,12 +3736,25 @@ $('newCardCopy').addEventListener('click', () => {
   delete copy.id;
   activeHistoryId = null;
   applyState(copy);
+}
+
+// ＋ New → start a fresh blank card directly (no menu).
+$('newCardBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  $('collectionDropdown').classList.remove('open');
+  $('historyDropdown').classList.remove('open');
+  openNewCard();
+});
+
+// ⧉ → duplicate the current card.
+$('duplicateCardBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  duplicateCurrentCard();
 });
 
 document.addEventListener('click', e => {
   $('historyDropdown').classList.remove('open');
   $('collectionDropdown').classList.remove('open');
-  $('newCardDropdown').classList.remove('open');
   const wrap = document.querySelector('.history-search-wrap');
   if (wrap && !wrap.contains(e.target)) {
     $('historySearchResults').classList.remove('open');
