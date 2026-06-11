@@ -1,0 +1,89 @@
+/* ============================================================================
+   Artifex Arcanum — design tokens (UX revision)
+   Source of truth: plans/design_handoff_ux_revision/tokens.jsx + README.md
+
+   This layer is ADDITIVE. The handoff palette lives under an `--arc-` prefix to
+   avoid colliding with the existing chrome/card variables in style.css
+   (current `--ink`/`--gold`/`--parchment` mean different things — see
+   IMPLEMENTATION_PLAN.md Q-A). Phase 1 introduces these tokens; later phases
+   migrate chrome surfaces onto them. The parchment-card art variables
+   (`--parchment*`, `--ink`, `--card-w/h`) are intentionally NOT touched.
+
+   Loaded BEFORE style.css so style.css can consume `--arc-*` as it migrates.
+   ============================================================================ */
+
+:root {
+  /* ── Ground (dark chrome) ── */
+  --arc-void:        #0a0703;  /* page bg, deepest */
+  --arc-ink:         #120c05;  /* panels */
+  --arc-ink-soft:    #1a1208;  /* secondary panels */
+  --arc-ink-raised:  #241a0c;  /* raised cards / inputs */
+  --arc-hairline:    #2e2410;  /* 1px borders */
+  --arc-rule:        #3a2c14;  /* stronger 1px borders / dividers */
+  --arc-rule-soft:   #23180a;  /* very faint dividers */
+
+  /* ── Gold scale (lightest → deepest) ── */
+  --arc-gold:        #d8b266;  /* primary accent / active state */
+  --arc-gold-hi:     #f0d28a;  /* highlight / primary headings */
+  --arc-gold-mid:    #b8862a;  /* button gradient stop */
+  --arc-gold-deep:   #8a6118;  /* secondary border */
+  --arc-gold-shadow: #5a3f0a;  /* drop-shadow tone */
+
+  /* ── Text on dark ── */
+  --arc-cream:       #e8d6a8;  /* primary text */
+  --arc-parchment:   #d8c89c;  /* body text */
+  --arc-muted:       #a08866;  /* secondary text */
+  --arc-faint:       #6d5a36;  /* tertiary / disabled */
+
+  /* ── State ── */
+  --arc-good:        #7fb285;  /* saved / connected */
+  --arc-warn:        #d28a4a;  /* overflow / clipped warnings */
+  --arc-danger:      #b85a3a;  /* destructive */
+
+  /* ── Type stacks ──
+     Chrome UI uses these. Card-content fonts stay user-selectable in Appearance. */
+  --arc-display: "Cinzel", "Cormorant Garamond", serif;       /* section heads, wordmark, buttons */
+  --arc-serif:   "Cormorant Garamond", "Crimson Pro", Georgia, serif; /* body, descriptions */
+  --arc-sans:    "Inter", system-ui, -apple-system, sans-serif;       /* UI chrome */
+  --arc-mono:    "JetBrains Mono", ui-monospace, monospace;           /* counts, kbd, tokens */
+
+  /* ── Radii (handoff §Borders & radii) ── */
+  --arc-r-surface: 3px;   /* most surfaces */
+  --arc-r-control: 4px;   /* buttons, inputs */
+  --arc-r-sheet:   18px;  /* mobile sheet top corners */
+  --arc-r-pill:    99px;  /* pills / badges */
+
+  /* ── Shadows (handoff §Shadows) ── */
+  --arc-shadow-card:  0 18px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(120,90,40,0.20);
+  --arc-shadow-cta:   0 6px 22px var(--arc-gold-shadow);
+  --arc-shadow-sheet: 0 -12px 30px rgba(0,0,0,0.5);
+  --arc-inset-gold:   inset 0 1px 0 var(--arc-gold-hi);
+}
+
+/* ── Light-mode counterparts (Q-B: light theme is kept) ──
+   Mirrors the established light palette in style.css's `body.light` block so
+   that when chrome surfaces migrate onto `--arc-*` in later phases, light mode
+   continues to read correctly. Card art is unaffected; state colours are shared.
+   These are not yet consumed in Phase 1 — they exist so Phase 2+ has both modes. */
+body.light {
+  --arc-void:        #f0e6cc;
+  --arc-ink:         #e9dcba;
+  --arc-ink-soft:    #e2d2ab;
+  --arc-ink-raised:  #d8c79c;
+  --arc-hairline:    rgba(120,80,30,0.20);
+  --arc-rule:        rgba(120,80,30,0.35);
+  --arc-rule-soft:   rgba(120,80,30,0.12);
+
+  /* Gold scale flips to deeper browns so it carries contrast on a light ground */
+  --arc-gold:        #8a5e16;
+  --arc-gold-hi:     #6b4400;
+  --arc-gold-mid:    #a06f1e;
+  --arc-gold-deep:   #5a3810;
+  --arc-gold-shadow: rgba(120,80,30,0.30);
+
+  /* Text on light */
+  --arc-cream:       #2c1a0e;
+  --arc-parchment:   #3a2008;
+  --arc-muted:       #5a3810;
+  --arc-faint:       #7a5020;
+}
