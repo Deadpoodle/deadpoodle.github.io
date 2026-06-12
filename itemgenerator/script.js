@@ -2267,6 +2267,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 })();
 
+// ── PROPERTIES FIRST-USE HINT ──
+(function initPropHint() {
+  const hint = $('propHint');
+  const dismiss = $('propHintDismiss');
+  if (!hint || !dismiss) return;
+  if (localStorage.getItem('dnd_props_hint_seen') === 'true') hint.style.display = 'none';
+  dismiss.addEventListener('click', () => {
+    hint.style.display = 'none';
+    localStorage.setItem('dnd_props_hint_seen', 'true');
+  });
+})();
+
 // ── UPLOAD HINT (card image circle click → open file picker) ──
 $('imgUploadHint').addEventListener('click', () => {
   $('itemImgUpload').click();

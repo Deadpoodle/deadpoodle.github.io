@@ -392,47 +392,35 @@
       <div>
         <div class="section-title">Properties</div>
         <div style="display:flex;flex-direction:column;gap:0.7rem;">
-          <div>
-            <div class="row-3" style="margin-bottom:0.25rem;">
-              <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="bonusLabel" value="Type" placeholder="Bonus">
-                <span class="label-rename-icon">✒</span>
-              </div>
-              <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="damageLabel" value="Dice" placeholder="Damage">
-                <span class="label-rename-icon">✒</span>
-              </div>
-              <div class="label-rename-wrap">
-                <input class="stat-label-rename" type="text" id="weightLabel" value="Value" placeholder="Weight">
-                <span class="label-rename-icon">✒</span>
-              </div>
-            </div>
-            <div class="row-3">
-              <input type="text" id="itemBonus" placeholder="+1, +2, +3…" value="Utility">
-              <input type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="Unnecessary">
-              <input type="text" id="itemWeight" placeholder="e.g. 4 lb" value="Free">
-            </div>
+          <div class="prop-hint" id="propHint">
+            <span class="prop-hint-text">✎ Click any property label to rename it. Fields left blank are hidden on the card.</span>
+            <button type="button" class="prop-hint-dismiss" id="propHintDismiss" title="Got it" aria-label="Dismiss hint">✕</button>
           </div>
-          <div>
-            <div class="row-2" style="margin-bottom:0.25rem;">
-              <div style="display:flex;align-items:center;gap:0.25rem;">
-                <div class="label-rename-wrap" style="flex:1;">
-                  <input class="stat-label-rename" type="text" id="saveLabel" value="Save" placeholder="Save">
-                  <span class="label-rename-icon">✒</span>
-                </div>
-                <span class="field-note">*</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:0.25rem;">
-                <div class="label-rename-wrap" style="flex:1;">
-                  <input class="stat-label-rename" type="text" id="rangeLabel" value="Range" placeholder="Range">
-                  <span class="label-rename-icon">✒</span>
-                </div>
-                <span class="field-note">*</span>
-              </div>
+          <div class="prop-list">
+            <div class="prop-row">
+              <input class="prop-label" type="text" id="bonusLabel" value="Type" placeholder="Bonus" title="Rename this property" aria-label="Property label">
+              <input class="prop-value" type="text" id="itemBonus" placeholder="+1, +2, +3…" value="Utility" aria-label="Property value">
+              <span class="prop-opt"></span>
             </div>
-            <div class="row-2">
-              <input type="text" id="itemSave" placeholder="e.g. DC 15 Dex">
-              <input type="text" id="itemRange" placeholder="e.g. 60 ft">
+            <div class="prop-row">
+              <input class="prop-label" type="text" id="damageLabel" value="Dice" placeholder="Damage" title="Rename this property" aria-label="Property label">
+              <input class="prop-value" type="text" id="itemDamage" placeholder="e.g. 1d8 piercing" value="Unnecessary" aria-label="Property value">
+              <span class="prop-opt"></span>
+            </div>
+            <div class="prop-row">
+              <input class="prop-label" type="text" id="weightLabel" value="Value" placeholder="Weight" title="Rename this property" aria-label="Property label">
+              <input class="prop-value" type="text" id="itemWeight" placeholder="e.g. 4 lb" value="Free" aria-label="Property value">
+              <span class="prop-opt"></span>
+            </div>
+            <div class="prop-row">
+              <input class="prop-label" type="text" id="saveLabel" value="Save" placeholder="Save" title="Rename this property" aria-label="Property label">
+              <input class="prop-value" type="text" id="itemSave" placeholder="e.g. DC 15 Dex" aria-label="Property value">
+              <span class="prop-opt field-note" title="Hidden on the card when left empty">*</span>
+            </div>
+            <div class="prop-row">
+              <input class="prop-label" type="text" id="rangeLabel" value="Range" placeholder="Range" title="Rename this property" aria-label="Property label">
+              <input class="prop-value" type="text" id="itemRange" placeholder="e.g. 60 ft" aria-label="Property value">
+              <span class="prop-opt field-note" title="Hidden on the card when left empty">*</span>
             </div>
           </div>
           <div class="field-group">
