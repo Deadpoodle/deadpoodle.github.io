@@ -325,14 +325,13 @@
   <div class="controls">
 
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="identity">Details</button>
-      <button class="tab-btn" data-tab="appearance">Appearance</button>
+      <button class="tab-btn active" data-tab="edit">Edit</button>
       <button class="tab-btn" data-tab="export">Share</button>
       <button class="tab-btn tab-btn-icon" data-tab="settings" title="Settings">⚙</button>
     </div>
 
-    <!-- TAB 1: IDENTITY -->
-    <div class="tab-panel active" id="tab-identity">
+    <!-- EDIT: collapsible sections (merged Details + Appearance) -->
+    <div class="tab-panel active" id="tab-edit">
 
       <div>
         <div class="section-title">Identity</div>
@@ -498,17 +497,6 @@ Markdown is supported:
           </div>
         </div>
       </div>
-
-      <div class="details-action-row">
-        <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
-        <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
-        <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo</button>
-      </div>
-
-    </div><!-- /tab-identity -->
-
-    <!-- TAB 2: APPEARANCE -->
-    <div class="tab-panel" id="tab-appearance">
 
       <div>
         <div class="section-title">Images</div>
@@ -680,7 +668,13 @@ Markdown is supported:
         <button class="btn btn-secondary" id="resetAppearanceBtn" style="width:100%;">↺ Reset Appearance</button>
       </div>
 
-    </div><!-- /tab-appearance -->
+      <div class="details-action-row">
+        <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
+        <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
+        <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo</button>
+      </div>
+
+    </div><!-- /tab-edit -->
 
     <!-- TAB 3: EXPORT -->
     <div class="tab-panel" id="tab-export">

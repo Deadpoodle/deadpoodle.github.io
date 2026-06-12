@@ -2225,6 +2225,48 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// ── COLLAPSIBLE EDIT SECTIONS ──
+// Turn each section heading in the Edit panel into a numbered ▾/▸ collapse toggle.
+// Appearance-oriented sections start collapsed to keep the common editing fields up top.
+(function initCollapsibleSections() {
+  const panel = $('tab-edit');
+  if (!panel) return;
+  const collapsedByDefault = ['Images', 'Colours', 'Typography', 'Card Elements', 'Reset'];
+  let n = 0;
+  panel.querySelectorAll(':scope > div > .section-title').forEach(title => {
+    n++;
+    const section = title.parentElement;
+    const label = (title.textContent || '').trim();
+    section.classList.add('collapsible');
+
+    const num = document.createElement('span');
+    num.className = 'section-num';
+    num.textContent = String(n).padStart(2, '0');
+    title.prepend(num);
+
+    const tog = document.createElement('span');
+    tog.className = 'section-toggle';
+    title.appendChild(tog);
+
+    const startCollapsed = collapsedByDefault.some(name => label.startsWith(name));
+    section.classList.toggle('collapsed', startCollapsed);
+    tog.textContent = startCollapsed ? '▸' : '▾';
+
+    title.setAttribute('role', 'button');
+    title.tabIndex = 0;
+    const toggle = () => {
+      const isCollapsed = section.classList.toggle('collapsed');
+      tog.textContent = isCollapsed ? '▸' : '▾';
+      title.setAttribute('aria-expanded', String(!isCollapsed));
+    };
+    title.setAttribute('aria-expanded', String(!startCollapsed));
+    title.addEventListener('click', toggle);
+    title.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+})();
+
 // ── UPLOAD HINT (card image circle click → open file picker) ──
 $('imgUploadHint').addEventListener('click', () => {
   $('itemImgUpload').click();
@@ -3030,12 +3072,12 @@ function updateSaveChip(state) {
   txt.textContent = 'saved · the ink is dry';
 }
 
-function switchToDetailsTab() {
+function switchToEditTab() {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  const detailsBtn = document.querySelector('.tab-btn[data-tab="identity"]');
-  if (detailsBtn) detailsBtn.classList.add('active');
-  $('tab-identity').classList.add('active');
+  const editBtn = document.querySelector('.tab-btn[data-tab="edit"]');
+  if (editBtn) editBtn.classList.add('active');
+  $('tab-edit').classList.add('active');
 }
 
 function tryLoadItem(item) {
@@ -3043,7 +3085,7 @@ function tryLoadItem(item) {
   // Always-on auto-save: commit any unsaved edits to the current card before switching away,
   // then load the requested one. No modal, no data loss.
   if (isDirty && isDifferentItem) doAutoSave();
-  if (isDifferentItem) switchToDetailsTab();
+  if (isDifferentItem) switchToEditTab();
   applyState(item);
 }
 
