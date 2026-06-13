@@ -1324,12 +1324,9 @@ ${pagesHTML}
     });
   });
 
+  // Superseded by the Export & Share sheet + selection mode (use SELECT… on the cards strip).
   $('pngSelectionBtn').addEventListener('click', () => {
-    if (!getHistory().length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
-    syncAllQualityUI(localStorage.getItem('dnd_export_quality') || 'standard');
-    buildSelectionList($('pngSelectList'), updatePngSelectUI);
-    updatePngSelectUI();
-    $('pngSelectModal').classList.add('active');
+    if (window._openExportSheet) window._openExportSheet();
   });
 
   $('pngSelectAll').addEventListener('click', () => {
@@ -1401,11 +1398,9 @@ ${pagesHTML}
       : '';
   }
 
+  // Superseded by the Export & Share sheet + selection mode.
   $('printSelectionBtn').addEventListener('click', () => {
-    if (!getHistory().length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
-    buildSelectionList($('printSelectList'), updatePrintSelectUI);
-    updatePrintSelectUI();
-    $('printSelectModal').classList.add('active');
+    if (window._openExportSheet) window._openExportSheet();
   });
 
   $('printSelectAll').addEventListener('click', () => {
@@ -1886,11 +1881,9 @@ async function openShareDiscoveryModal() {
 }
 
 // "Share Dropbox Link to Selection" button — opens the selection modal
+// Superseded by the Export & Share sheet's Share-link row + selection mode.
 $('copyShareLinkBtn').addEventListener('click', () => {
-  if (!getHistory().length) { showInfoModal('No Saved Items', 'No saved cards in history yet.'); return; }
-  buildSelectionList($('shareSelectList'), updateShareSelectUI);
-  updateShareSelectUI();
-  $('shareSelectModal').classList.add('active');
+  if (window._openExportSheet) window._openExportSheet();
 });
 
 $('shareSelectAll').addEventListener('click', () => {
@@ -1984,8 +1977,12 @@ $('shareLinkUrlBox').addEventListener('click', async () => {
 // One outbound surface operating on the current "selection".
 // 4b-1: selection = the current card (multi-select arrives with selection mode).
 
-// The array of card states the sheet acts on.
+// The array of card states the sheet acts on: the multi-selection when selection
+// mode is active and non-empty, otherwise the current card.
 function getExportSelection() {
+  if (_selectionMode && _selection.size) {
+    return getHistory().filter(h => _selection.has(h.id));
+  }
   return [collectCurrentState()];
 }
 
@@ -3852,6 +3849,47 @@ function buildSelectionList(listEl, updateUICb) {
   }
 }
 
+// ── SELECTION MODE (cards strip → Export & Share acts on the selection) ──
+let _selectionMode = false;
+const _selection = new Set();
+
+function updateSelectButton() {
+  const btn = $('selectModeBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', _selectionMode);
+  if (_selectionMode) btn.textContent = _selection.size ? `✕ Done (${_selection.size})` : '✕ Done';
+  else btn.textContent = 'Select…';
+}
+
+function toggleCardSelection(id, el) {
+  if (_selection.has(id)) { _selection.delete(id); el.classList.remove('selected'); }
+  else { _selection.add(id); el.classList.add('selected'); }
+  updateSelectButton();
+}
+
+function enterSelectionMode() {
+  _selectionMode = true;
+  _selection.clear();
+  $('historyTrack').classList.add('selection-mode');
+  updateSelectButton();
+  renderHistoryBar();
+}
+
+function exitSelectionMode() {
+  _selectionMode = false;
+  _selection.clear();
+  $('historyTrack').classList.remove('selection-mode');
+  updateSelectButton();
+  renderHistoryBar();
+}
+
+$('selectModeBtn').addEventListener('click', () => {
+  if (_selectionMode) exitSelectionMode(); else enterSelectionMode();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && _selectionMode) exitSelectionMode();
+});
+
 function renderHistoryBar() {
   const allItems   = getHistory();
   const q          = _historySearchQuery.trim().toLowerCase();
@@ -3930,11 +3968,21 @@ function renderHistoryBar() {
     barMark.textContent = '*';
     barMark.style.display = 'none';
 
+    const check = document.createElement('span');
+    check.className = 'history-check';
+    check.setAttribute('aria-hidden', 'true');
+
+    el.appendChild(check);
     el.appendChild(makeHistoryThumb(item));
     el.appendChild(meta);
     el.appendChild(barMark);
     el.appendChild(del);
-    el.addEventListener('click', () => { tryLoadItem(item); requestAnimationFrame(scrollHistoryActiveToCenter); });
+    if (_selectionMode && _selection.has(item.id)) el.classList.add('selected');
+    el.addEventListener('click', () => {
+      if (_selectionMode) { toggleCardSelection(item.id, el); return; }
+      tryLoadItem(item);
+      requestAnimationFrame(scrollHistoryActiveToCenter);
+    });
     container.appendChild(el);
 
     // ── Dropdown item ──

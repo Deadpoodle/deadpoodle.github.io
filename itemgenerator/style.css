@@ -1166,6 +1166,46 @@
   }
   .history-item.history-active .history-name { color: var(--gold-light); }
 
+  /* ── SELECTION MODE (cards strip) ── */
+  .bar-select-btn {
+    flex-shrink: 0;
+    border: none;
+    border-left: 1px solid rgba(180,130,60,0.15);
+    padding: 0 0.85rem;
+    background: transparent;
+    color: var(--arc-muted);
+    font-family: var(--arc-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .bar-select-btn:hover { color: var(--arc-gold); }
+  .bar-select-btn.active { color: var(--arc-gold-hi); background: rgba(180,130,60,0.12); }
+
+  .history-track.selection-mode { background: rgba(180,130,60,0.06); }
+  .history-check {
+    display: none;
+    width: 15px; height: 15px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--arc-rule);
+    border-radius: 50%;
+    position: relative;
+  }
+  .history-track.selection-mode .history-check { display: inline-block; }
+  .history-track.selection-mode .history-delete { display: none; }
+  .history-track.selection-mode .history-item.selected .history-check {
+    background: var(--arc-gold);
+    border-color: var(--arc-gold);
+  }
+  .history-track.selection-mode .history-item.selected {
+    box-shadow: inset 0 0 0 1.5px var(--arc-gold);
+    border-radius: var(--arc-r-surface);
+    border-right-color: transparent;
+    background: rgba(180,130,60,0.14);
+  }
+
   .history-thumb {
     width: 32px;
     height: 32px;
@@ -2208,6 +2248,7 @@
     .history-track,
     .bar-wordmark,
     .bar-export-btn,
+    .bar-select-btn,
     .history-type-filter { display: none !important; }
     .history-label-wrap { border-right: none; }
     .history-label-text,
