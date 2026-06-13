@@ -18,9 +18,13 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 <script src="utils.js" defer></script>
+<script src="indexeddb.js" defer></script>
 <script src="script.js" defer></script>
 </head>
 <body>
+
+<!-- TOAST (non-modal status) -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- PROGRESS OVERLAY -->
 <div class="progress-overlay" id="progressOverlay">
@@ -782,8 +786,8 @@ Markdown is supported:
             <label class="field-label" for="maxHistorySetting" style="margin-bottom:0;">Max saved cards</label>
             <span id="maxHistoryValue" style="font-family:'Cinzel',serif;font-size:small;color:var(--gold-light);min-width:1.5rem;text-align:right;">30</span>
           </div>
-          <input type="range" id="maxHistorySetting" min="1" max="50" step="1"
-            style="width:100%;" title="Maximum number of cards to keep in history (1–50)">
+          <input type="range" id="maxHistorySetting" min="1" max="200" step="1"
+            style="width:100%;" title="Maximum number of cards to keep in history (1–200)">
         </div>
         <div id="maxHistoryUnlockedRow" style="display:none;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
@@ -792,7 +796,7 @@ Markdown is supported:
           <input type="number" id="maxHistoryUnlockedInput" min="1" step="1"
             style="width:100%;padding:0.35rem 0.5rem;" title="Maximum number of cards to keep in history">
         </div>
-        <p class="field-note-legend" style="margin-top:0.4rem;" id="maxHistoryNote">Max 50. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.</p>
+        <p class="field-note-legend" style="margin-top:0.4rem;" id="maxHistoryNote">Max 200. Cards with large images use more browser storage — if history fills up, the oldest cards are dropped automatically.</p>
         <label class="toggle-row" style="margin-top:0.6rem;cursor:pointer;" title="Go beyond, Plus Ultra!">
           <span class="toggle-wrap"><input type="checkbox" id="unlockMaxHistory"><span class="toggle-knob"></span></span>
           <span id="unlockMaxHistoryLabel">Unlock card history</span>

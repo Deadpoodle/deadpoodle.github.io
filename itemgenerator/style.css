@@ -1662,6 +1662,29 @@
   .save-chip[data-state="unsaved"] { color: var(--arc-warn); }
   @keyframes saveChipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+  /* ── TOAST (non-modal status) ── */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translate(-50%, 16px);
+    z-index: 3000;
+    max-width: min(90vw, 460px);
+    padding: 0.7rem 1.1rem;
+    background: var(--arc-ink-raised);
+    border: 1px solid var(--arc-rule);
+    border-radius: var(--arc-r-control);
+    box-shadow: var(--arc-shadow-card);
+    font-family: var(--arc-serif);
+    font-size: 0.95rem;
+    color: var(--arc-cream);
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
   /* Confirm modal */
   .confirm-modal {
     position: fixed;
