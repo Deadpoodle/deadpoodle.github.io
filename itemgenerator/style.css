@@ -2247,9 +2247,14 @@
   @media (max-width: 860px) {
     .history-track,
     .bar-wordmark,
-    .bar-export-btn,
     .bar-select-btn,
     .history-type-filter { display: none !important; }
+    /* Export stays reachable on mobile as a compact icon (opens the bottom sheet) */
+    .bar-export-label { display: none; }
+    .bar-export-btn { padding: 0 0.6rem; font-size: 0.9rem; }
+    /* Declutter the bar: save chip shows the status dot only */
+    .save-chip { padding: 0.28rem 0.45rem; }
+    .save-chip-text { display: none; }
     .history-label-wrap { border-right: none; }
     .history-label-text,
     #collectionDropdownLabel { display: none; }
@@ -2267,7 +2272,7 @@
       flex-direction: column;
     }
 
-    /* Card preview — top section, height is user-draggable */
+    /* Card preview — top section (card hero); height snaps between peek/expanded */
     .preview-area {
       order: 1;
       flex-shrink: 0;
@@ -2277,6 +2282,8 @@
       overflow-y: auto;
       overflow-x: hidden;
     }
+    /* Smoothly animate only the snap on release (not every drag frame) */
+    .workspace.mobile-snapping .preview-area { transition: height 0.22s ease; }
 
     /* Drag handle — sits between preview and tabs */
     .mobile-drag-handle {

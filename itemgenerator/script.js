@@ -4559,9 +4559,11 @@ if ($('persistScaleToggle').checked) {
   let dragStartY = 0;
   let dragStartH = 0;
   let dragging   = false;
+  let dragMoved  = false;
 
   function startDrag(clientY) {
     dragging   = true;
+    dragMoved  = false;
     dragStartY = clientY;
     dragStartH = previewEl.offsetHeight;
     document.body.style.userSelect = 'none';
@@ -4571,10 +4573,23 @@ if ($('persistScaleToggle').checked) {
   function moveDrag(clientY) {
     if (!dragging) return;
     const delta  = clientY - dragStartY;
+    if (Math.abs(delta) > 6) dragMoved = true;
     // Clamp within the workspace itself: preview + drag handle + min tab area must all fit
     const maxH   = workspace.offsetHeight - handle.offsetHeight - 60;
     const newH   = Math.max(80, Math.min(maxH, dragStartH + delta));
     workspace.style.setProperty('--mobile-preview-h', newH + 'px');
+  }
+
+  // Bottom-sheet snap targets, expressed as the preview (card-hero) height:
+  //   peek     → large card, small form (sheet "peek")
+  //   expanded → small card, large form (sheet "expanded")
+  function snapTargets() {
+    const wsH  = workspace.offsetHeight;
+    const maxH = wsH - handle.offsetHeight - 60;
+    return {
+      expanded: Math.max(80, Math.round(wsH * 0.30)),
+      peek:     Math.min(maxH, Math.round(wsH * 0.62)),
+    };
   }
 
   function endDrag() {
@@ -4582,7 +4597,18 @@ if ($('persistScaleToggle').checked) {
     dragging = false;
     document.body.style.userSelect = '';
     document.body.style.webkitUserSelect = '';
-    localStorage.setItem(STORAGE_KEY, previewEl.offsetHeight);
+
+    const { expanded, peek } = snapTargets();
+    const cur = previewEl.offsetHeight;
+    const nearestIsPeek = Math.abs(cur - peek) <= Math.abs(cur - expanded);
+    // A tap (no real drag) toggles to the OTHER state; a drag snaps to the nearest.
+    const target = dragMoved ? (nearestIsPeek ? peek : expanded)
+                             : (nearestIsPeek ? expanded : peek);
+
+    workspace.classList.add('mobile-snapping');
+    workspace.style.setProperty('--mobile-preview-h', target + 'px');
+    setTimeout(() => workspace.classList.remove('mobile-snapping'), 240);
+    localStorage.setItem(STORAGE_KEY, target);
   }
 
   // Touch events
