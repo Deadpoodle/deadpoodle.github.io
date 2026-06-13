@@ -34,60 +34,6 @@
   <button class="btn btn-secondary" id="progressCancelBtn" style="margin-top:1.2rem;font-size:small;padding:0.35rem 1.2rem;border-color:rgba(139,26,26,0.5);color:rgba(200,90,90,0.9);display:none;">✕ Cancel</button>
 </div>
 
-<!-- PNG SELECTION MODAL -->
-<div class="confirm-modal" id="pngSelectModal">
-  <div class="confirm-modal-box print-select-box">
-    <div class="confirm-modal-title">Select Cards to Download</div>
-    <div class="png-quality-row">
-      <span class="png-quality-heading">Quality:</span>
-      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="draft"> Draft (1.5×)</label>
-      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="standard"> Standard (2×)</label>
-      <label class="png-quality-option"><input type="radio" name="pngModalQuality" value="high"> High (3×)</label>
-    </div>
-    <div class="print-select-controls">
-      <button class="btn-cancel print-select-meta-btn" id="pngSelectAll">Select All</button>
-      <button class="btn-cancel print-select-meta-btn" id="pngSelectNone">Select None</button>
-    </div>
-    <div id="pngSelectList" class="print-select-list"></div>
-    <div class="confirm-modal-btns">
-      <button class="btn btn-primary" id="pngSelectConfirm">⬇ Download Selected (0)</button>
-      <button class="btn-cancel" id="pngSelectCancel">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- PRINT SELECTION MODAL -->
-<div class="confirm-modal" id="printSelectModal">
-  <div class="confirm-modal-box print-select-box">
-    <div class="confirm-modal-title">Select Cards to Print</div>
-    <div class="print-select-controls">
-      <button class="btn-cancel print-select-meta-btn" id="printSelectAll">Select All</button>
-      <button class="btn-cancel print-select-meta-btn" id="printSelectNone">Select None</button>
-      <span class="print-select-page-hint" id="printSelectPageHint"></span>
-    </div>
-    <div id="printSelectList" class="print-select-list"></div>
-    <div class="print-opts-section" id="printOptsSection">
-      <div class="print-opts-title">Print Options</div>
-      <label class="print-opt-row">
-        <input type="checkbox" id="printOptSquareCorners">
-        <span>Square corners</span>
-      </label>
-      <label class="print-opt-row">
-        <input type="checkbox" id="printOptBleed" checked>
-        <span>Print bleed</span>
-      </label>
-      <label class="print-opt-row">
-        <input type="checkbox" id="printOptDoubleSided">
-        <span>Double-sided</span>
-      </label>
-    </div>
-    <div class="confirm-modal-btns">
-      <button class="btn btn-primary" id="printSelectConfirm">🖨 Print Selected (0)</button>
-      <button class="btn-cancel" id="printSelectCancel">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <!-- SINGLE-CARD PRINT OPTIONS MODAL -->
 <div class="confirm-modal" id="singlePrintModal">
   <div class="confirm-modal-box" style="max-width:340px;width:92%;">
@@ -105,22 +51,6 @@
     <div class="confirm-modal-btns">
       <button class="btn btn-primary" id="singlePrintConfirm">🖨 Print</button>
       <button class="btn-cancel" id="singlePrintCancel">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- SHARE SELECTION MODAL -->
-<div class="confirm-modal" id="shareSelectModal">
-  <div class="confirm-modal-box print-select-box">
-    <div class="confirm-modal-title">Share Cards to Dropbox</div>
-    <div class="print-select-controls">
-      <button class="btn-cancel print-select-meta-btn" id="shareSelectAll">Select All</button>
-      <button class="btn-cancel print-select-meta-btn" id="shareSelectNone">Select None</button>
-    </div>
-    <div id="shareSelectList" class="print-select-list"></div>
-    <div class="confirm-modal-btns">
-      <button class="btn btn-primary" id="shareSelectConfirm">🔗 Share Selected (0)</button>
-      <button class="btn-cancel" id="shareSelectCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -824,6 +754,25 @@ Markdown is supported:
               <input type="radio" name="compressItemLevel" value="aggressive" id="compressItemAggressive" style="accent-color:var(--gold);"> Aggressive — 300px
             </label>
           </div>
+        </div>
+      </div>
+
+      <div data-group="storage">
+        <div class="section-title">Storage</div>
+        <div class="storage-callout">
+          <span class="storage-callout-icon">✦</span>
+          <div class="storage-callout-body">
+            <div class="storage-callout-title">IndexedDB storage</div>
+            <div class="storage-callout-text">Card images are kept in IndexedDB (typically 50&nbsp;MB+), so the app stays fast and roomy. Your existing cards migrated automatically — only preferences remain in localStorage.</div>
+          </div>
+        </div>
+        <div class="storage-used" id="storageUsedRow">
+          <div class="storage-used-line">
+            <span id="storageUsedLabel">calculating…</span>
+            <span class="storage-backend" id="storageBackend">INDEXEDDB</span>
+          </div>
+          <div class="storage-bar"><div class="storage-bar-fill" id="storageBarFill"></div></div>
+          <div class="storage-used-note field-note-legend" id="storageUsedNote"></div>
         </div>
       </div>
 

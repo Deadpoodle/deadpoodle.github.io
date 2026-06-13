@@ -7,9 +7,9 @@ function safeConfirm(msg) {
   return confirm(msg);
 }
 
-// Syncs all export quality radio groups (Settings, Share tab, Download modal) from a value
+// Syncs all export quality radio groups (Settings, Share tab) from a value
 function syncAllQualityUI(q) {
-  ['exportQuality', 'shareQuality', 'pngModalQuality'].forEach(name => {
+  ['exportQuality', 'shareQuality'].forEach(name => {
     const r = document.querySelector(`input[name="${name}"][value="${q}"]`);
     if (r) r.checked = true;
   });
@@ -1307,166 +1307,15 @@ ${pagesHTML}
   popup.document.close();
 }
 
-// ── DOWNLOAD SELECTION ──
-(function () {
-  function updatePngSelectUI() {
-    const checked = $('pngSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
-    $('pngSelectConfirm').textContent = `⬇ Download Selected (${checked})`;
-    $('pngSelectConfirm').disabled = checked === 0;
-  }
+// ── DOWNLOAD SELECTION → Export & Share sheet (selection mode picks the cards) ──
+$('pngSelectionBtn').addEventListener('click', () => {
+  if (window._openExportSheet) window._openExportSheet();
+});
 
-  // When quality changes in modal → update localStorage + all other quality UI
-  document.querySelectorAll('input[name="pngModalQuality"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      if (!radio.checked) return;
-      localStorage.setItem('dnd_export_quality', radio.value);
-      syncAllQualityUI(radio.value);
-    });
-  });
-
-  // Superseded by the Export & Share sheet + selection mode (use SELECT… on the cards strip).
-  $('pngSelectionBtn').addEventListener('click', () => {
-    if (window._openExportSheet) window._openExportSheet();
-  });
-
-  $('pngSelectAll').addEventListener('click', () => {
-    $('pngSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-    updatePngSelectUI();
-  });
-
-  $('pngSelectNone').addEventListener('click', () => {
-    $('pngSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    updatePngSelectUI();
-  });
-
-  $('pngSelectCancel').addEventListener('click', () => {
-    $('pngSelectModal').classList.remove('active');
-  });
-
-  $('pngSelectConfirm').addEventListener('click', async () => {
-    $('pngSelectModal').classList.remove('active');
-
-    const selectedIds = new Set(
-      [...$('pngSelectList').querySelectorAll('input[type="checkbox"]:checked')]
-        .map(cb => parseInt(cb.value, 10))
-    );
-    const items = getHistory().filter(h => selectedIds.has(h.id));
-    if (!items.length) return;
-
-    showProgress('Rendering items…', true);
-    let exportedCount = 0;
-    for (let i = 0; i < items.length; i++) {
-      if (_exportCancelled) break;
-      const item = items[i];
-      updateProgress(i, items.length, `Rendering "${item.name || 'Unnamed'}" (${i + 1}/${items.length})…`);
-      try {
-        const canvas = await renderStateToCanvas(item);
-        if (_exportCancelled) break;
-        const link = document.createElement('a');
-        link.download = buildExportFilename(item);
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        exportedCount++;
-        await new Promise(r => setTimeout(r, 400));
-      } catch (e) {
-        console.error('Failed to render', item.name, e);
-      }
-    }
-    if (_exportCancelled) {
-      updateProgress(exportedCount, items.length, `Cancelled — ${exportedCount} of ${items.length} downloaded.`);
-      await new Promise(r => setTimeout(r, 1200));
-    } else {
-      updateProgress(items.length, items.length, 'Done!');
-      await new Promise(r => setTimeout(r, 600));
-    }
-    hideProgress();
-  });
-})();
-
-// ── PRINT ALL (A4 landscape, popup window) ──
-// ── PRINT SELECTION ──
-(function () {
-  function updatePrintSelectUI() {
-    const checked = $('printSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
-    const frontPages = Math.max(1, Math.ceil(checked / 9));
-    const doubleSided = $('printOptDoubleSided') && $('printOptDoubleSided').checked;
-    const totalPages = doubleSided ? frontPages * 2 : frontPages;
-    $('printSelectConfirm').textContent = `🖨 Print Selected (${checked})`;
-    $('printSelectConfirm').disabled = checked === 0;
-    $('printSelectPageHint').textContent = checked > 0
-      ? `${totalPages} page${totalPages !== 1 ? 's' : ''}`
-      : '';
-  }
-
-  // Superseded by the Export & Share sheet + selection mode.
-  $('printSelectionBtn').addEventListener('click', () => {
-    if (window._openExportSheet) window._openExportSheet();
-  });
-
-  $('printSelectAll').addEventListener('click', () => {
-    $('printSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-    updatePrintSelectUI();
-  });
-
-  $('printSelectNone').addEventListener('click', () => {
-    $('printSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    updatePrintSelectUI();
-  });
-
-  $('printSelectCancel').addEventListener('click', () => {
-    $('printSelectModal').classList.remove('active');
-  });
-
-  $('printOptDoubleSided').addEventListener('change', updatePrintSelectUI);
-
-  $('printSelectConfirm').addEventListener('click', async () => {
-    $('printSelectModal').classList.remove('active');
-
-    printOptions.squareCorners = $('printOptSquareCorners').checked;
-    printOptions.bleed         = $('printOptBleed').checked;
-    printOptions.doubleSided   = $('printOptDoubleSided').checked;
-
-    const selectedIds = new Set(
-      [...$('printSelectList').querySelectorAll('input[type="checkbox"]:checked')]
-        .map(cb => parseInt(cb.value, 10))
-    );
-    const items = getHistory().filter(h => selectedIds.has(h.id));
-    if (!items.length) return;
-
-    showProgress('Preparing print sheet…', true);
-    const printEntries = [];
-
-    for (let i = 0; i < items.length; i++) {
-      if (_exportCancelled) break;
-      updateProgress(i, items.length, `Rendering "${items[i].name || 'Unnamed'}" (${i + 1}/${items.length})…`);
-      try {
-        const stateForPrint = printOptions.squareCorners
-          ? { ...items[i], squareCorners: true }
-          : items[i];
-        const canvas = await renderStateToCanvas(stateForPrint);
-        if (_exportCancelled) break;
-        printEntries.push({
-          url:       canvas.toDataURL('image/png'),
-          oversized: !!items[i].allowOversized,
-          cardColor: items[i].cardColor || '#d4b87a',
-        });
-      } catch (e) {
-        console.error('Failed to render', items[i].name, e);
-      }
-    }
-
-    if (_exportCancelled) {
-      updateProgress(printEntries.length, items.length, `Cancelled — ${printEntries.length} of ${items.length} rendered.`);
-      await new Promise(r => setTimeout(r, 1200));
-      hideProgress();
-    } else {
-      updateProgress(items.length, items.length, 'Opening print dialog…');
-      await new Promise(r => setTimeout(r, 200));
-      hideProgress();
-      printImagesInPopup(printEntries, 'all', { ...printOptions });
-    }
-  });
-})();
+// ── PRINT SELECTION → Export & Share sheet (selection mode picks the cards) ──
+$('printSelectionBtn').addEventListener('click', () => {
+  if (window._openExportSheet) window._openExportSheet();
+});
 
 // ── EXPORT JSON ──
 $('exportJsonBtn').addEventListener('click', () => {
@@ -1600,12 +1449,6 @@ $('disconnectShareBtn').addEventListener('click', () => {
 $('discoverShareFilesBtn').addEventListener('click', () => openShareDiscoveryModal());
 
 // ── Share selection modal ──
-
-function updateShareSelectUI() {
-  const checked = $('shareSelectList').querySelectorAll('input[type="checkbox"][value]:checked').length;
-  $('shareSelectConfirm').textContent = `🔗 Share Selected (${checked})`;
-  $('shareSelectConfirm').disabled = checked === 0;
-}
 
 function updateShareDiscoveryUI() {
   const checked = $('shareDiscoveryList').querySelectorAll('input[type="checkbox"]:checked').length;
@@ -1886,18 +1729,6 @@ $('copyShareLinkBtn').addEventListener('click', () => {
   if (window._openExportSheet) window._openExportSheet();
 });
 
-$('shareSelectAll').addEventListener('click', () => {
-  $('shareSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-  updateShareSelectUI();
-});
-$('shareSelectNone').addEventListener('click', () => {
-  $('shareSelectList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-  updateShareSelectUI();
-});
-$('shareSelectCancel').addEventListener('click', () => {
-  $('shareSelectModal').classList.remove('active');
-});
-
 $('shareDiscoveryAll').addEventListener('click', () => {
   $('shareDiscoveryList').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
   updateShareDiscoveryUI();
@@ -1914,50 +1745,6 @@ $('shareDiscoveryImport').addEventListener('click', async () => {
 });
 $('shareDiscoveryDownload').addEventListener('click', async () => {
   await downloadSelectedDiscoveryFiles();
-});
-
-// Confirm — upload selected cards to Dropbox and copy the share link
-$('shareSelectConfirm').addEventListener('click', async () => {
-  $('shareSelectModal').classList.remove('active');
-
-  const selectedIds = new Set(
-    [...$('shareSelectList').querySelectorAll('input[type="checkbox"]:checked')]
-      .map(cb => parseInt(cb.value, 10))
-  );
-  const items = getHistory().filter(h => selectedIds.has(h.id));
-  if (!items.length) return;
-
-  const btn      = $('copyShareLinkBtn');
-  const feedback = $('shareLinkFeedback');
-  const urlBox   = $('shareLinkUrlBox');
-  btn.disabled = true;
-  btn.textContent = '⏳ Uploading…';
-  setShareFeedback('', '');
-
-  try {
-    const url = await shareCurrentCard(items);
-    if (url) {
-      // Show the URL in the text box
-      urlBox.value = url;
-      urlBox.style.display = 'block';
-      // Auto-copy to clipboard
-      await navigator.clipboard.writeText(url);
-      const n = items.length;
-      setShareFeedback(`✓ Link copied! (${n} card${n !== 1 ? 's' : ''})`, 'rgba(100,200,100,0.9)');
-    }
-  } catch (err) {
-    if (err.message === 'network_error') {
-      setShareFeedback('Could not reach your cloud provider — check your connection and try again.', 'rgba(220,80,80,0.9)', true);
-    } else if (err.message === 'auth_expired') {
-      // modal already shown by _dbx / _gdrive
-    } else {
-      setShareFeedback('Failed to copy link — please try again.', 'rgba(220,80,80,0.9)', true);
-    }
-    console.error('[share] shareSelectConfirm error:', err);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🔗 Share Link to Selection';
-  }
 });
 
 // Click the URL box to copy its contents
@@ -2411,6 +2198,31 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// Refresh the Storage-group usage indicator (card count · MB used · backend).
+async function updateStorageIndicator() {
+  const label   = $('storageUsedLabel');
+  const backend = $('storageBackend');
+  const fill    = $('storageBarFill');
+  const note    = $('storageUsedNote');
+  if (!label) return;
+  const n   = getHistory().length;
+  const max = getMaxHistory();
+  if (backend) backend.textContent = _idbReady ? 'INDEXEDDB' : 'LOCALSTORAGE';
+
+  let usageStr = '', pct = 0, noteStr = '';
+  if (navigator.storage && navigator.storage.estimate) {
+    try {
+      const { usage, quota } = await navigator.storage.estimate();
+      if (usage != null) usageStr = `${(usage / (1024 * 1024)).toFixed(1)} MB`;
+      if (quota) pct = Math.min(100, Math.round((usage / quota) * 100));
+      noteStr = pct > 0 ? `${pct}% used${pct < 60 ? ' — plenty of room' : ''}` : '';
+    } catch { /* estimate unsupported */ }
+  }
+  label.textContent = `${n} of ${max} cards${usageStr ? ' · ' + usageStr : ''}`;
+  if (fill) fill.style.width = pct + '%';
+  if (note) note.textContent = noteStr;
+}
+
 // ── SETTINGS PAGE (full-page overlay) ──
 (function () {
   const page = $('settingsPage');
@@ -2418,7 +2230,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   // Lift the overlay out of .workspace (position:relative; z-index:1 traps its stacking
   // context under the top bar) so the fixed full-page overlay sits above everything.
   document.body.appendChild(page);
-  function open() { doAutoSave(); page.classList.add('active'); }
+  function open() { doAutoSave(); updateStorageIndicator(); page.classList.add('active'); }
   function close() { page.classList.remove('active'); }
   $('openSettingsBtn').addEventListener('click', open);
   $('settingsBack').addEventListener('click', close);
@@ -3779,109 +3591,6 @@ function openCollectionEditModal(existing) {
   $('collectionEditDesc').value  = existing ? existing.description : '';
   $('collectionEditModal').classList.add('active');
   setTimeout(() => $('collectionEditName').focus(), 60);
-}
-
-function buildSelectionList(listEl, updateUICb) {
-  const items = getHistory();
-  const cols  = getCollections();
-  listEl.innerHTML = '';
-
-  // Group items
-  const byCollection = new Map();
-  const uncollected  = [];
-  items.forEach(item => {
-    if (item.collectionId && cols.find(c => c.id === item.collectionId)) {
-      if (!byCollection.has(item.collectionId)) byCollection.set(item.collectionId, []);
-      byCollection.get(item.collectionId).push(item);
-    } else {
-      uncollected.push(item);
-    }
-  });
-
-  function syncGroupToggle(groupToggle, body) {
-    const cbs = [...body.querySelectorAll('input[type="checkbox"]')];
-    const n = cbs.filter(cb => cb.checked).length;
-    groupToggle.indeterminate = n > 0 && n < cbs.length;
-    groupToggle.checked = n === cbs.length;
-  }
-
-  function addGroupHeader(name, groupItems) {
-    const header = document.createElement('div');
-    header.className = 'select-group-header';
-
-    const caret = document.createElement('span');
-    caret.className = 'select-group-caret';
-    caret.textContent = '▾';
-
-    const selectToggle = document.createElement('input');
-    selectToggle.type = 'checkbox';
-    selectToggle.checked = true;
-    selectToggle.className = 'select-group-toggle';
-
-    const label = document.createElement('span');
-    label.className = 'select-group-name';
-    label.textContent = name;
-
-    const count = document.createElement('span');
-    count.className = 'select-group-count';
-    count.textContent = `(${groupItems.length})`;
-
-    header.appendChild(caret);
-    header.appendChild(selectToggle);
-    header.appendChild(label);
-    header.appendChild(count);
-    listEl.appendChild(header);
-
-    const body = document.createElement('div');
-    body.className = 'select-group-body';
-    listEl.appendChild(body);
-
-    selectToggle.addEventListener('change', () => {
-      body.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = selectToggle.checked; });
-      selectToggle.indeterminate = false;
-      updateUICb();
-    });
-
-    caret.addEventListener('click', () => {
-      const collapsed = body.classList.toggle('collapsed');
-      caret.textContent = collapsed ? '▸' : '▾';
-    });
-
-    return { body, selectToggle };
-  }
-
-  function addItemRow(item, isChild, body, groupToggle) {
-    const row = document.createElement('label');
-    row.className = 'print-select-item' + (isChild ? ' collection-child' : '');
-    const rarityLabel = rarityLabels[item.rarity] || item.rarity;
-    row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
-      <span class="print-select-name">${item.name || 'Unnamed'}</span>
-      <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
-    row.querySelector('input').addEventListener('change', () => {
-      if (groupToggle) syncGroupToggle(groupToggle, body);
-      updateUICb();
-    });
-    (body || listEl).appendChild(row);
-  }
-
-  // Render collections first
-  cols.forEach(col => {
-    const group = byCollection.get(col.id);
-    if (!group || group.length === 0) return;
-    const { body, selectToggle } = addGroupHeader(col.name, group);
-    group.forEach(item => addItemRow(item, true, body, selectToggle));
-  });
-
-  // Uncollected at bottom
-  if (uncollected.length > 0) {
-    const hasGroups = byCollection.size > 0;
-    if (hasGroups) {
-      const { body, selectToggle } = addGroupHeader('Uncollected', uncollected);
-      uncollected.forEach(item => addItemRow(item, true, body, selectToggle));
-    } else {
-      uncollected.forEach(item => addItemRow(item, false, null, null));
-    }
-  }
 }
 
 // ── SELECTION MODE (cards strip → Export & Share acts on the selection) ──
