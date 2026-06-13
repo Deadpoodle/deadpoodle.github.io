@@ -769,9 +769,16 @@ Markdown is supported:
         <div class="settings-page-title">⚙ Settings</div>
         <button class="settings-back-btn" id="settingsBack" type="button">← Back to editor</button>
       </div>
-      <div class="settings-page-body">
+      <div class="settings-page-main">
+      <nav class="settings-nav" id="settingsNav">
+        <button class="settings-nav-item active" data-group="behaviour" type="button"><span class="settings-nav-k">Behaviour</span><small>prompts · scale · theme</small></button>
+        <button class="settings-nav-item" data-group="storage" type="button"><span class="settings-nav-k">Storage</span><small>compression · history</small></button>
+        <button class="settings-nav-item" data-group="cloud" type="button"><span class="settings-nav-k">Cloud &amp; sharing</span><small>Dropbox · Drive · links</small></button>
+        <button class="settings-nav-item" data-group="defaults" type="button"><span class="settings-nav-k">Defaults &amp; about</span><small>presets · danger zone</small></button>
+      </nav>
+      <div class="settings-page-body" id="settingsBody" data-active="behaviour">
 
-      <div>
+      <div data-group="behaviour">
         <div class="section-title">Preferences</div>
         <label class="toggle-row" style="cursor:pointer;" id="themeSettingsRow">
           <span class="toggle-wrap"><input type="checkbox" id="themeSettingsCheck"><span class="toggle-knob"></span></span>
@@ -820,7 +827,7 @@ Markdown is supported:
         </div>
       </div>
 
-      <div>
+      <div data-group="storage">
         <div class="section-title">History</div>
         <div id="maxHistorySliderRow">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
@@ -844,7 +851,7 @@ Markdown is supported:
         </label>
       </div>
 
-      <div>
+      <div data-group="defaults">
         <div class="section-title">Defaults</div>
         <label class="toggle-row">
           <span class="toggle-wrap"><input type="checkbox" id="defaultTypeImgToggle"><span class="toggle-knob"></span></span>
@@ -891,7 +898,7 @@ Markdown is supported:
         </div>
       </div>
 
-      <div>
+      <div data-group="defaults">
         <div class="section-title">Export Quality</div>
         <p class="field-note-legend" style="margin-bottom:0.5rem;">Higher quality produces sharper PNGs but takes longer to render.</p>
         <div style="display:flex;flex-direction:column;gap:0.35rem;">
@@ -907,7 +914,7 @@ Markdown is supported:
         </div>
       </div>
 
-      <div>
+      <div data-group="cloud">
         <div class="section-title">Share Provider</div>
         <p class="field-note-legend" style="margin-bottom:0.7rem;">Connect a cloud storage account to share cards via link. Your files are stored in your own account — only you can delete them.</p>
         <div id="shareProviderConnected" style="display:none;margin-bottom:0.6rem;">
@@ -930,13 +937,13 @@ Markdown is supported:
         </div>
       </div>
 
-      <div>
+      <div data-group="defaults">
         <div class="section-title">Data</div>
         <p class="field-note-legend" style="margin-bottom:0.6rem;">Remove all data this app has stored in your browser, including saved item history and preferences. See the <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold-light);">Privacy Policy</a> and <a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold-light);">Terms of Service</a> for details on what is stored and how it is used.</p>
         <button class="btn btn-secondary" id="clearAllDataBtnSettings" style="width:100%;border-color:rgba(139,26,26,0.45);color:rgba(200,90,90,0.85);">✕ Clear All Stored Data</button>
       </div>
 
-      <div style="border-top:1px solid rgba(180,130,60,0.2);padding-top:1rem;margin-top:auto;">
+      <div data-group="defaults" style="border-top:1px solid rgba(180,130,60,0.2);padding-top:1rem;">
         <div class="section-title">About</div>
         <p style="font-family:'Crimson Pro',serif;font-size:medium;color:rgba(180,130,60,0.7);line-height:1.65;">
           Made with the help of
@@ -952,6 +959,7 @@ Markdown is supported:
       </div>
 
       </div><!-- /settings-page-body -->
+      </div><!-- /settings-page-main -->
     </div><!-- /settingsPage -->
 
   </div>

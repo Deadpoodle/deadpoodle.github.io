@@ -2427,6 +2427,22 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
   window._openSettings = open;
   window._closeSettings = close;
+
+  // Four-group sub-nav: show only the active group's sections.
+  const body = $('settingsBody');
+  function showGroup(g) {
+    document.querySelectorAll('.settings-nav-item').forEach(b =>
+      b.classList.toggle('active', b.dataset.group === g));
+    if (body) {
+      body.dataset.active = g;
+      body.querySelectorAll(':scope > [data-group]').forEach(sec => {
+        sec.style.display = (sec.dataset.group === g) ? '' : 'none';
+      });
+    }
+  }
+  document.querySelectorAll('.settings-nav-item').forEach(btn =>
+    btn.addEventListener('click', () => showGroup(btn.dataset.group)));
+  showGroup('behaviour');
 })();
 
 // ── COLLAPSIBLE EDIT SECTIONS ──

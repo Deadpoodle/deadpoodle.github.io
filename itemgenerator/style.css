@@ -1869,16 +1869,74 @@
     white-space: nowrap;
   }
   .settings-back-btn:hover { background: rgba(216,178,102,0.2); border-color: var(--arc-gold); color: var(--arc-gold-hi); }
+  .settings-page-main { flex: 1; display: flex; min-height: 0; }
+  .settings-nav {
+    flex-shrink: 0;
+    width: 240px;
+    padding: 1.4rem 0.8rem;
+    border-right: 1px solid var(--arc-rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    overflow-y: auto;
+  }
+  .settings-nav-item {
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    border-radius: 0 var(--arc-r-surface) var(--arc-r-surface) 0;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .settings-nav-k {
+    font-family: var(--arc-display);
+    font-size: 0.76rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--arc-parchment);
+  }
+  .settings-nav-item small {
+    font-family: var(--arc-serif);
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--arc-muted);
+  }
+  .settings-nav-item:hover { background: rgba(180,130,60,0.06); }
+  .settings-nav-item.active { background: var(--arc-ink-raised); border-left-color: var(--arc-gold); }
+  .settings-nav-item.active .settings-nav-k { color: var(--arc-gold-hi); }
+
   .settings-page-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     width: 100%;
-    max-width: 760px;
+    max-width: 720px;
     margin: 0 auto;
-    padding: 1.8rem 2rem 4rem;
+    padding: 1.8rem 2.2rem 4rem;
     display: flex;
     flex-direction: column;
     gap: 1.6rem;
+  }
+
+  /* Settings sub-nav: stack on mobile */
+  @media (max-width: 640px) {
+    .settings-page-main { flex-direction: column; }
+    .settings-nav {
+      width: auto;
+      flex-direction: row;
+      gap: 0.4rem;
+      overflow-x: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--arc-rule);
+      padding: 0.6rem;
+    }
+    .settings-nav-item { flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 0; }
+    .settings-nav-item.active { border-left-color: transparent; border-bottom-color: var(--arc-gold); }
+    .settings-nav-item small { display: none; }
   }
 
   /* Confirm modal */
