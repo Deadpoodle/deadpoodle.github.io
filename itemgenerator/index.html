@@ -321,7 +321,42 @@
     <button id="newCardBtn" class="history-save-btn" title="Start a new blank card" style="border-radius:0;border:none;">＋ New</button>
     <button id="duplicateCardBtn" class="history-save-btn new-card-dup-btn" title="Duplicate the current card" aria-label="Duplicate current card" style="border-radius:0;border:none;border-left:1px solid rgba(180,130,60,0.15);">⧉</button>
   </div>
+  <button id="exportShareBtn" class="bar-export-btn" title="Export & share cards">⤓ Export &amp; Share</button>
   <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;"><span class="theme-icon">☀</span><span class="theme-label"> Light</span></button>
+</div>
+
+<!-- EXPORT & SHARE SHEET (desktop popover · mobile bottom sheet) -->
+<div class="export-sheet-scrim" id="exportSheetScrim"></div>
+<div class="export-sheet" id="exportSheet" role="dialog" aria-modal="true" aria-label="Export and share">
+  <div class="export-sheet-handle" aria-hidden="true"></div>
+  <div class="export-sheet-head">
+    <span class="export-sheet-title">Export &amp; Share</span>
+    <span class="export-sheet-count" id="exportSheetCount">This card</span>
+  </div>
+  <div class="export-sheet-quality">
+    <span class="export-sheet-qlabel">Quality</span>
+    <div class="export-qstepper" id="exportQStepper">
+      <button type="button" data-q="draft">Draft</button>
+      <button type="button" data-q="standard">Standard</button>
+      <button type="button" data-q="high">High</button>
+    </div>
+  </div>
+  <div class="export-sheet-rows">
+    <button type="button" class="export-row export-row-primary" id="exportRowPng">
+      <span class="export-row-icon">⬇</span><span class="export-row-label">Download PNG</span>
+    </button>
+    <button type="button" class="export-row" id="exportRowPrint">
+      <span class="export-row-icon">🖨</span><span class="export-row-label">Print</span>
+    </button>
+    <button type="button" class="export-row" id="exportRowShare">
+      <span class="export-row-icon">🔗</span><span class="export-row-label">Share link</span><span class="export-row-sub" id="exportRowShareSub"></span>
+    </button>
+    <button type="button" class="export-row" id="exportRowJson">
+      <span class="export-row-icon">⧉</span><span class="export-row-label">Export JSON</span>
+    </button>
+  </div>
+  <div class="export-sheet-feedback" id="exportSheetFeedback"></div>
+  <button type="button" class="export-sheet-cancel" id="exportSheetCancel">Cancel</button>
 </div>
 
 <div class="workspace">

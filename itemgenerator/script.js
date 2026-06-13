@@ -1980,6 +1980,183 @@ $('shareLinkUrlBox').addEventListener('click', async () => {
   }
 });
 
+// ── EXPORT & SHARE SHEET (Phase 4b) ──────────────────────────────────────────
+// One outbound surface operating on the current "selection".
+// 4b-1: selection = the current card (multi-select arrives with selection mode).
+
+// The array of card states the sheet acts on.
+function getExportSelection() {
+  return [collectCurrentState()];
+}
+
+// Render each state and trigger a PNG download.
+async function downloadPngs(states) {
+  if (!states.length) return;
+  const multi = states.length > 1;
+  showProgress(multi ? 'Rendering items…' : 'Rendering card…', multi);
+  let done = 0;
+  for (let i = 0; i < states.length; i++) {
+    if (_exportCancelled) break;
+    const item = states[i];
+    updateProgress(i, states.length, `Rendering "${item.name || 'Unnamed'}"${multi ? ` (${i + 1}/${states.length})` : ''}…`);
+    try {
+      const canvas = await renderStateToCanvas(item);
+      if (_exportCancelled) break;
+      const link = document.createElement('a');
+      link.download = buildExportFilename(item);
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      done++;
+      if (multi) await new Promise(r => setTimeout(r, 400));
+    } catch (e) { console.error('Failed to render', item.name, e); }
+  }
+  updateProgress(states.length, states.length, _exportCancelled ? `Cancelled — ${done} downloaded.` : 'Done!');
+  await new Promise(r => setTimeout(r, 500));
+  hideProgress();
+}
+
+// Render each state and open the print popup (single card or A4 sheet).
+async function printStates(states, opts) {
+  if (!states.length) return;
+  const o = Object.assign(
+    { squareCorners: false, bleed: true, doubleSided: false, cardBackUrl: printOptions.cardBackUrl },
+    opts || {}
+  );
+  printOptions.squareCorners = o.squareCorners;
+  printOptions.bleed         = o.bleed;
+  printOptions.doubleSided   = o.doubleSided;
+  const multi = states.length > 1;
+  showProgress('Preparing print…', multi);
+  const entries = [];
+  for (let i = 0; i < states.length; i++) {
+    if (_exportCancelled) break;
+    updateProgress(i, states.length, `Rendering "${states[i].name || 'Unnamed'}"${multi ? ` (${i + 1}/${states.length})` : ''}…`);
+    try {
+      const sp = o.squareCorners ? { ...states[i], squareCorners: true } : states[i];
+      const canvas = await renderStateToCanvas(sp);
+      if (_exportCancelled) break;
+      entries.push({
+        url:       canvas.toDataURL('image/png'),
+        oversized: !!states[i].allowOversized,
+        cardColor: states[i].cardColor || '#d4b87a',
+      });
+    } catch (e) { console.error('Failed to render', states[i].name, e); }
+  }
+  if (_exportCancelled || !entries.length) { hideProgress(); return; }
+  updateProgress(states.length, states.length, 'Opening print dialog…');
+  await new Promise(r => setTimeout(r, 200));
+  hideProgress();
+  printImagesInPopup(entries, multi ? 'all' : 'single', o);
+}
+
+// Export the given states as a JSON file.
+function exportJsonStates(states) {
+  const payload = { version: 2, collections: collectionsForCards(states), items: states };
+  const customBack = localStorage.getItem('dnd_card_back_image');
+  if (customBack) payload.cardBack = customBack;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  const stamp = new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-');
+  a.download = `artifex-arcanum-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Sheet open/close + wiring ──
+(function () {
+  const sheet = $('exportSheet');
+  const scrim = $('exportSheetScrim');
+  if (!sheet || !scrim) return;
+  const count    = $('exportSheetCount');
+  const feedback = $('exportSheetFeedback');
+
+  function setSheetFeedback(msg, color) {
+    feedback.textContent = msg || '';
+    feedback.style.color = color || 'var(--arc-muted)';
+  }
+
+  function syncQuality() {
+    const q = localStorage.getItem('dnd_export_quality') || 'standard';
+    $('exportQStepper').querySelectorAll('button').forEach(b =>
+      b.classList.toggle('active', b.dataset.q === q));
+  }
+
+  function openSheet() {
+    const sel = getExportSelection();
+    count.textContent = sel.length > 1 ? `${sel.length} cards` : 'This card';
+    const provider = (typeof getShareProvider === 'function') ? getShareProvider() : null;
+    $('exportRowShareSub').textContent = provider ? '' : 'connect a provider in Settings';
+    $('exportRowShare').classList.toggle('export-row-disabled', !provider);
+    setSheetFeedback('');
+    syncQuality();
+    scrim.classList.add('active');
+    sheet.classList.add('active');
+  }
+
+  function closeSheet() {
+    scrim.classList.remove('active');
+    sheet.classList.remove('active');
+  }
+  window._openExportSheet  = openSheet;
+  window._closeExportSheet = closeSheet;
+
+  $('exportShareBtn').addEventListener('click', openSheet);
+  $('exportSheetCancel').addEventListener('click', closeSheet);
+  scrim.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sheet.classList.contains('active')) closeSheet();
+  });
+
+  $('exportQStepper').querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      localStorage.setItem('dnd_export_quality', btn.dataset.q);
+      syncAllQualityUI(btn.dataset.q);
+      syncQuality();
+    });
+  });
+
+  $('exportRowPng').addEventListener('click', async () => {
+    const sel = getExportSelection();
+    closeSheet();
+    try { await downloadPngs(sel); }
+    catch (e) { showInfoModal('Export Failed', 'Export failed. If you used external images, try uploading them directly.'); }
+  });
+
+  $('exportRowPrint').addEventListener('click', async () => {
+    const sel = getExportSelection();
+    closeSheet();
+    try { await printStates(sel); }
+    catch (e) { hideProgress(); showInfoModal('Print Failed', 'Print failed: ' + (e && e.message || e)); }
+  });
+
+  $('exportRowShare').addEventListener('click', async () => {
+    const provider = (typeof getShareProvider === 'function') ? getShareProvider() : null;
+    if (!provider) { setSheetFeedback('Connect a cloud provider in Settings to share a link.', 'var(--arc-warn)'); return; }
+    const sel = getExportSelection();
+    setSheetFeedback('⏳ Uploading…', 'var(--arc-muted)');
+    try {
+      const url = await shareCurrentCard(sel);
+      if (url) {
+        await navigator.clipboard.writeText(url).catch(() => {});
+        setSheetFeedback(`✓ Link copied! (${sel.length} card${sel.length !== 1 ? 's' : ''})`, 'var(--arc-good)');
+      }
+    } catch (err) {
+      if (err.message === 'network_error') setSheetFeedback('Could not reach your cloud provider — check your connection.', 'var(--arc-danger)');
+      else if (err.message === 'auth_expired') { /* auth modal shown by the share layer */ }
+      else setSheetFeedback('Failed to share — please try again.', 'var(--arc-danger)');
+      console.error('[share] export sheet error:', err);
+    }
+  });
+
+  $('exportRowJson').addEventListener('click', () => {
+    const sel = getExportSelection();
+    closeSheet();
+    exportJsonStates(sel);
+  });
+})();
+
 // Helper — sets share feedback text.
 // isError=true: message stays permanently so the user can read it.
 // isError=false (default): fades out after 3 s.
