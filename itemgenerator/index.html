@@ -367,7 +367,7 @@
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="edit">Edit</button>
       <button class="tab-btn" data-tab="export">Share</button>
-      <button class="tab-btn tab-btn-icon" data-tab="settings" title="Settings">⚙</button>
+      <button class="tab-btn tab-btn-icon" id="openSettingsBtn" title="Settings">⚙</button>
     </div>
 
     <!-- EDIT: collapsible sections (merged Details + Appearance) -->
@@ -763,8 +763,13 @@ Markdown is supported:
 
     </div><!-- /tab-export -->
 
-    <!-- TAB 4: SETTINGS -->
-    <div class="tab-panel" id="tab-settings">
+    <!-- SETTINGS PAGE (full-page overlay) -->
+    <div class="settings-page" id="settingsPage" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="settings-page-head">
+        <div class="settings-page-title">⚙ Settings</div>
+        <button class="settings-back-btn" id="settingsBack" type="button">← Back to editor</button>
+      </div>
+      <div class="settings-page-body">
 
       <div>
         <div class="section-title">Preferences</div>
@@ -946,7 +951,8 @@ Markdown is supported:
         </a>
       </div>
 
-    </div><!-- /tab-settings -->
+      </div><!-- /settings-page-body -->
+    </div><!-- /settingsPage -->
 
   </div>
 

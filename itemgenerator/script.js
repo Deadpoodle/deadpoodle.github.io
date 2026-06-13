@@ -2401,6 +2401,7 @@ function scheduleAutoSave() {
 
 // ── TABS ──
 document.querySelectorAll('.tab-btn').forEach(btn => {
+  if (btn.id === 'openSettingsBtn') return; // settings opens a full-page overlay, not a tab panel
   btn.addEventListener('click', () => {
     doAutoSave();
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2409,6 +2410,24 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     $('tab-' + btn.dataset.tab).classList.add('active');
   });
 });
+
+// ── SETTINGS PAGE (full-page overlay) ──
+(function () {
+  const page = $('settingsPage');
+  if (!page) return;
+  // Lift the overlay out of .workspace (position:relative; z-index:1 traps its stacking
+  // context under the top bar) so the fixed full-page overlay sits above everything.
+  document.body.appendChild(page);
+  function open() { doAutoSave(); page.classList.add('active'); }
+  function close() { page.classList.remove('active'); }
+  $('openSettingsBtn').addEventListener('click', open);
+  $('settingsBack').addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && page.classList.contains('active')) close();
+  });
+  window._openSettings = open;
+  window._closeSettings = close;
+})();
 
 // ── COLLAPSIBLE EDIT SECTIONS ──
 // Turn each section heading in the Edit panel into a numbered ▾/▸ collapse toggle.
