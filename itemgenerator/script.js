@@ -220,6 +220,10 @@ function syncCard() {
   const bFont = `'${$('bodyFont').value || 'Crimson Pro'}',Georgia,serif`;
   const name    = $('itemName').value || 'Unnamed Item';
 
+  // Keep the center card-strip name in sync as the user types
+  const stripName = $('cardStripName');
+  if (stripName) stripName.textContent = name;
+
   // Keep history bar/dropdown name in sync as the user types
   if (activeHistoryId) {
     document.querySelectorAll('.history-item, .history-dropdown-item').forEach(el => {
@@ -815,8 +819,25 @@ const printOptions = {
 };
 
 // ── CARD BACK IMAGE — single source of truth ──
+// The custom card-back data URL (or null for the default). Held in memory so the
+// synchronous export/share payload builders can read it; persisted to IndexedDB
+// (it's an image blob, like the per-card blobs) rather than the 5 MB localStorage.
+let _cardBackData = null;
+
+function _persistCardBack(url) {
+  if (window.idbBlobs && _idbReady) {
+    if (url) window.idbBlobs.set('__cardBack', url).catch(() => {});
+    else     window.idbBlobs.delete('__cardBack').catch(() => {});
+    localStorage.removeItem('dnd_card_back_image'); // drop any legacy localStorage copy
+  } else {
+    if (url) localStorage.setItem('dnd_card_back_image', url);
+    else     localStorage.removeItem('dnd_card_back_image');
+  }
+}
+
 // url: data URL for a custom back, or null/falsy to restore the default.
-// Updates printOptions, the print dialog preview, the flip-back face, and localStorage.
+// Updates printOptions, the print dialog preview, the flip-back face, the in-memory
+// cache, and IndexedDB.
 function setCardBack(url) {
   const resolved = url || 'img/card_back_v2.png';
   printOptions.cardBackUrl = resolved;
@@ -837,16 +858,18 @@ function setCardBack(url) {
       if (clearBtn) clearBtn.style.display = 'none';
     }
   }
-  if (url) {
-    localStorage.setItem('dnd_card_back_image', url);
-  } else {
-    localStorage.removeItem('dnd_card_back_image');
-  }
+  _cardBackData = url || null;
+  _persistCardBack(_cardBackData);
 }
 
-// Restore persisted card back on load
-(function () {
-  const saved = localStorage.getItem('dnd_card_back_image');
+// Restore persisted card back on load (IndexedDB, migrating any legacy localStorage copy).
+(async function () {
+  try { await (window.__storageReady || Promise.resolve()); } catch {}
+  let saved = null;
+  if (window.idbBlobs && _idbReady) {
+    try { saved = await window.idbBlobs.get('__cardBack'); } catch {}
+  }
+  if (!saved) saved = localStorage.getItem('dnd_card_back_image'); // legacy → migrated by setCardBack
   if (saved) setCardBack(saved);
 })();
 
@@ -1321,8 +1344,7 @@ $('printSelectionBtn').addEventListener('click', () => {
 $('exportJsonBtn').addEventListener('click', () => {
   const saved   = getHistory();
   const payload = { version: 2, collections: collectionsForCards(saved), items: saved };
-  const customBack = localStorage.getItem('dnd_card_back_image');
-  if (customBack) payload.cardBack = customBack;
+  if (_cardBackData) payload.cardBack = _cardBackData;
   const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url     = URL.createObjectURL(blob);
   const a       = document.createElement('a');
@@ -1764,11 +1786,19 @@ $('shareLinkUrlBox').addEventListener('click', async () => {
 // One outbound surface operating on the current "selection".
 // 4b-1: selection = the current card (multi-select arrives with selection mode).
 
-// The array of card states the sheet acts on: the multi-selection when selection
-// mode is active and non-empty, otherwise the current card.
+// The cards ticked in the Export & Share sheet's checklist. The active card uses
+// its live (unsaved-edits-included) state; others use their saved history state.
+// Falls back to the current card when nothing is ticked.
 function getExportSelection() {
-  if (_selectionMode && _selection.size) {
-    return getHistory().filter(h => _selection.has(h.id));
+  const list = $('exportPickList');
+  if (list) {
+    const ids = [...list.querySelectorAll('input[type="checkbox"][value]:checked')].map(cb => Number(cb.value));
+    if (ids.length) {
+      const hist = getHistory();
+      return ids
+        .map(id => (id === activeHistoryId ? collectCurrentState() : hist.find(h => h.id === id)))
+        .filter(Boolean);
+    }
   }
   return [collectCurrentState()];
 }
@@ -1836,8 +1866,7 @@ async function printStates(states, opts) {
 // Export the given states as a JSON file.
 function exportJsonStates(states) {
   const payload = { version: 2, collections: collectionsForCards(states), items: states };
-  const customBack = localStorage.getItem('dnd_card_back_image');
-  if (customBack) payload.cardBack = customBack;
+  if (_cardBackData) payload.cardBack = _cardBackData;
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -1867,9 +1896,111 @@ function exportJsonStates(states) {
       b.classList.toggle('active', b.dataset.q === q));
   }
 
+  function updateCount() {
+    const n = $('exportPickList').querySelectorAll('input[type="checkbox"][value]:checked').length;
+    count.textContent = n === 0 ? 'Current card' : n === 1 ? '1 card' : `${n} cards`;
+  }
+
+  // Collection-grouped, collapsible card checklist (ported from the pre-overhaul
+  // selection modal). All saved cards start ticked.
+  function buildPickList() {
+    const listEl = $('exportPickList');
+    if (!listEl) return;
+    const items = getHistory();
+    const cols  = getCollections();
+    listEl.innerHTML = '';
+
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'export-pick-empty';
+      empty.textContent = 'No saved cards yet — this exports the current card.';
+      listEl.appendChild(empty);
+      updateCount();
+      return;
+    }
+
+    const byCollection = new Map();
+    const uncollected  = [];
+    items.forEach(item => {
+      if (item.collectionId && cols.find(c => c.id === item.collectionId)) {
+        if (!byCollection.has(item.collectionId)) byCollection.set(item.collectionId, []);
+        byCollection.get(item.collectionId).push(item);
+      } else uncollected.push(item);
+    });
+
+    function syncGroupToggle(groupToggle, body) {
+      const cbs = [...body.querySelectorAll('input[type="checkbox"]')];
+      const n = cbs.filter(cb => cb.checked).length;
+      groupToggle.indeterminate = n > 0 && n < cbs.length;
+      groupToggle.checked = n === cbs.length;
+    }
+
+    function addGroupHeader(name, groupItems) {
+      const header = document.createElement('div');
+      header.className = 'select-group-header';
+      const caret = document.createElement('span');
+      caret.className = 'select-group-caret';
+      caret.textContent = '▾';
+      const selectToggle = document.createElement('input');
+      selectToggle.type = 'checkbox';
+      selectToggle.checked = true;
+      selectToggle.className = 'select-group-toggle';
+      const label = document.createElement('span');
+      label.className = 'select-group-name';
+      label.textContent = name;
+      const cnt = document.createElement('span');
+      cnt.className = 'select-group-count';
+      cnt.textContent = `(${groupItems.length})`;
+      header.append(caret, selectToggle, label, cnt);
+      listEl.appendChild(header);
+      const body = document.createElement('div');
+      body.className = 'select-group-body';
+      listEl.appendChild(body);
+      selectToggle.addEventListener('change', () => {
+        body.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = selectToggle.checked; });
+        selectToggle.indeterminate = false;
+        updateCount();
+      });
+      caret.addEventListener('click', () => {
+        const collapsed = body.classList.toggle('collapsed');
+        caret.textContent = collapsed ? '▸' : '▾';
+      });
+      return { body, selectToggle };
+    }
+
+    function addItemRow(item, isChild, body, groupToggle) {
+      const row = document.createElement('label');
+      row.className = 'print-select-item' + (isChild ? ' collection-child' : '');
+      const rarityLabel = rarityLabels[item.rarity] || item.rarity || '';
+      row.innerHTML = `<input type="checkbox" value="${item.id}" checked>
+        <span class="print-select-name">${item.name || 'Unnamed'}</span>
+        <span class="history-rarity rarity-${item.rarity}" style="margin-left:auto;flex-shrink:0;">${rarityLabel}</span>`;
+      row.querySelector('input').addEventListener('change', () => {
+        if (groupToggle) syncGroupToggle(groupToggle, body);
+        updateCount();
+      });
+      (body || listEl).appendChild(row);
+    }
+
+    cols.forEach(col => {
+      const group = byCollection.get(col.id);
+      if (!group || !group.length) return;
+      const { body, selectToggle } = addGroupHeader(col.name, group);
+      group.forEach(item => addItemRow(item, true, body, selectToggle));
+    });
+    if (uncollected.length) {
+      if (byCollection.size > 0) {
+        const { body, selectToggle } = addGroupHeader('Uncollected', uncollected);
+        uncollected.forEach(item => addItemRow(item, true, body, selectToggle));
+      } else {
+        uncollected.forEach(item => addItemRow(item, false, null, null));
+      }
+    }
+    updateCount();
+  }
+
   function openSheet() {
-    const sel = getExportSelection();
-    count.textContent = sel.length > 1 ? `${sel.length} cards` : 'This card';
+    buildPickList();
     const provider = (typeof getShareProvider === 'function') ? getShareProvider() : null;
     $('exportRowShareSub').textContent = provider ? '' : 'connect a provider in Settings';
     $('exportRowShare').classList.toggle('export-row-disabled', !provider);
@@ -1889,6 +2020,15 @@ function exportJsonStates(states) {
   $('exportShareBtn').addEventListener('click', openSheet);
   $('exportSheetCancel').addEventListener('click', closeSheet);
   scrim.addEventListener('click', closeSheet);
+
+  $('exportPickAll').addEventListener('click', () => {
+    $('exportPickList').querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = true; cb.indeterminate = false; });
+    updateCount();
+  });
+  $('exportPickNone').addEventListener('click', () => {
+    $('exportPickList').querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+    updateCount();
+  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && sheet.classList.contains('active')) closeSheet();
   });
@@ -1910,8 +2050,13 @@ function exportJsonStates(states) {
 
   $('exportRowPrint').addEventListener('click', async () => {
     const sel = getExportSelection();
+    const opts = {
+      squareCorners: $('exportOptSquareCorners').checked,
+      bleed:         $('exportOptBleed').checked,
+      doubleSided:   $('exportOptDoubleSided').checked,
+    };
     closeSheet();
-    try { await printStates(sel); }
+    try { await printStates(sel, opts); }
     catch (e) { hideProgress(); showInfoModal('Print Failed', 'Print failed: ' + (e && e.message || e)); }
   });
 
@@ -2204,10 +2349,17 @@ async function updateStorageIndicator() {
   const backend = $('storageBackend');
   const fill    = $('storageBarFill');
   const note    = $('storageUsedNote');
-  if (!label) return;
+  // Left-rail mirror
+  const railLine    = $('railStorageLine');
+  const railFill    = $('railStorageFill');
+  const railBackend = $('railStorageBackend');
+  if (!label && !railLine) return;
+
   const n   = getHistory().length;
   const max = getMaxHistory();
-  if (backend) backend.textContent = _idbReady ? 'INDEXEDDB' : 'LOCALSTORAGE';
+  const backendStr = _idbReady ? 'INDEXEDDB' : 'LOCALSTORAGE';
+  if (backend) backend.textContent = backendStr;
+  if (railBackend) railBackend.textContent = backendStr;
 
   let usageStr = '', pct = 0, noteStr = '';
   if (navigator.storage && navigator.storage.estimate) {
@@ -2218,9 +2370,12 @@ async function updateStorageIndicator() {
       noteStr = pct > 0 ? `${pct}% used${pct < 60 ? ' — plenty of room' : ''}` : '';
     } catch { /* estimate unsupported */ }
   }
-  label.textContent = `${n} of ${max} cards${usageStr ? ' · ' + usageStr : ''}`;
+  const lineStr = `${n} of ${max} cards${usageStr ? ' · ' + usageStr : ''}`;
+  if (label) label.textContent = lineStr;
   if (fill) fill.style.width = pct + '%';
   if (note) note.textContent = noteStr;
+  if (railLine) railLine.textContent = lineStr;
+  if (railFill) railFill.style.width = pct + '%';
 }
 
 // ── SETTINGS PAGE (full-page overlay) ──
@@ -2232,7 +2387,9 @@ async function updateStorageIndicator() {
   document.body.appendChild(page);
   function open() { doAutoSave(); updateStorageIndicator(); page.classList.add('active'); }
   function close() { page.classList.remove('active'); }
-  $('openSettingsBtn').addEventListener('click', open);
+  window.openSettingsPage = open;   // entry point for the left-rail Settings button
+  const obtn = $('openSettingsBtn');
+  if (obtn) obtn.addEventListener('click', open);
   $('settingsBack').addEventListener('click', close);
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && page.classList.contains('active')) close();
@@ -2522,6 +2679,12 @@ const SHARE_PROVIDER_LABELS = {
 function updateShareUI() {
   const provider = getShareProvider();
   const connected = !!provider && !!getShareToken();
+  // Top-bar cloud avatar reflects connection status.
+  const avatar = $('cloudAvatar');
+  if (avatar) {
+    avatar.classList.toggle('connected', connected);
+    avatar.title = connected ? 'Connected · Cloud & sharing' : 'Cloud & sharing';
+  }
   const connectedEl  = $('shareProviderConnected');
   const btnsEl       = $('shareProviderBtns');
   const noProviderEl = $('shareNoProviderMsg');
@@ -3598,11 +3761,15 @@ let _selectionMode = false;
 const _selection = new Set();
 
 function updateSelectButton() {
-  const btn = $('selectModeBtn');
-  if (!btn) return;
-  btn.classList.toggle('active', _selectionMode);
-  if (_selectionMode) btn.textContent = _selection.size ? `✕ Done (${_selection.size})` : '✕ Done';
-  else btn.textContent = 'Select…';
+  const label = _selectionMode
+    ? (_selection.size ? `✕ Done (${_selection.size})` : '✕ Done')
+    : 'Select…';
+  ['selectModeBtn', 'railSelectBtn'].forEach(id => {
+    const btn = $(id);
+    if (!btn) return;
+    btn.classList.toggle('active', _selectionMode);
+    btn.textContent = label;
+  });
 }
 
 function toggleCardSelection(id, el) {
@@ -3614,7 +3781,8 @@ function toggleCardSelection(id, el) {
 function enterSelectionMode() {
   _selectionMode = true;
   _selection.clear();
-  $('historyTrack').classList.add('selection-mode');
+  const track = $('historyTrack'); if (track) track.classList.add('selection-mode');
+  const railList = $('railCollectionList'); if (railList) railList.classList.add('selection-mode');
   updateSelectButton();
   renderHistoryBar();
 }
@@ -3622,7 +3790,8 @@ function enterSelectionMode() {
 function exitSelectionMode() {
   _selectionMode = false;
   _selection.clear();
-  $('historyTrack').classList.remove('selection-mode');
+  const track = $('historyTrack'); if (track) track.classList.remove('selection-mode');
+  const railList = $('railCollectionList'); if (railList) railList.classList.remove('selection-mode');
   updateSelectButton();
   renderHistoryBar();
 }
@@ -3634,7 +3803,164 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && _selectionMode) exitSelectionMode();
 });
 
+// Shared builder for a card row (used by the legacy cards-strip and the left rail).
+function makeHistoryItemEl(item) {
+  const rarityLabel = rarityLabels[item.rarity] || item.rarity || '';
+  const el = document.createElement('div');
+  el.className = 'history-item';
+  el.dataset.historyId = item.id;
+  el.title = `Load: ${item.name || 'Unnamed Item'}`;
+  if (activeHistoryId === item.id) el.classList.add('history-active');
+
+  const meta = document.createElement('div');
+  meta.className = 'history-meta';
+  meta.innerHTML = `<span class="history-name">${item.name || 'Unnamed'}</span>
+                    <span class="history-rarity rarity-${item.rarity}">${rarityLabel}</span>`;
+
+  const del = document.createElement('button');
+  del.className = 'history-delete';
+  del.title = 'Remove from history';
+  del.textContent = '✕';
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    const wasActive = activeHistoryId === item.id;
+    const updated = getHistory().filter(h => h.id !== item.id);
+    saveHistory(updated);
+    if (wasActive) {
+      if (updated.length > 0) applyState(updated[0]);
+      else { activeHistoryId = null; applyState(getNewCardState()); }
+    }
+    renderHistoryBar();
+  });
+
+  const barMark = document.createElement('span');
+  barMark.className = 'item-dirty-mark';
+  barMark.textContent = '*';
+  barMark.style.display = 'none';
+
+  const check = document.createElement('span');
+  check.className = 'history-check';
+  check.setAttribute('aria-hidden', 'true');
+
+  el.appendChild(check);
+  el.appendChild(makeHistoryThumb(item));
+  el.appendChild(meta);
+  el.appendChild(barMark);
+  el.appendChild(del);
+  if (_selectionMode && _selection.has(item.id)) el.classList.add('selected');
+  el.addEventListener('click', () => {
+    if (_selectionMode) { toggleCardSelection(item.id, el); return; }
+    tryLoadItem(item);
+    requestAnimationFrame(scrollHistoryActiveToCenter);
+  });
+  return el;
+}
+
+// ── LEFT RAIL — collections accordion (each collection expands to its cards) ──
+const _expandedCollections = new Set();
+let _lastAutoExpandedId = null;
+
+function renderLeftRail() {
+  const list = $('railCollectionList');
+  if (!list) return;
+
+  let items = getHistory();
+  if (_activeTypeFilter !== 'all') {
+    items = items.filter(h => (h.cardMode || 'item') === _activeTypeFilter);
+  }
+  const cols = getCollections();
+
+  // Auto-expand the group holding the active card when the selection changes.
+  const activeItem = activeHistoryId != null
+    ? getHistory().find(h => h.id === activeHistoryId) : null;
+  const activeKey = activeItem
+    ? (activeItem.collectionId != null ? 'col-' + activeItem.collectionId : 'uncat')
+    : null;
+  if (activeItem && activeHistoryId !== _lastAutoExpandedId) {
+    _expandedCollections.add(activeKey);
+    _lastAutoExpandedId = activeHistoryId;
+  }
+
+  // Real collections + an "Uncategorised" bucket for cards without a collection.
+  const groups = [];
+  cols.forEach(col => groups.push({
+    key: 'col-' + col.id, name: col.name, colId: col.id,
+    items: items.filter(h => h.collectionId === col.id),
+  }));
+  const uncategorised = items.filter(h => h.collectionId == null);
+  if (uncategorised.length) {
+    groups.push({ key: 'uncat', name: 'Uncategorised', items: uncategorised });
+  }
+
+  list.innerHTML = '';
+
+  // "Expand All / Collapse All" toggle (replaces the old all-cards row).
+  if (groups.length > 0) {
+    const allKeys = groups.map(g => g.key);
+    const allExpanded = allKeys.every(k => _expandedCollections.has(k));
+    const toggle = document.createElement('button');
+    toggle.className = 'rail-expand-all';
+    toggle.textContent = allExpanded ? '▾ Collapse All' : '▸ Expand All';
+    toggle.addEventListener('click', () => {
+      if (allExpanded) allKeys.forEach(k => _expandedCollections.delete(k));
+      else allKeys.forEach(k => _expandedCollections.add(k));
+      renderLeftRail();
+    });
+    list.appendChild(toggle);
+  } else {
+    const empty = document.createElement('div');
+    empty.className = 'history-empty';
+    empty.textContent = 'No cards yet';
+    list.appendChild(empty);
+  }
+
+  groups.forEach(g => {
+    const wrap = document.createElement('div');
+    wrap.className = 'rail-collection';
+    const expanded = _expandedCollections.has(g.key);
+    if (expanded) wrap.classList.add('expanded');
+    if (activeItem && g.colId != null && g.colId === activeItem.collectionId) {
+      wrap.classList.add('active-collection');
+    }
+
+    const head = document.createElement('button');
+    head.className = 'rail-collection-head';
+    head.innerHTML =
+      `<span class="rail-caret">${expanded ? '▾' : '▸'}</span>` +
+      `<span class="rail-col-name"></span>` +
+      `<span class="rail-col-count">${g.items.length}</span>`;
+    head.querySelector('.rail-col-name').textContent = g.name;
+    head.addEventListener('click', () => {
+      if (_expandedCollections.has(g.key)) _expandedCollections.delete(g.key);
+      else _expandedCollections.add(g.key);
+      renderLeftRail();
+    });
+
+    const cardsWrap = document.createElement('div');
+    cardsWrap.className = 'rail-collection-cards';
+    if (g.items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'history-empty';
+      empty.textContent = 'No cards here yet';
+      cardsWrap.appendChild(empty);
+    } else {
+      g.items.forEach(item => cardsWrap.appendChild(makeHistoryItemEl(item)));
+    }
+
+    wrap.appendChild(head);
+    wrap.appendChild(cardsWrap);
+    list.appendChild(wrap);
+  });
+
+  requestAnimationFrame(updateHistoryActiveClass);
+}
+
 function renderHistoryBar() {
+  // The left rail is the primary card browser; keep it (and the storage meter)
+  // in sync on every refresh, including the empty-state early returns below.
+  renderLeftRail();
+  updateStorageIndicator();
+
   const allItems   = getHistory();
   const q          = _historySearchQuery.trim().toLowerCase();
   let items = allItems;
@@ -3677,57 +4003,7 @@ function renderHistoryBar() {
     const rarityLabel = rarityLabels[item.rarity] || item.rarity || '';
 
     // ── Bar item ──
-    const el = document.createElement('div');
-    el.className = 'history-item';
-    el.dataset.historyId = item.id;
-    el.title = `Load: ${item.name || 'Unnamed Item'}`;
-
-    const meta = document.createElement('div');
-    meta.className = 'history-meta';
-    meta.innerHTML = `<span class="history-name">${item.name || 'Unnamed'}</span>
-                      <span class="history-rarity rarity-${item.rarity}">${rarityLabel}</span>`;
-
-    const del = document.createElement('button');
-    del.className = 'history-delete';
-    del.title = 'Remove from history';
-    del.textContent = '✕';
-    del.addEventListener('click', e => {
-      e.stopPropagation();
-      const wasActive = activeHistoryId === item.id;
-      const updated = getHistory().filter(h => h.id !== item.id);
-      saveHistory(updated);
-      if (wasActive) {
-        if (updated.length > 0) {
-          applyState(updated[0]);
-        } else {
-          activeHistoryId = null;
-          applyState(getNewCardState());
-        }
-      }
-      renderHistoryBar();
-    });
-
-    const barMark = document.createElement('span');
-    barMark.className = 'item-dirty-mark';
-    barMark.textContent = '*';
-    barMark.style.display = 'none';
-
-    const check = document.createElement('span');
-    check.className = 'history-check';
-    check.setAttribute('aria-hidden', 'true');
-
-    el.appendChild(check);
-    el.appendChild(makeHistoryThumb(item));
-    el.appendChild(meta);
-    el.appendChild(barMark);
-    el.appendChild(del);
-    if (_selectionMode && _selection.has(item.id)) el.classList.add('selected');
-    el.addEventListener('click', () => {
-      if (_selectionMode) { toggleCardSelection(item.id, el); return; }
-      tryLoadItem(item);
-      requestAnimationFrame(scrollHistoryActiveToCenter);
-    });
-    container.appendChild(el);
+    container.appendChild(makeHistoryItemEl(item));
 
     // ── Dropdown item ──
     const ddEl = document.createElement('div');
@@ -3892,6 +4168,52 @@ $('duplicateCardBtn').addEventListener('click', e => {
   e.stopPropagation();
   duplicateCurrentCard();
 });
+
+// Center-strip new-card / duplicate (desktop primary surface, mirrors the bar buttons).
+{
+  const newC = $('newCardBtnCenter');
+  const dupC = $('duplicateCardBtnCenter');
+  if (newC) newC.addEventListener('click', () => openNewCard());
+  if (dupC) dupC.addEventListener('click', () => duplicateCurrentCard());
+}
+
+// Left-rail buttons: ＋ New (collection), ⚙ Settings.
+// (Card picking for export now lives in the Export & Share sheet's checklist.)
+{
+  const newCol = $('railNewCollection');
+  if (newCol) newCol.addEventListener('click', () => openCollectionEditModal(null));
+  const railSettings = $('railSettingsBtn');
+  if (railSettings) railSettings.addEventListener('click', () => {
+    if (window.openSettingsPage) window.openSettingsPage();
+  });
+}
+
+// Card action dock (under the preview) — proxies to the existing single-card actions.
+// Save/PNG/Print buttons still exist (hidden) in the edit panel / former Share tab;
+// Share opens the unified Export & Share sheet.
+{
+  const proxy = (dockId, targetId) => {
+    const d = $(dockId), t = $(targetId);
+    if (d && t) d.addEventListener('click', () => t.click());
+  };
+  proxy('dockSaveBtn',  'historySaveBtn');
+  proxy('dockPngBtn',   'exportPng');
+  proxy('dockPrintBtn', 'exportPrint');
+  proxy('dockShareBtn', 'exportShareBtn');
+  // Settings → Backup (JSON): reuse the former Share-tab handlers.
+  proxy('settingsExportJson', 'exportJsonBtn');
+  proxy('settingsImportJson', 'importJsonBtn');
+}
+
+// Top-bar cloud avatar → open Settings on the Cloud & sharing group.
+{
+  const cloud = $('cloudAvatar');
+  if (cloud) cloud.addEventListener('click', () => {
+    if (window.openSettingsPage) window.openSettingsPage();
+    const navCloud = document.querySelector('.settings-nav-item[data-group="cloud"]');
+    if (navCloud) navCloud.click();
+  });
+}
 
 document.addEventListener('click', e => {
   $('historyDropdown').classList.remove('open');

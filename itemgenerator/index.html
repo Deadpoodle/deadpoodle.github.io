@@ -219,7 +219,7 @@
     </div>
   </div>
   <!-- Cards in collection dropdown -->
-  <div class="history-label-wrap">
+  <div class="history-label-wrap" id="cardsLabelWrap">
     <button class="history-label" id="historyDropdownBtn"><span>📜</span> <span class="history-label-text">Cards</span> <span class="dropdown-caret">▼</span></button>
     <div class="history-dropdown" id="historyDropdown">
       <div class="history-dropdown-new" id="historyDropdownNew">＋ New Card</div>
@@ -254,6 +254,7 @@
   </div>
   <button id="exportShareBtn" class="bar-export-btn" title="Export & share cards"><span class="bar-export-icon">⤓</span><span class="bar-export-label"> Export &amp; Share</span></button>
   <button id="themeToggle" class="history-save-btn theme-toggle" style="border-left:1px solid rgba(180,130,60,0.15);border-radius:0;border-top:none;border-right:none;border-bottom:none;"><span class="theme-icon">☀</span><span class="theme-label"> Light</span></button>
+  <button id="cloudAvatar" class="bar-cloud-avatar" title="Cloud &amp; sharing" aria-label="Cloud and sharing settings">☁</button>
 </div>
 
 <!-- EXPORT & SHARE SHEET (desktop popover · mobile bottom sheet) -->
@@ -264,6 +265,16 @@
     <span class="export-sheet-title">Export &amp; Share</span>
     <span class="export-sheet-count" id="exportSheetCount">This card</span>
   </div>
+  <div class="export-sheet-pick">
+    <div class="export-pick-head">
+      <span class="export-pick-title">Choose cards</span>
+      <span class="export-pick-actions">
+        <button type="button" id="exportPickAll">All</button>
+        <button type="button" id="exportPickNone">None</button>
+      </span>
+    </div>
+    <div class="export-pick-list" id="exportPickList"></div>
+  </div>
   <div class="export-sheet-quality">
     <span class="export-sheet-qlabel">Quality</span>
     <div class="export-qstepper" id="exportQStepper">
@@ -271,6 +282,21 @@
       <button type="button" data-q="standard">Standard</button>
       <button type="button" data-q="high">High</button>
     </div>
+  </div>
+  <div class="print-opts-section" id="exportPrintOpts">
+    <div class="print-opts-title">Print options</div>
+    <label class="print-opt-row">
+      <input type="checkbox" id="exportOptSquareCorners">
+      <span>Square corners</span>
+    </label>
+    <label class="print-opt-row">
+      <input type="checkbox" id="exportOptBleed" checked>
+      <span>Print bleed</span>
+    </label>
+    <label class="print-opt-row">
+      <input type="checkbox" id="exportOptDoubleSided">
+      <span>Double-sided</span>
+    </label>
   </div>
   <div class="export-sheet-rows">
     <button type="button" class="export-row export-row-primary" id="exportRowPng">
@@ -291,16 +317,49 @@
 </div>
 
 <div class="workspace">
-  <!-- LEFT: CONTROLS -->
-  <div class="controls">
-
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="edit">Edit</button>
-      <button class="tab-btn" data-tab="export">Share</button>
-      <button class="tab-btn tab-btn-icon" id="openSettingsBtn" title="Settings">⚙</button>
+  <!-- LEFT RAIL: filter · collections · storage · settings (desktop only) -->
+  <aside class="left-rail" id="leftRail">
+    <div class="rail-section">
+      <div class="rail-label">Filter</div>
+      <div class="rail-filter" id="railTypeFilter">
+        <button class="type-filter-btn active" data-type="all">All</button>
+        <button class="type-filter-btn" data-type="item">Item</button>
+        <button class="type-filter-btn type-filter-disabled" data-type="spell" title="Spell cards coming soon">Spell</button>
+        <button class="type-filter-btn type-filter-disabled" data-type="monster" title="Monster cards coming soon">Monster</button>
+      </div>
     </div>
 
-    <!-- EDIT: collapsible sections (merged Details + Appearance) -->
+    <div class="rail-section rail-collections">
+      <div class="rail-label-row">
+        <span class="rail-label">Collections</span>
+        <div class="rail-label-actions">
+          <button class="rail-newcol-btn" id="railNewCollection" title="Create a new collection">＋ NEW</button>
+        </div>
+      </div>
+      <div class="rail-collection-list" id="railCollectionList"></div>
+    </div>
+
+    <div class="rail-section rail-storage" id="railStorageSection">
+      <div class="rail-label">Storage</div>
+      <div class="rail-storage-line" id="railStorageLine">—</div>
+      <div class="rail-storage-bar"><div class="rail-storage-fill" id="railStorageFill"></div></div>
+      <div class="rail-storage-backend" id="railStorageBackend">LOCALSTORAGE</div>
+      <button class="rail-settings-btn" id="railSettingsBtn">⚙ Settings</button>
+    </div>
+  </aside>
+
+  <!-- CENTER: CONTROLS -->
+  <div class="controls">
+
+    <!-- Card strip head: new card + active card name (replaces the top cards-strip) -->
+    <div class="card-strip-head" id="cardStripHead">
+      <button id="newCardBtnCenter" class="card-strip-new" title="Start a new blank card">＋ New Card</button>
+      <button id="duplicateCardBtnCenter" class="card-strip-dup" title="Duplicate the current card" aria-label="Duplicate current card">⧉</button>
+      <span class="card-strip-name" id="cardStripName">Untitled</span>
+    </div>
+
+    <!-- EDIT: the only editor surface — no longer a tab, always visible.
+         (Share moved to the card action dock; Settings opens from the left rail.) -->
     <div class="tab-panel active" id="tab-edit">
 
       <div>
@@ -626,9 +685,11 @@ Markdown is supported:
         <button class="btn btn-secondary" id="resetAppearanceBtn" style="width:100%;">↺ Reset Appearance</button>
       </div>
 
+      <!-- Save / PNG now live in the card action dock; these stay in the DOM (their
+           handlers are bound by id and the dock proxies clicks) but are hidden. -->
       <div class="details-action-row">
-        <button class="history-save-btn" id="historySaveBtn" title="Save current item to history">＋ Save</button>
-        <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG">⬇ Export PNG</button>
+        <button class="history-save-btn" id="historySaveBtn" title="Save current item to history" style="display:none;">＋ Save</button>
+        <button class="btn btn-primary" id="exportPngInline" title="Export current card as PNG" style="display:none;">⬇ Export PNG</button>
         <button class="btn btn-secondary" id="clearCardBtn" title="Undo unsaved changes and reload from last save">↩ Undo</button>
       </div>
 
@@ -724,7 +785,30 @@ Markdown is supported:
           Remember card scale
         </label>
         <p class="field-note-legend" style="margin-top:0.4rem;">Restores your preferred card preview scale the next time you open the app.</p>
-        <label class="toggle-row" style="margin-top:0.6rem;">
+      </div>
+
+      <div data-group="storage">
+        <div class="section-title">Storage</div>
+        <div class="storage-callout">
+          <span class="storage-callout-icon">✦</span>
+          <div class="storage-callout-body">
+            <div class="storage-callout-title">IndexedDB storage</div>
+            <div class="storage-callout-text">Card images are kept in IndexedDB (typically 50&nbsp;MB+), so the app stays fast and roomy. Your existing cards migrated automatically — only preferences remain in localStorage.</div>
+          </div>
+        </div>
+        <div class="storage-used" id="storageUsedRow">
+          <div class="storage-used-line">
+            <span id="storageUsedLabel">calculating…</span>
+            <span class="storage-backend" id="storageBackend">INDEXEDDB</span>
+          </div>
+          <div class="storage-bar"><div class="storage-bar-fill" id="storageBarFill"></div></div>
+          <div class="storage-used-note field-note-legend" id="storageUsedNote"></div>
+        </div>
+      </div>
+
+      <div data-group="storage">
+        <div class="section-title">Compression</div>
+        <label class="toggle-row">
           <span class="toggle-wrap"><input type="checkbox" id="compressImagesToggle"><span class="toggle-knob"></span></span>
           Compress uploaded images
         </label>
@@ -754,25 +838,6 @@ Markdown is supported:
               <input type="radio" name="compressItemLevel" value="aggressive" id="compressItemAggressive" style="accent-color:var(--gold);"> Aggressive — 300px
             </label>
           </div>
-        </div>
-      </div>
-
-      <div data-group="storage">
-        <div class="section-title">Storage</div>
-        <div class="storage-callout">
-          <span class="storage-callout-icon">✦</span>
-          <div class="storage-callout-body">
-            <div class="storage-callout-title">IndexedDB storage</div>
-            <div class="storage-callout-text">Card images are kept in IndexedDB (typically 50&nbsp;MB+), so the app stays fast and roomy. Your existing cards migrated automatically — only preferences remain in localStorage.</div>
-          </div>
-        </div>
-        <div class="storage-used" id="storageUsedRow">
-          <div class="storage-used-line">
-            <span id="storageUsedLabel">calculating…</span>
-            <span class="storage-backend" id="storageBackend">INDEXEDDB</span>
-          </div>
-          <div class="storage-bar"><div class="storage-bar-fill" id="storageBarFill"></div></div>
-          <div class="storage-used-note field-note-legend" id="storageUsedNote"></div>
         </div>
       </div>
 
@@ -883,6 +948,15 @@ Markdown is supported:
         <div id="shareProviderBtns" style="display:flex;flex-direction:column;gap:0.4rem;">
           <button class="btn btn-secondary" id="connectDropboxBtn" style="justify-content:flex-start;gap:0.5rem;font-size:medium;"><span>📦</span> Connect Dropbox</button>
           <button class="btn btn-secondary" id="connectGdriveBtn" style="justify-content:flex-start;gap:0.5rem;font-size:medium;"><span>📂</span> Connect Google Drive</button>
+        </div>
+      </div>
+
+      <div data-group="defaults">
+        <div class="section-title">Backup (JSON)</div>
+        <p class="field-note-legend" style="margin-bottom:0.6rem;">Export all your cards (with images) to a single JSON file, or import a previously exported file. You can share the file with others to let them load and edit your cards.</p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="settingsExportJson">⬇ Export JSON</button>
+          <button class="btn btn-secondary" id="settingsImportJson">⬆ Import JSON</button>
         </div>
       </div>
 
@@ -1020,8 +1094,12 @@ Markdown is supported:
         </div>
       </div>
 
-    <div class="export-hint">
-      Use the <strong>Share</strong> tab to save as PNG, print, or share your card.
+    <!-- Action dock under the card (replaces the old Share tab) -->
+    <div class="card-action-dock" id="cardActionDock">
+      <button class="dock-btn dock-btn-primary" id="dockSaveBtn" title="Save this card to your history">＋ Save to History</button>
+      <button class="dock-btn" id="dockPngBtn" title="Download this card as a PNG"><span class="dock-ic">⬇</span> PNG</button>
+      <button class="dock-btn" id="dockPrintBtn" title="Print this card"><span class="dock-ic">🖨</span> Print</button>
+      <button class="dock-btn" id="dockShareBtn" title="Export &amp; share this card"><span class="dock-ic">🔗</span> Share</button>
     </div>
   </div>
 </div>
