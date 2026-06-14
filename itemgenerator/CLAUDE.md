@@ -5,9 +5,17 @@ Live at artifexarcanum.ie; this is the `itemgenerator/` subdir of `Deadpoodle/de
 
 ## Files
 - `index.html` — all markup (top bar, left rail, editor, preview, settings overlay, modals).
-- `style.css` — almost all styling. Desktop is `min-width: 861px`; mobile is `max-width: 860px`.
-- `tokens.css` — `--arc-*` design tokens (dark) + a `body.light` override block. Loaded **before**
-  `style.css`. New chrome should consume `--arc-*` so light/dark theming is automatic.
+- `css/` — all styling, split from the old monolithic `style.css` into one file per area, loaded
+  by `index.html` **in this exact order** (cascade depends on it): `tokens.css` (the `--arc-*`
+  design tokens + `body.light` override block — load first; new chrome should consume `--arc-*` so
+  light/dark theming is automatic) → `base.css` (reset, scrollbars, `:root`, body/background,
+  wordmark, `.workspace` grid) → `chrome.css` (left rail + center strip head) → `editor.css`
+  (edit-form controls) → `card.css` (**LOCKED** card art + preview/dock/flip/slider) →
+  `history.css` → `modals.css` → `settings.css` → `overlays.css` (print/download modals + progress
+  + char counter) → `print.css` (`@media print`) → `responsive.css` (desktop/mobile `@media` +
+  `body.light` block — loaded **last**, it overrides earlier rules). Desktop is `min-width: 861px`;
+  mobile is `max-width: 860px`. The split was pure cut-and-paste (no rule edits) — keep it that way:
+  put each rule in the file matching its area, and don't reorder the `<link>`s.
 - `script.js` — all logic (state, save/load, export, rail, dock, settings).
 - `utils.js` — share helpers. `indexeddb.js` — `window.idbBlobs` blob adapter. `oauth.html` — cloud OAuth.
 - `IMPLEMENTATION_PLAN.md` — phased history of the UX overhaul. `plans/design_handoff_ux_revision/`
@@ -17,7 +25,7 @@ Live at artifexarcanum.ie; this is the `itemgenerator/` subdir of `Deadpoodle/de
 - **Card art is LOCKED.** The parchment card (frame, circle, stats strip, 63×88 mm print size) must
   not change visually. Only chrome around it evolves.
 - **Scrollbars are unified** by a global `* { scrollbar-width: thin; scrollbar-color: ... }` rule
-  near the top of `style.css` (+ a `body.light *` variant), matching the cards dropdown. Don't add
+  near the top of `css/base.css` (+ a `body.light *` variant), matching the cards dropdown. Don't add
   per-element `::-webkit-scrollbar` rules — they'd diverge. The only exception is `.history-track`
   (`scrollbar-width: none`, intentionally hidden).
 - **Layout.** Desktop = 3-col `.workspace`: `#leftRail` (filter pills · collections accordion ·

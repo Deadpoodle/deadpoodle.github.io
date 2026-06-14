@@ -1,14 +1,4 @@
-  /* ── PRINT / EXPORT ── */
-  /* All printing is done via a popup window containing baked PNG images.
-     This @media print block only applies if someone uses Ctrl+P directly. */
-  @media print {
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { background: white; }
-    body::before { display: none; }
-    header, .history-bar, .controls, .scale-control, .export-hint, .card-action-dock, .left-rail,
-    .progress-overlay, #offscreenRender, #printSheet { display: none !important; }
-  }
-
+/* responsive.css - swipe hint, desktop/mobile @media queries, mobile drag handle, mobile search overlay, theme toggle, light-mode (body.light) block. Loaded LAST. Part of the split-up style.css; see index.html for load order. */
   /* ── SWIPE HINT OVERLAY ──
      position:fixed so it doesn't move when .preview-area scrolls.
      top/height/left-or-right/width are all set in JS from the preview bounding rect. */
