@@ -1,0 +1,302 @@
+/* overlays.css - print/download selection modals, PNG quality row, light-mode modal tweaks, print options, progress overlay, char counter. Part of the split-up style.css; see index.html for load order. */
+  /* ── PRINT SELECTION MODAL ── */
+  .print-select-box { max-width: 460px; width: 92%; }
+  .print-select-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .print-select-meta-btn {
+    font-size: small;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid rgba(180,130,60,0.3);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--label-color);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .print-select-meta-btn:hover { border-color: rgba(180,130,60,0.6); color: var(--gold-light); }
+  .print-select-page-hint {
+    margin-left: auto;
+    font-size: small;
+    color: rgba(180,130,60,0.55);
+    font-family: 'Crimson Pro', serif;
+  }
+  .print-select-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid rgba(180,130,60,0.2);
+    border-radius: 4px;
+    margin-bottom: 0.85rem;
+  }
+  .print-select-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid rgba(180,130,60,0.1);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .print-select-item:last-child { border-bottom: none; }
+  .print-select-item:hover { background: rgba(180,130,60,0.07); }
+  .print-select-item.collection-child { padding-left: 2.1rem; }
+  .print-select-item input[type="checkbox"] {
+    accent-color: var(--gold);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .print-select-name {
+    font-family: 'Cinzel', serif;
+    font-size: small;
+    color: #e8d898;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .print-select-rarity {
+    font-size: small;
+    font-family: 'Crimson Pro', serif;
+    flex-shrink: 0;
+  }
+  body.light .print-select-item:hover { background: rgba(120,80,30,0.07); }
+  body.light .print-select-name { color: #2c1a0e; }
+
+  /* ── PNG QUALITY ROW (inside Download Selection modal) ── */
+  .png-quality-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.45rem 0.75rem;
+    background: rgba(180,130,60,0.07);
+    border: 1px solid rgba(180,130,60,0.18);
+    border-radius: 5px;
+  }
+  .png-quality-heading {
+    font-family: 'Cinzel', serif;
+    font-size: small;
+    letter-spacing: 0.06em;
+    color: var(--gold-light);
+    flex-shrink: 0;
+  }
+  .png-quality-option {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: small;
+    font-weight: 500;
+    color: #c9a96e;
+  }
+  .png-quality-option input[type="radio"] { accent-color: var(--gold); flex-shrink: 0; }
+  body.light .png-quality-row { background: rgba(120,80,30,0.06); border-color: rgba(120,80,30,0.2); }
+  body.light .png-quality-heading { color: #5a3810; }
+  body.light .png-quality-option { color: #4a2c08; }
+
+  /* ── Light mode modals ── */
+  body.light .confirm-modal-box {
+    background: rgba(244,234,207,0.99);
+    border-color: rgba(120,80,30,0.35);
+  }
+  body.light .confirm-modal-title { color: #5a3010; }
+  body.light .confirm-modal-msg   { color: #3a2008; }
+  body.light .confirm-modal-msg strong { color: #2c1a0e; }
+  body.light .confirm-modal-btns .btn-cancel {
+    border-color: rgba(120,80,30,0.35);
+    color: #6b4418;
+  }
+  body.light .confirm-modal-btns .btn-cancel:hover {
+    border-color: rgba(120,80,30,0.6);
+    color: #3a2008;
+  }
+  body.light .print-select-list {
+    border-color: rgba(120,80,30,0.2);
+  }
+  body.light .print-select-item {
+    border-bottom-color: rgba(120,80,30,0.1);
+  }
+  body.light .print-select-controls .btn-cancel {
+    border-color: rgba(120,80,30,0.3);
+    color: #6b4418;
+  }
+
+  /* ── PRINT OPTIONS SECTION ── */
+  .print-opts-section {
+    border: 1px solid rgba(180,130,60,0.18);
+    border-radius: 5px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .print-opts-title {
+    font-family: 'Cinzel', serif;
+    font-size: medium;
+    letter-spacing: 0.07em;
+    color: rgba(180,130,60,0.65);
+    text-transform: uppercase;
+  }
+  .print-opt-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: medium;
+    color: #c9a96e;
+    cursor: pointer;
+    user-select: none;
+  }
+  .print-opt-row input[type="checkbox"] {
+    accent-color: var(--gold);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .print-opt-back-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    padding-top: 0.3rem;
+    border-top: 1px solid rgba(180,130,60,0.12);
+    margin-top: 0.2rem;
+  }
+  .print-opt-back-label {
+    font-size: small;
+    color: rgba(180,130,60,0.7);
+    width: 100%;
+  }
+  .print-opt-upload-btn {
+    cursor: pointer;
+  }
+  .print-opt-back-preview-wrap {
+    width: 100%;
+    margin-top: 0.35rem;
+  }
+  .print-opt-back-preview-wrap img {
+    height: 44mm;
+    width: auto;
+    border-radius: 3px;
+    border: 1px solid rgba(180,130,60,0.25);
+    display: block;
+  }
+
+  body.light .print-opts-section   { border-color: rgba(120,80,30,0.2); }
+  body.light .print-opts-title     { color: rgba(80,50,15,0.6); }
+  body.light .print-opt-row        { color: #3a2008; }
+  body.light .print-opt-back-label { color: rgba(80,50,15,0.7); }
+  body.light .print-opt-back-row   { border-top-color: rgba(120,80,30,0.15); }
+
+  /* ── PROGRESS OVERLAY ── */
+  .progress-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,5,2,0.88);
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+  }
+  .progress-overlay.active { display: flex; }
+  .progress-title {
+    font-family: 'Cinzel', serif;
+    font-size: medium;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+  }
+  .progress-bar-wrap {
+    width: 280px;
+    height: 6px;
+    background: rgba(180,130,60,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--gold), var(--gold-light));
+    border-radius: 3px;
+    transition: width 0.2s;
+    width: 0%;
+  }
+  .progress-label {
+    font-family: 'Crimson Pro', serif;
+    font-size: small;
+    color: #9a7a4a;
+    font-style: italic;
+  }
+
+  /* Off-screen render area — positioned far left so it never overlaps page content when html2canvas composites */
+  #offscreenRender {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ── CHAR COUNTER ── */
+  .char-counter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: small;
+  }
+
+  .char-count {
+    font-family: 'Cinzel', serif;
+    font-size: small;
+    letter-spacing: 0.06em;
+    color: #6a4e2e;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .char-count.warn  { color: #b8860b; }
+  .char-count.over  { color: #8b1a1a; font-weight: 600; }
+
+  .oversized-warning {
+    display: none;
+    font-size: medium;
+    color: #8b4a00;
+    background: rgba(139,74,0,0.08);
+    border: 1px solid rgba(139,74,0,0.25);
+    border-radius: 3px;
+    padding: 0.35rem 0.6rem;
+    line-height: 1.45;
+  }
+  .oversized-warning.visible { display: block; }
+
+  /* Allow oversized text toggle — slightly more prominent */
+  .oversized-toggle-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: small;
+    color: #8a6a3a;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .oversized-toggle-row .toggle-wrap input:checked + .toggle-knob {
+    background: rgba(139,26,26,0.3);
+    border-color: rgba(139,26,26,0.6);
+  }
+  .oversized-toggle-row .toggle-wrap input:checked + .toggle-knob::before {
+    background: #c0392b;
+  }
+  .oversized-toggle-row-UNUSED {
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
