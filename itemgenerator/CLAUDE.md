@@ -31,8 +31,28 @@ Live at artifexarcanum.ie; this is the `itemgenerator/` subdir of `Deadpoodle/de
 - **Export render is NOT a DOM clone.** `buildCardNode(state)` rebuilds the card from state for
   `renderStateToCanvas`. **Keep `buildCardNode` in sync with `syncCard`** whenever card rendering
   changes, or PNG/print output will drift from the live preview.
-- **Settings** = full-page overlay `#settingsPage` (reparented to `<body>`, slides in from the
-  right), four groups. Opened via the left-rail Settings button (`window.openSettingsPage()`).
+- **Settings** = overlay `#settingsPage` (reparented to `<body>`). Desktop: **slides in from the
+  left**, width-capped at the card-preview's left edge so it covers only rail + editor
+  (`positionPanel()` measures `.preview-area` on open/resize; full-width below 861px). It's **one
+  scrolling page of collapsible sections** (`#settingsBody`) — the old four-group sub-nav is gone.
+  First section open, the rest collapsed; a section tagged `data-no-collapse` (About) stays open.
+  `.settings-page-head` is 48px to line its divider up with the top bar. "← Back to editor" sits
+  bottom-left in `.settings-page-foot`, aligned over the rail's Settings button. Entry points (all
+  call `window.openSettingsPage()`): left-rail Settings button (desktop), `#mobileSettingsBtn` under
+  Undo in the editor (mobile, since the rail is hidden), top-bar cloud avatar (also expands +
+  scrolls `#settingsCloudSection`).
+- **Collapsible sections** are wired by `initCollapsibleSections(panel, opts)` (turns each
+  `:scope > div > .section-title` into a ▾/▸ toggle). Used for `#tab-edit` (numbered) and
+  `#settingsBody` (un-numbered, first open). `data-no-collapse` opts a section out.
+- **Left-rail collections accordion.** Collection-head names are bold gold UPPERCASE by default; the
+  active collection is shown by a highlighted background bar, not a font change. Clicking a head
+  toggles only that group. `applyState()` re-renders the rail so the active card's group auto-expands
+  at selection time (state in `_expandedCollections` / `_lastAutoExpandedId`) — don't move that
+  auto-expand back into a generic render path or unrelated re-renders will hijack the open group.
+- **Font sizes:** mixed-case reading text uses CSS keywords (`small`≈13px / `medium`≈16px); the
+  small-caps display labels (uppercase, letter-spaced) keep their `rem` values; card-render text
+  stays `rem` (multiplied by the font-scale sliders, and locked). Don't convert caps labels or card
+  text to keywords.
 - **Hidden `#tab-export` is load-bearing.** The old Share tab is hidden but still in the DOM; the
   card dock and Settings → Backup buttons **proxy clicks** into its buttons (`exportPng`,
   `exportPrint`, `exportJsonBtn`, `importJsonBtn`). Don't delete it without rewiring those to call

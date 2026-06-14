@@ -1,3 +1,4 @@
 .claude
 *.md
 itemgenerator/tests/
+itemgenerator/plans/

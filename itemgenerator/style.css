@@ -55,6 +55,9 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--arc-gold);
+    /* Match the left rail's 278px grid column so this divider lines up exactly with
+       the rail's right edge below it. */
+    width: 278px;
     padding: 0 0.95rem;
     display: flex;
     align-items: center;
@@ -202,22 +205,20 @@
     border-radius: var(--arc-r-surface);
     cursor: pointer;
     text-align: left;
-    color: var(--arc-parchment);
-    font-family: 'Crimson Pro', serif;
-    font-style: italic;
-    font-size: 0.86rem;
+    color: var(--arc-gold);
+    font-family: var(--arc-display);
+    font-size: small;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
   }
   .rail-collection-head:hover { background: rgba(180,130,60,0.06); }
+  /* Active collection: same gold-uppercase text as every head, set apart only by
+     the highlighted background bar + a brighter gold. */
   .rail-collection.active-collection > .rail-collection-head {
     background: var(--arc-ink-raised);
     border-color: rgba(216,178,102,0.25);
     color: var(--arc-gold-hi);
-    font-family: var(--arc-display);
-    font-style: normal;
-    font-size: 0.74rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-weight: 600;
   }
   .rail-caret {
     color: var(--arc-faint);
@@ -252,7 +253,7 @@
   .rail-collection-cards .history-empty {
     display: flex;
     padding: 0.4rem 0.5rem;
-    font-size: 0.78rem;
+    font-size: small;
   }
 
   /* Card rows inside the rail (reuses .history-item builder) */
@@ -275,10 +276,10 @@
   .rail-collection-cards .history-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .rail-collection-cards .history-name {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    color: var(--arc-parchment); font-size: 0.82rem;
+    color: var(--arc-parchment); font-size: small;
   }
   .rail-collection-cards .history-item.history-active .history-name { color: var(--arc-gold-hi); }
-  .rail-collection-cards .history-rarity { font-size: 0.62rem; }
+  .rail-collection-cards .history-rarity { font-size: small; }
   .rail-collection-cards .history-thumb { flex-shrink: 0; }
   .rail-collection-cards .history-delete {
     flex-shrink: 0; background: none; border: none; cursor: pointer;
@@ -305,7 +306,7 @@
   .rail-storage-line {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: 0.8rem;
+    font-size: small;
     color: var(--arc-muted);
     margin-bottom: 0.4rem;
   }
@@ -389,7 +390,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--arc-display);
-    font-size: 0.9rem;
+    font-size: medium;
     letter-spacing: 0.06em;
     color: var(--arc-gold-hi);
   }
@@ -465,6 +466,9 @@
     border-color: rgba(139,26,26,0.45);
     color: rgba(200,90,90,0.85);
   }
+
+  /* Mobile-only Settings entry under the Undo button (left rail is desktop-only) */
+  .mobile-settings-btn { display: none; }
 
   /* (scrollbars unified globally near the top of this file) */
 
@@ -1661,7 +1665,7 @@
   .history-dropdown-empty {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: 0.85rem;
+    font-size: small;
     color: #6a4e2e;
     padding: 0.75rem 1rem;
   }
@@ -1762,7 +1766,7 @@
     border-radius: 3px;
     color: #dabb80;
     font-family: 'Crimson Pro', serif;
-    font-size: 0.8rem;
+    font-size: small;
     padding: 0.18rem 0.5rem;
     width: 130px;
     outline: none;
@@ -1820,13 +1824,13 @@
     border-bottom: 1px solid var(--arc-rule-soft);
     color: var(--arc-parchment);
     font-family: 'Crimson Pro', serif;
-    font-size: 0.85rem;
+    font-size: small;
   }
   .history-search-result-item:last-child { border-bottom: none; }
   .history-search-result-item:hover { background: rgba(180,130,60,0.1); }
   .history-search-result-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .history-search-result-meta {
-    font-size: 0.7rem;
+    font-size: small;
     color: var(--arc-muted);
     flex-shrink: 0;
     text-transform: capitalize;
@@ -1853,7 +1857,7 @@
   }
   .collection-dd-count {
     font-family: 'Crimson Pro', serif;
-    font-size: 0.7rem;
+    font-size: small;
     color: var(--text-muted);
     margin-left: 0.5rem;
     flex-shrink: 0;
@@ -2065,7 +2069,7 @@
     border: 1px solid var(--arc-hairline);
     background: var(--arc-ink-raised);
     font-family: var(--arc-sans);
-    font-size: 0.72rem;
+    font-size: small;
     letter-spacing: 0.02em;
     color: var(--arc-muted);
     white-space: nowrap;
@@ -2098,7 +2102,7 @@
     border-radius: var(--arc-r-control);
     box-shadow: var(--arc-shadow-card);
     font-family: var(--arc-serif);
-    font-size: 0.95rem;
+    font-size: medium;
     color: var(--arc-cream);
     text-align: center;
     opacity: 0;
@@ -2199,7 +2203,7 @@
 
   .export-sheet-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.9rem; }
   .export-sheet-title { font-family: var(--arc-display); font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--arc-gold-hi); }
-  .export-sheet-count { font-family: var(--arc-serif); font-style: italic; font-size: 0.85rem; color: var(--arc-muted); }
+  .export-sheet-count { font-family: var(--arc-serif); font-style: italic; font-size: small; color: var(--arc-muted); }
 
   /* Card checklist */
   /* Only the card list scrolls; every other section keeps its natural height. */
@@ -2230,7 +2234,7 @@
   }
   .export-pick-empty {
     padding: 0.8rem 0.7rem; font-family: var(--arc-serif); font-style: italic;
-    font-size: 0.85rem; color: var(--arc-muted); text-align: center;
+    font-size: small; color: var(--arc-muted); text-align: center;
   }
 
   /* Collection group headers + card rows (ported from the pre-overhaul modal) */
@@ -2254,7 +2258,7 @@
     font-family: var(--arc-display); font-size: 0.74rem; letter-spacing: 0.04em;
     color: var(--arc-gold-hi); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .select-group-count { font-family: var(--arc-serif); font-size: 0.8rem; color: var(--arc-faint); flex-shrink: 0; }
+  .select-group-count { font-family: var(--arc-serif); font-size: small; color: var(--arc-faint); flex-shrink: 0; }
 
   .print-select-item {
     display: flex; align-items: center; gap: 0.6rem;
@@ -2266,10 +2270,10 @@
   .print-select-item.collection-child { padding-left: 2rem; }
   .print-select-item input[type="checkbox"] { accent-color: var(--arc-gold); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
   .print-select-name {
-    font-family: var(--arc-serif); font-size: 0.92rem; color: var(--arc-parchment);
+    font-family: var(--arc-serif); font-size: medium; color: var(--arc-parchment);
     flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .print-select-item .history-rarity { font-size: 0.72rem; }
+  .print-select-item .history-rarity { font-size: small; }
 
   .export-sheet-quality { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
   .export-sheet-qlabel { font-family: var(--arc-display); font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--arc-muted); }
@@ -2277,7 +2281,7 @@
   .export-qstepper button {
     flex: 1; padding: 0.4rem 0; border: none; border-right: 1px solid var(--arc-hairline);
     background: transparent; color: var(--arc-parchment);
-    font-family: var(--arc-sans); font-size: 0.72rem; cursor: pointer;
+    font-family: var(--arc-sans); font-size: small; cursor: pointer;
   }
   .export-qstepper button:last-child { border-right: none; }
   .export-qstepper button.active { background: var(--arc-gold); color: var(--arc-ink); font-weight: 600; }
@@ -2288,13 +2292,13 @@
     padding: 0.7rem 0.8rem; text-align: left;
     border: 1px solid var(--arc-hairline); border-radius: var(--arc-r-control);
     background: var(--arc-ink-raised); color: var(--arc-cream);
-    font-family: var(--arc-serif); font-size: 0.95rem; cursor: pointer;
+    font-family: var(--arc-serif); font-size: medium; cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
   .export-row:hover { border-color: var(--arc-rule); background: var(--arc-ink); }
   .export-row-icon { width: 1.2rem; flex-shrink: 0; text-align: center; font-size: 1rem; }
   .export-row-label { flex: 1; }
-  .export-row-sub { font-size: 0.72rem; font-style: italic; color: var(--arc-faint); }
+  .export-row-sub { font-size: small; font-style: italic; color: var(--arc-faint); }
   .export-row-primary {
     background: linear-gradient(180deg, var(--arc-gold), var(--arc-gold-mid));
     color: var(--arc-ink); border-color: var(--arc-gold-deep); font-weight: 600;
@@ -2303,11 +2307,11 @@
   .export-row-primary:hover { filter: brightness(1.06); border-color: var(--arc-gold-deep); background: linear-gradient(180deg, var(--arc-gold), var(--arc-gold-mid)); }
   .export-row-disabled { opacity: 0.55; }
 
-  .export-sheet-feedback { min-height: 1.1rem; margin-top: 0.6rem; text-align: center; font-family: var(--arc-serif); font-size: 0.85rem; color: var(--arc-muted); }
+  .export-sheet-feedback { min-height: 1.1rem; margin-top: 0.6rem; text-align: center; font-family: var(--arc-serif); font-size: small; color: var(--arc-muted); }
   .export-sheet-cancel {
     width: 100%; margin-top: 0.7rem; padding: 0.55rem;
     background: transparent; border: 1px solid var(--arc-hairline); border-radius: var(--arc-r-control);
-    color: var(--arc-muted); font-family: var(--arc-sans); font-size: 0.85rem; cursor: pointer;
+    color: var(--arc-muted); font-family: var(--arc-sans); font-size: small; cursor: pointer;
   }
   .export-sheet-cancel:hover { color: var(--arc-cream); border-color: var(--arc-rule); }
 
@@ -2336,10 +2340,10 @@
     display: flex;
     flex-direction: column;
     background: var(--arc-void);
-    transform: translateX(100%);
+    transform: translateX(-100%);
     transition: transform 0.28s ease, visibility 0s linear 0.28s;
     visibility: hidden;
-    box-shadow: -16px 0 40px rgba(0,0,0,0.5);
+    box-shadow: 16px 0 40px rgba(0,0,0,0.5);
   }
   .settings-page.active {
     transform: translateX(0);
@@ -2351,7 +2355,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 56px;
+    height: 48px;   /* match .history-bar so the header dividers line up */
     padding: 0 1.4rem;
     border-bottom: 1px solid var(--arc-rule);
     background: linear-gradient(180deg, var(--arc-ink-soft), var(--arc-ink));
@@ -2377,57 +2381,28 @@
     white-space: nowrap;
   }
   .settings-back-btn:hover { background: rgba(216,178,102,0.2); border-color: var(--arc-gold); color: var(--arc-gold-hi); }
-  .settings-page-main { flex: 1; display: flex; min-height: 0; }
-  .settings-nav {
-    flex-shrink: 0;
-    width: 240px;
-    padding: 1.4rem 0.8rem;
-    border-right: 1px solid var(--arc-rule);
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    overflow-y: auto;
-  }
-  .settings-nav-item {
-    text-align: left;
-    background: transparent;
-    border: none;
-    border-left: 2px solid transparent;
-    border-radius: 0 var(--arc-r-surface) var(--arc-r-surface) 0;
-    padding: 0.6rem 0.8rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .settings-nav-k {
-    font-family: var(--arc-display);
-    font-size: 0.76rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--arc-parchment);
-  }
-  .settings-nav-item small {
-    font-family: var(--arc-serif);
-    font-style: italic;
-    font-size: 0.78rem;
-    color: var(--arc-muted);
-  }
-  .settings-nav-item:hover { background: rgba(180,130,60,0.06); }
-  .settings-nav-item.active { background: var(--arc-ink-raised); border-left-color: var(--arc-gold); }
-  .settings-nav-item.active .settings-nav-k { color: var(--arc-gold-hi); }
 
+  /* Single scrolling page of collapsible sections (the 4-group sub-nav was retired).
+     Full-width so the scrollbar sits at the panel's right edge, not inset. */
   .settings-page-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     width: 100%;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 1.8rem 2.2rem 4rem;
+    padding: 1.8rem 2.2rem 2rem;
     display: flex;
     flex-direction: column;
-    gap: 1.6rem;
+    gap: 1rem;
+  }
+
+  /* Footer pins the Back-to-editor button bottom-left, lined up over the rail's
+     Settings button (0.85rem bottom inset matches .left-rail's padding-bottom). */
+  .settings-page-foot {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 0.8rem;
+    border-top: 1px solid var(--arc-rule-soft);
   }
 
   /* Storage group: IndexedDB callout + usage indicator */
@@ -2450,10 +2425,10 @@
     color: var(--arc-gold-hi);
     margin-bottom: 3px;
   }
-  .storage-callout-text { font-family: var(--arc-serif); font-size: 0.92rem; line-height: 1.5; color: var(--arc-parchment); }
+  .storage-callout-text { font-family: var(--arc-serif); font-size: medium; line-height: 1.5; color: var(--arc-parchment); }
   .storage-used { display: flex; flex-direction: column; gap: 0.4rem; }
   .storage-used-line { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
-  #storageUsedLabel { font-family: var(--arc-serif); font-size: 0.92rem; color: var(--arc-cream); }
+  #storageUsedLabel { font-family: var(--arc-serif); font-size: medium; color: var(--arc-cream); }
   .storage-backend {
     font-family: var(--arc-mono);
     font-size: 0.62rem;
@@ -2468,21 +2443,10 @@
   .storage-bar-fill { height: 100%; width: 0; background: var(--arc-gold); border-radius: 99px; transition: width 0.3s ease; }
   .storage-used-note { text-align: right; margin-top: 0; }
 
-  /* Settings sub-nav: stack on mobile */
+  /* Settings: tighten padding on mobile */
   @media (max-width: 640px) {
-    .settings-page-main { flex-direction: column; }
-    .settings-nav {
-      width: auto;
-      flex-direction: row;
-      gap: 0.4rem;
-      overflow-x: auto;
-      border-right: none;
-      border-bottom: 1px solid var(--arc-rule);
-      padding: 0.6rem;
-    }
-    .settings-nav-item { flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 0; }
-    .settings-nav-item.active { border-left-color: transparent; border-bottom-color: var(--arc-gold); }
-    .settings-nav-item small { display: none; }
+    .settings-page-body { padding: 1.2rem 1.1rem 1.6rem; }
+    .settings-page-foot { padding: 0.7rem 1.1rem; }
   }
 
   /* Confirm modal */
@@ -2937,6 +2901,8 @@
     /* Export stays reachable on mobile as a compact icon (opens the bottom sheet) */
     .bar-export-label { display: none; }
     .bar-export-btn { padding: 0 0.6rem; font-size: 0.9rem; }
+    /* Settings reached from the bottom of the editor on mobile */
+    .mobile-settings-btn { display: block; width: 100%; }
     /* Declutter the bar: save chip shows the status dot only */
     .save-chip { padding: 0.28rem 0.45rem; }
     .save-chip-text { display: none; }

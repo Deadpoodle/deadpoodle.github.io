@@ -2385,59 +2385,61 @@ async function updateStorageIndicator() {
   // Lift the overlay out of .workspace (position:relative; z-index:1 traps its stacking
   // context under the top bar) so the fixed full-page overlay sits above everything.
   document.body.appendChild(page);
-  function open() { doAutoSave(); updateStorageIndicator(); page.classList.add('active'); }
+  function positionPanel() {
+    // Constrain the slide-in panel to the left portion of the screen: it covers the
+    // left rail + editor and stops at the left edge of the card-preview column. On
+    // narrow layouts (the 3-column grid collapses below 861px) fall back to full width.
+    const preview = document.querySelector('.preview-area');
+    const edge = preview ? preview.getBoundingClientRect().left : 0;
+    if (edge > 1 && window.matchMedia('(min-width: 861px)').matches) {
+      page.style.width = edge + 'px';
+      page.style.right = 'auto';
+    } else {
+      page.style.width = '';
+      page.style.right = '';
+    }
+  }
+  function open() { doAutoSave(); updateStorageIndicator(); positionPanel(); page.classList.add('active'); }
   function close() { page.classList.remove('active'); }
   window.openSettingsPage = open;   // entry point for the left-rail Settings button
   const obtn = $('openSettingsBtn');
   if (obtn) obtn.addEventListener('click', open);
   $('settingsBack').addEventListener('click', close);
+  window.addEventListener('resize', () => { if (page.classList.contains('active')) positionPanel(); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && page.classList.contains('active')) close();
   });
   window._openSettings = open;
   window._closeSettings = close;
-
-  // Four-group sub-nav: show only the active group's sections.
-  const body = $('settingsBody');
-  function showGroup(g) {
-    document.querySelectorAll('.settings-nav-item').forEach(b =>
-      b.classList.toggle('active', b.dataset.group === g));
-    if (body) {
-      body.dataset.active = g;
-      body.querySelectorAll(':scope > [data-group]').forEach(sec => {
-        sec.style.display = (sec.dataset.group === g) ? '' : 'none';
-      });
-    }
-  }
-  document.querySelectorAll('.settings-nav-item').forEach(btn =>
-    btn.addEventListener('click', () => showGroup(btn.dataset.group)));
-  showGroup('behaviour');
 })();
 
-// ── COLLAPSIBLE EDIT SECTIONS ──
-// Turn each section heading in the Edit panel into a numbered ▾/▸ collapse toggle.
-// Appearance-oriented sections start collapsed to keep the common editing fields up top.
-(function initCollapsibleSections() {
-  const panel = $('tab-edit');
+// ── COLLAPSIBLE SECTIONS ──
+// Turn each section heading inside a panel into a ▾/▸ collapse toggle.
+// opts.numbered       → prepend a 01/02/… index (used by the Edit panel).
+// opts.defaultCollapsed(label, i) → whether a section starts collapsed.
+function initCollapsibleSections(panel, opts = {}) {
   if (!panel) return;
-  const collapsedByDefault = ['Images', 'Colours', 'Typography', 'Card Elements', 'Reset'];
+  const { numbered = true, defaultCollapsed = () => false } = opts;
   let n = 0;
-  panel.querySelectorAll(':scope > div > .section-title').forEach(title => {
-    n++;
+  panel.querySelectorAll(':scope > div > .section-title').forEach((title, i) => {
     const section = title.parentElement;
+    if (section.hasAttribute('data-no-collapse')) return;   // e.g. About — always open
+    n++;
     const label = (title.textContent || '').trim();
     section.classList.add('collapsible');
 
-    const num = document.createElement('span');
-    num.className = 'section-num';
-    num.textContent = String(n).padStart(2, '0');
-    title.prepend(num);
+    if (numbered) {
+      const num = document.createElement('span');
+      num.className = 'section-num';
+      num.textContent = String(n).padStart(2, '0');
+      title.prepend(num);
+    }
 
     const tog = document.createElement('span');
     tog.className = 'section-toggle';
     title.appendChild(tog);
 
-    const startCollapsed = collapsedByDefault.some(name => label.startsWith(name));
+    const startCollapsed = defaultCollapsed(label, i);
     section.classList.toggle('collapsed', startCollapsed);
     tog.textContent = startCollapsed ? '▸' : '▾';
 
@@ -2454,7 +2456,17 @@ async function updateStorageIndicator() {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
   });
-})();
+}
+// Edit panel: numbered sections; appearance-oriented ones start collapsed.
+initCollapsibleSections($('tab-edit'), {
+  defaultCollapsed: label =>
+    ['Images', 'Colours', 'Typography', 'Card Elements', 'Reset'].some(name => label.startsWith(name)),
+});
+// Settings page: one scrolling page; first section open, the rest collapsed.
+initCollapsibleSections($('settingsBody'), {
+  numbered: false,
+  defaultCollapsed: (label, i) => i > 0,
+});
 
 // ── PROPERTIES FIRST-USE HINT ──
 (function initPropHint() {
@@ -3525,6 +3537,11 @@ function applyState(s) {
   if (s.id) {
     activeHistoryId = s.id;
     updateHistoryActiveClass();
+    // Re-render the rail now so the "expand the active card's group" logic runs at
+    // selection time (and syncs _lastAutoExpandedId). Otherwise the change is deferred
+    // until the next unrelated render — e.g. a collection-head click — which would then
+    // wrongly snap open the active card's group instead of the clicked one.
+    renderLeftRail();
     _undoBaseline = JSON.parse(JSON.stringify(s));
   } else {
     _undoBaseline = null;
@@ -4186,6 +4203,10 @@ $('duplicateCardBtn').addEventListener('click', e => {
   if (railSettings) railSettings.addEventListener('click', () => {
     if (window.openSettingsPage) window.openSettingsPage();
   });
+  const mobileSettings = $('mobileSettingsBtn');
+  if (mobileSettings) mobileSettings.addEventListener('click', () => {
+    if (window.openSettingsPage) window.openSettingsPage();
+  });
 }
 
 // Card action dock (under the preview) — proxies to the existing single-card actions.
@@ -4210,8 +4231,12 @@ $('duplicateCardBtn').addEventListener('click', e => {
   const cloud = $('cloudAvatar');
   if (cloud) cloud.addEventListener('click', () => {
     if (window.openSettingsPage) window.openSettingsPage();
-    const navCloud = document.querySelector('.settings-nav-item[data-group="cloud"]');
-    if (navCloud) navCloud.click();
+    const sec = document.getElementById('settingsCloudSection');
+    if (sec) {
+      // Expand the Share Provider section (if collapsed) and scroll it into view.
+      if (sec.classList.contains('collapsed')) sec.querySelector('.section-title').click();
+      requestAnimationFrame(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
   });
 }
 
