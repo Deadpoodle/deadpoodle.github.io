@@ -2,3 +2,4 @@
 *.md
 itemgenerator/tests/
 itemgenerator/plans/
+bash.exe.stackdump
