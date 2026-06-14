@@ -1,0 +1,311 @@
+/* chrome.css - left rail (filter pills, collections accordion, storage, settings btn) + center strip head. Part of the split-up style.css; see index.html for load order. */
+  /* ── LEFT RAIL (desktop): filter · collections · storage · settings ── */
+  .left-rail {
+    background: linear-gradient(180deg, var(--arc-ink), var(--arc-void));
+    border-right: 1px solid var(--arc-rule);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.1rem 0.85rem 0.85rem;
+    min-height: 0;
+  }
+  .rail-section { display: flex; flex-direction: column; flex-shrink: 0; }
+  .rail-section + .rail-section { margin-top: 1.1rem; }
+  .rail-collections { flex: 1; min-height: 0; }
+
+  .rail-label {
+    font-family: var(--arc-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--arc-faint);
+    margin-bottom: 0.5rem;
+  }
+  .rail-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    gap: 0.4rem;
+  }
+  .rail-label-row .rail-label { margin-bottom: 0; }
+  .rail-label-actions { display: flex; align-items: baseline; gap: 0.6rem; }
+  .rail-newcol-btn, .rail-select-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--arc-display);
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0;
+  }
+  .rail-newcol-btn { color: var(--arc-gold); }
+  .rail-select-btn { color: var(--arc-muted); }
+  .rail-select-btn:hover, .rail-newcol-btn:hover { color: var(--arc-gold-hi); }
+  .rail-select-btn.active { color: var(--arc-gold-hi); }
+
+  /* Filter pills */
+  .rail-filter {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    background: var(--arc-ink-soft);
+    border: 1px solid var(--arc-hairline);
+    border-radius: var(--arc-r-surface);
+    padding: 3px;
+  }
+  .rail-filter .type-filter-btn {
+    padding: 0.4rem 0;
+    text-align: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--arc-muted);
+    font-family: var(--arc-display);
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .rail-filter .type-filter-btn.active {
+    background: var(--arc-ink-raised);
+    border-color: rgba(216,178,102,0.25);
+    color: var(--arc-gold-hi);
+    font-weight: 600;
+  }
+  .rail-filter .type-filter-btn.type-filter-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Collections accordion */
+  .rail-collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+    scrollbar-width: thin;
+  }
+  .rail-expand-all {
+    flex-shrink: 0;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--arc-rule-soft);
+    cursor: pointer;
+    color: var(--arc-muted);
+    font-family: var(--arc-display);
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.55rem 0.5rem;
+    margin-bottom: 2px;
+  }
+  .rail-expand-all:hover { color: var(--arc-gold-hi); }
+
+  .rail-collection { display: flex; flex-direction: column; flex-shrink: 0; }
+  .rail-collection-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.55rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--arc-r-surface);
+    cursor: pointer;
+    text-align: left;
+    color: var(--arc-gold);
+    font-family: var(--arc-display);
+    font-size: small;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .rail-collection-head:hover { background: rgba(180,130,60,0.06); }
+  /* Active collection: same gold-uppercase text as every head, set apart only by
+     the highlighted background bar + a brighter gold. */
+  .rail-collection.active-collection > .rail-collection-head {
+    background: var(--arc-ink-raised);
+    border-color: rgba(216,178,102,0.25);
+    color: var(--arc-gold-hi);
+  }
+  .rail-caret {
+    color: var(--arc-faint);
+    font-size: 0.6rem;
+    width: 0.7rem;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+  .rail-collection.expanded > .rail-collection-head .rail-caret { color: var(--arc-gold); }
+  .rail-col-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rail-col-count {
+    font-family: var(--arc-mono);
+    font-size: 0.62rem;
+    color: var(--arc-faint);
+    flex-shrink: 0;
+  }
+  .rail-collection.active-collection > .rail-collection-head .rail-col-count { color: var(--arc-gold); }
+
+  /* Nested card list: clamp ~10 rows, scroll within */
+  .rail-collection-cards {
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 440px; /* ~10 card rows, then scroll within */
+    overflow-y: auto;
+    margin: 1px 0 3px 0.35rem;
+    padding-left: 0.35rem;
+    border-left: 1px solid var(--arc-rule-soft);
+    scrollbar-width: thin;
+  }
+  .rail-collection.expanded > .rail-collection-cards { display: flex; }
+  .rail-collection-cards .history-empty {
+    display: flex;
+    padding: 0.4rem 0.5rem;
+    font-size: small;
+  }
+
+  /* Card rows inside the rail (reuses .history-item builder) */
+  .rail-collection-cards .history-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: var(--arc-r-surface);
+    cursor: pointer;
+    width: 100%;
+    min-width: 0;
+  }
+  .rail-collection-cards .history-item:hover { background: rgba(180,130,60,0.06); }
+  .rail-collection-cards .history-item.history-active {
+    background: var(--arc-ink-raised);
+    border-color: rgba(216,178,102,0.3);
+  }
+  .rail-collection-cards .history-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .rail-collection-cards .history-name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--arc-parchment); font-size: small;
+  }
+  .rail-collection-cards .history-item.history-active .history-name { color: var(--arc-gold-hi); }
+  .rail-collection-cards .history-rarity { font-size: small; }
+  .rail-collection-cards .history-thumb { flex-shrink: 0; }
+  .rail-collection-cards .history-delete {
+    flex-shrink: 0; background: none; border: none; cursor: pointer;
+    color: var(--arc-faint); font-size: 0.7rem; padding: 0 0.2rem;
+  }
+  .rail-collection-cards .history-delete:hover { color: var(--arc-danger); }
+
+  /* Selection mode inside the rail: the checkbox takes over the delete-X's spot
+     on the right, so the card name never slides left/right. */
+  .rail-collection-cards .history-check { order: 10; margin-left: auto; }
+  .rail-collection-list.selection-mode .history-check { display: inline-block; }
+  .rail-collection-list.selection-mode .history-delete { display: none; }
+  .rail-collection-list.selection-mode .history-item.selected .history-check {
+    background: var(--arc-gold);
+    border-color: var(--arc-gold);
+  }
+  .rail-collection-list.selection-mode .history-item.selected {
+    box-shadow: inset 0 0 0 1.5px var(--arc-gold);
+    background: rgba(180,130,60,0.14);
+  }
+
+  /* Storage block */
+  .rail-storage { margin-top: 0.9rem; border-top: 1px solid var(--arc-rule-soft); padding-top: 0.85rem; }
+  .rail-storage-line {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: small;
+    color: var(--arc-muted);
+    margin-bottom: 0.4rem;
+  }
+  .rail-storage-bar {
+    height: 4px;
+    background: var(--arc-hairline);
+    border-radius: var(--arc-r-pill);
+    overflow: hidden;
+  }
+  .rail-storage-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--arc-gold);
+    box-shadow: 0 0 6px var(--arc-gold);
+  }
+  .rail-storage-backend {
+    font-family: var(--arc-mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    color: var(--arc-faint);
+    margin-top: 0.35rem;
+  }
+  .rail-settings-btn {
+    margin-top: 0.85rem;
+    width: 100%;
+    padding: 0.5rem;
+    background: var(--arc-ink-soft);
+    border: 1px solid var(--arc-hairline);
+    border-radius: var(--arc-r-surface);
+    color: var(--arc-muted);
+    font-family: var(--arc-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .rail-settings-btn:hover { color: var(--arc-gold-hi); border-color: rgba(216,178,102,0.3); }
+
+  /* ── CENTER STRIP HEAD (＋ New Card · active card name) ── */
+  .card-strip-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-shrink: 0;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--arc-rule);
+    background: var(--arc-ink);
+  }
+  .card-strip-new {
+    flex-shrink: 0;
+    height: 30px;
+    padding: 0 0.75rem;
+    border: none;
+    border-radius: var(--arc-r-surface);
+    background: linear-gradient(180deg, var(--arc-gold), var(--arc-gold-mid));
+    color: var(--arc-ink);
+    font-family: var(--arc-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 var(--arc-gold-hi);
+    white-space: nowrap;
+  }
+  .card-strip-dup {
+    flex-shrink: 0;
+    height: 30px;
+    width: 32px;
+    border: 1px solid var(--arc-hairline);
+    border-radius: var(--arc-r-surface);
+    background: var(--arc-ink-soft);
+    color: var(--arc-muted);
+    cursor: pointer;
+  }
+  .card-strip-dup:hover { color: var(--arc-gold-hi); border-color: rgba(216,178,102,0.3); }
+  .card-strip-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--arc-display);
+    font-size: medium;
+    letter-spacing: 0.06em;
+    color: var(--arc-gold-hi);
+  }
+

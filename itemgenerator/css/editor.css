@@ -1,0 +1,386 @@
+/* editor.css - controls, tabs, edit-form fields, upload zones, image picker, property chips, colour rows, rarity preview, buttons. Part of the split-up style.css; see index.html for load order. */
+  /* ── LEFT PANEL ── */
+  .controls {
+    background: var(--panel-bg);
+    border-right: 1px solid rgba(180,130,60,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(180,130,60,0.2);
+    background: rgba(0,0,0,0.3);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 0.7rem 0.3rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(210,160,70,0.75);
+    font-family: 'Cinzel', serif;
+    font-size: medium;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--gold-light); }
+  .tab-btn-icon { flex: none; padding: 0.7rem 0.9rem; font-size: medium; }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: rgba(180,130,60,0.06);
+  }
+  .tab-panel {
+    display: none;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem 1.6rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .tab-panel.active { display: flex; }
+
+  /* ── DETAILS TAB ACTION ROW (Save / Export PNG / Clear) ── */
+  .details-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .details-action-row button {
+    font-size: small;
+    white-space: nowrap;
+  }
+  #historySaveBtn {
+    border: 1px solid rgba(180,130,60,0.4);
+    border-radius: 4px;
+    padding: 0.45rem 1.2rem;
+  }
+  #exportPngInline { padding: 0.45rem 0.8rem; }
+  #clearCardBtn {
+    padding: 0.35rem 0.45rem;
+    border-color: rgba(139,26,26,0.45);
+    color: rgba(200,90,90,0.85);
+  }
+
+  /* Mobile-only Settings entry under the Undo button (left rail is desktop-only) */
+  .mobile-settings-btn { display: none; }
+
+  /* (scrollbars unified globally near the top of this file) */
+
+  /* ── UPLOAD HINT (card image circle, no image loaded) ── */
+  .img-upload-hint {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: rgba(255,255,255,0);
+    opacity: 0;
+    transition: opacity 0.18s;
+    cursor: pointer;
+    z-index: 4;
+    text-align: center;
+  }
+  .img-upload-hint .hint-icon { font-size: 1.1rem; line-height: 1; }
+  .img-upload-hint .hint-text {
+    font-family: 'Cinzel', serif;
+    font-size: small;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+  .card-image-container:not(.has-img):hover .img-upload-hint {
+    opacity: 1;
+    background: rgba(0,0,0,0.52);
+    color: rgba(255,255,255,0.92);
+  }
+  .card-image-container.has-img .img-upload-hint { pointer-events: none; }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: medium;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.8;
+    margin-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── FIELD NOTE ASTERISK ── */
+  .field-note {
+    color: var(--gold);
+    font-size: small;
+    font-weight: 700;
+    margin-left: 3px;
+    opacity: 0.85;
+  }
+  .field-note-legend {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: small;
+    color: rgba(210,160,70,0.85);
+    margin-top: 0.15rem;
+  }
+  body.light .field-note-legend { color: #6b4010; }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(180,130,60,0.4), transparent);
+  }
+
+  /* ── COLLAPSIBLE EDIT SECTIONS ── */
+  .collapsible > .section-title { cursor: pointer; user-select: none; }
+  .collapsible > .section-title::after { order: 1; }   /* rule line sits between title and toggle */
+  .section-num {
+    order: 0;
+    flex-shrink: 0;
+    font-family: var(--arc-mono);
+    font-size: 0.68rem;
+    color: var(--arc-faint);
+    letter-spacing: 0;
+    opacity: 0.9;
+  }
+  .section-toggle {
+    order: 2;
+    flex-shrink: 0;
+    margin-left: 0.6rem;
+    font-size: 0.7rem;
+    color: var(--arc-faint);
+  }
+  .collapsible.collapsed > :not(.section-title) { display: none !important; }
+  .collapsible > .section-title:hover { opacity: 1; }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  label {
+    font-size: medium;
+    color: var(--label-color);
+    letter-spacing: 0.04em;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 3px;
+    color: #e8d5a3;
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: medium;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: rgba(180,130,60,0.65);
+    background: rgba(244,232,193,0.13);
+  }
+
+  /* Custom select — remove native arrow and substitute our own gold chevron */
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a96e' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    padding-right: 2.2rem;
+  }
+  select option { background: #1a0f07; color: #e8d5a3; }
+
+  textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+  /* Image upload zones */
+  .upload-zone {
+    border: 1.5px dashed rgba(180,130,60,0.35);
+    border-radius: 4px;
+    padding: 0.8rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover { border-color: rgba(180,130,60,0.65); background: rgba(244,232,193,0.05); }
+  .upload-zone.has-image { border-style: solid; border-color: rgba(180,130,60,0.5); }
+
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-preview {
+    width: 100%;
+    max-height: 80px;
+    object-fit: cover;
+    border-radius: 3px;
+    display: none;
+  }
+
+  .upload-zone.has-image .upload-preview { display: block; }
+  .upload-zone.has-image .upload-placeholder { display: none; }
+
+  .upload-placeholder {
+    color: #a07840;
+    font-size: small;
+    line-height: 1.5;
+  }
+
+  .upload-placeholder span { display: block; font-size: 1.4rem; margin-bottom: 0.2rem; }
+
+  /* ── Image picker list (Appearance tab) ── */
+  .img-picker-list { display: flex; flex-direction: column; gap: 0.55rem; }
+  .img-picker-row  { display: flex; align-items: center; gap: 0.65rem; }
+  .img-picker-labels { flex: 1; min-width: 0; }
+  .img-picker-labels label { display: block; margin-bottom: 0.1rem; }
+  .img-picker-labels small { color: rgba(180,130,60,0.55); font-size: small; line-height: 1.3; }
+  .upload-zone-sm {
+    width: 58px; height: 58px;
+    padding: 0.3rem;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .upload-zone-sm .upload-preview { width: 100%; height: 100%; max-height: none; object-fit: cover; }
+  .upload-zone-sm .upload-placeholder { display: flex; align-items: center; justify-content: center; }
+  .upload-zone-sm .upload-placeholder span { font-size: 1.3rem; margin: 0; }
+  .img-picker-clear { font-size: small; padding: 0.25rem 0.55rem; white-space: nowrap; flex-shrink: 0; }
+
+  body.light .img-picker-labels small { color: rgba(80,50,15,0.5); }
+
+  /* ── PROPERTY CHIP ROWS ── */
+  .prop-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .prop-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 0.6rem;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  /* Editable label chip — visibly interactive so it doesn't read as ornament */
+  input.prop-label {
+    font-family: 'Cinzel', serif;
+    font-size: small;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    background: rgba(180,130,60,0.08);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    padding: 0.4rem 0.5rem;
+    cursor: text;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input.prop-label:hover { border-color: rgba(180,130,60,0.55); background: rgba(180,130,60,0.12); }
+  input.prop-label:focus { outline: none; border-color: var(--gold-light); background: rgba(180,130,60,0.16); }
+  .prop-opt { font-size: small; text-align: center; }
+
+  /* First-use hint above the property rows */
+  .prop-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    background: rgba(180,130,60,0.08);
+    border: 1px solid var(--arc-hairline);
+    border-radius: var(--arc-r-control);
+  }
+  .prop-hint-text {
+    flex: 1;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: small;
+    line-height: 1.4;
+    color: var(--arc-muted);
+  }
+  .prop-hint-dismiss {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--arc-faint);
+    cursor: pointer;
+    font-size: small;
+    line-height: 1;
+    padding: 0.1rem 0.2rem;
+  }
+  .prop-hint-dismiss:hover { color: var(--gold-light); }
+
+  /* Color pickers */
+  .color-row { display: flex; gap: 0.5rem; align-items: center; }
+  .color-row input[type="color"] {
+    width: 36px; height: 36px; border-radius: 3px;
+    border: 1px solid var(--input-border);
+    padding: 2px; cursor: pointer; background: transparent;
+    flex-shrink: 0;
+  }
+  .color-row input[type="text"] { flex: 1; }
+
+  /* Rarity badge preview */
+  .rarity-preview {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 2px;
+    font-size: small;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.08em;
+    border: 1px solid currentColor;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: medium;
+    letter-spacing: 0.12em;
+    padding: 0.6rem 1.2rem;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #6b3a1f, #8b4a2a);
+    border-color: var(--gold);
+    color: var(--parchment);
+  }
+
+  .btn-primary:hover { background: linear-gradient(135deg, #8b4a2a, #a05a35); box-shadow: 0 0 20px rgba(184,134,11,0.3); }
+
+  .btn-secondary {
+    background: transparent;
+    border-color: rgba(180,130,60,0.4);
+    color: var(--label-color);
+  }
+
+  .btn-secondary:hover { border-color: rgba(180,130,60,0.7); color: var(--gold-light); }
+
+  .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
