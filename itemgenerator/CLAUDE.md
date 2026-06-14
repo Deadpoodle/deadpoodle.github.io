@@ -16,8 +16,21 @@ Live at artifexarcanum.ie; this is the `itemgenerator/` subdir of `Deadpoodle/de
   `body.light` block — loaded **last**, it overrides earlier rules). Desktop is `min-width: 861px`;
   mobile is `max-width: 860px`. The split was pure cut-and-paste (no rule edits) — keep it that way:
   put each rule in the file matching its area, and don't reorder the `<link>`s.
-- `script.js` — all logic (state, save/load, export, rail, dock, settings).
-- `utils.js` — share helpers. `indexeddb.js` — `window.idbBlobs` blob adapter. `oauth.html` — cloud OAuth.
+- `scripts/` — all logic, split from the old monolithic `script.js` into one file per area, loaded
+  by `index.html` as **classic `<script defer>` in this exact order** (execution order + per-script
+  function hoisting depend on it): `utils.js` (share helpers) → `indexeddb.js` (`window.idbBlobs`
+  blob adapter) → `helpers.js` (`$`, modal/toast/confirm helpers) → `card-sync.js` (`syncCard` live
+  render, crop, inputs, colour pickers) → `images.js` (compression, uploads, scale/flip) →
+  `export.js` (`buildCardNode`, `renderStateToCanvas`, PNG/print, JSON import/export) →
+  `share-sheet.js` (share UI + Export & Share sheet) → `app.js` (theme, autosave, tabs, settings
+  page, collapsible sections, collections) → `storage.js` (history + localStorage/IndexedDB,
+  `initStorage`, `window.__storageReady`) → `cloud.js` (Dropbox/Drive OAuth + share/fetch) →
+  `history-ui.js` (`applyState`, save chip, collection UI, selection, left-rail accordion) →
+  `history-nav.js` (search, nav, swipe, settings toggles) → `boot.js` (initial render + the
+  `window.__storageReady.then(...)` bootstrap — **must load last**). The split was pure cut-and-paste
+  (no code edits): keep each function in its area file, put bootstrap/init in `boot.js`, and **never
+  reorder the `<script>`s** — a forward reference across files throws `ReferenceError` on load.
+- `oauth.html` — cloud OAuth.
 - `IMPLEMENTATION_PLAN.md` — phased history of the UX overhaul. `plans/design_handoff_ux_revision/`
   — the design source of truth (README + `.jsx` mockups + screenshots).
 
@@ -90,6 +103,6 @@ is unreliable: virtual-time hangs, screenshots usually fail, and even `--dump-do
 often times out because the page defers `marked` + `html2canvas` from jsdelivr and fonts from Google
 — a fresh headless profile has no cache and the `load` event waits on those CDNs. (A lighter page
 like `privacy.html` dumps fine, which is the tell that a timeout is network/CDN, not a code hang.)
-Trust `node --check script.js` + static review for logic; do visual/behaviour checks in a real
+Trust `node --check scripts/*.js` + static review for logic; do visual/behaviour checks in a real
 browser. `python -m http.server` is single-threaded — restart it if it gets gummed up by stuck
 headless connections.
