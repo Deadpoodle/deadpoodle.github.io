@@ -132,7 +132,7 @@
   .field-note-legend {
     font-family: 'Crimson Pro', serif;
     font-style: italic;
-    font-size: small;
+    font-size: medium;
     color: rgba(210,160,70,0.85);
     margin-top: 0.15rem;
   }

@@ -66,6 +66,10 @@
         <input type="checkbox" id="singlePrintOptBleed" checked>
         <span>Print bleed</span>
       </label>
+      <label class="print-opt-row">
+        <input type="checkbox" id="singlePrintOptDoubleSided">
+        <span>Double-sided</span>
+      </label>
     </div>
     <div class="confirm-modal-btns">
       <button class="btn btn-primary" id="singlePrintConfirm">🖨 Print</button>
@@ -297,9 +301,9 @@
   <div class="export-sheet-quality">
     <span class="export-sheet-qlabel">Quality</span>
     <div class="export-qstepper" id="exportQStepper">
-      <button type="button" data-q="draft">Draft</button>
-      <button type="button" data-q="standard">Standard</button>
-      <button type="button" data-q="high">High</button>
+      <button type="button" data-q="draft">Draft (1.5×)</button>
+      <button type="button" data-q="standard">Standard (2×)</button>
+      <button type="button" data-q="high">High (3×)</button>
     </div>
   </div>
   <div class="print-opts-section" id="exportPrintOpts">
@@ -738,7 +742,7 @@ Markdown is supported:
 
       <div>
         <div class="section-title">Export Quality</div>
-        <div class="png-quality-row" style="flex-wrap:nowrap;">
+        <div class="png-quality-row">
           <label class="png-quality-option"><input type="radio" name="shareQuality" value="draft"> Draft (1.5×)</label>
           <label class="png-quality-option"><input type="radio" name="shareQuality" value="standard"> Standard (2×)</label>
           <label class="png-quality-option"><input type="radio" name="shareQuality" value="high"> High (3×)</label>

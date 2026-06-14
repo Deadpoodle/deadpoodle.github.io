@@ -114,7 +114,7 @@ $('singlePrintConfirm').addEventListener('click', async () => {
   const opts = {
     squareCorners: $('singlePrintOptSquareCorners').checked,
     bleed:         $('singlePrintOptBleed').checked,
-    doubleSided:   false,
+    doubleSided:   $('singlePrintOptDoubleSided').checked,
     cardBackUrl:   printOptions.cardBackUrl,
   };
   showProgress('Preparing print…');

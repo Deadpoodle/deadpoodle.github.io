@@ -79,7 +79,7 @@
   }
   .collections-manage-name {
     font-family: 'Cinzel', serif;
-    font-size: small;
+    font-size: medium;
     color: #e8d898;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -87,7 +87,7 @@
   }
   .collections-manage-count {
     font-family: 'Crimson Pro', serif;
-    font-size: small;
+    font-size: medium;
     color: var(--text-muted);
     font-style: italic;
   }
@@ -301,7 +301,7 @@
 
   .export-sheet-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.9rem; }
   .export-sheet-title { font-family: var(--arc-display); font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--arc-gold-hi); }
-  .export-sheet-count { font-family: var(--arc-serif); font-style: italic; font-size: small; color: var(--arc-muted); }
+  .export-sheet-count { font-family: var(--arc-serif); font-style: italic; font-size: medium; color: var(--arc-muted); }
 
   /* Card checklist */
   /* Only the card list scrolls; every other section keeps its natural height. */
@@ -353,10 +353,10 @@
   .select-group-body.collapsed { display: none; }
   .select-group-toggle { accent-color: var(--arc-gold); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
   .select-group-name {
-    font-family: var(--arc-display); font-size: 0.74rem; letter-spacing: 0.04em;
+    font-family: var(--arc-display); font-size: medium; letter-spacing: 0.04em;
     color: var(--arc-gold-hi); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .select-group-count { font-family: var(--arc-serif); font-size: small; color: var(--arc-faint); flex-shrink: 0; }
+  .select-group-count { font-family: var(--arc-serif); font-size: medium; color: var(--arc-faint); flex-shrink: 0; }
 
   .print-select-item {
     display: flex; align-items: center; gap: 0.6rem;
@@ -374,7 +374,7 @@
   .print-select-item .history-rarity { font-size: small; }
 
   .export-sheet-quality { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
-  .export-sheet-qlabel { font-family: var(--arc-display); font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--arc-muted); }
+  .export-sheet-qlabel { font-family: var(--arc-display); font-size: small; letter-spacing: 0.16em; text-transform: uppercase; color: var(--arc-muted); }
   .export-qstepper { display: flex; flex: 1; border: 1px solid var(--arc-hairline); border-radius: var(--arc-r-control); overflow: hidden; }
   .export-qstepper button {
     flex: 1; padding: 0.4rem 0; border: none; border-right: 1px solid var(--arc-hairline);
@@ -396,7 +396,7 @@
   .export-row:hover { border-color: var(--arc-rule); background: var(--arc-ink); }
   .export-row-icon { width: 1.2rem; flex-shrink: 0; text-align: center; font-size: 1rem; }
   .export-row-label { flex: 1; }
-  .export-row-sub { font-size: small; font-style: italic; color: var(--arc-faint); }
+  .export-row-sub { font-size: medium; font-style: italic; color: var(--arc-faint); }
   .export-row-primary {
     background: linear-gradient(180deg, var(--arc-gold), var(--arc-gold-mid));
     color: var(--arc-ink); border-color: var(--arc-gold-deep); font-weight: 600;
@@ -405,11 +405,11 @@
   .export-row-primary:hover { filter: brightness(1.06); border-color: var(--arc-gold-deep); background: linear-gradient(180deg, var(--arc-gold), var(--arc-gold-mid)); }
   .export-row-disabled { opacity: 0.55; }
 
-  .export-sheet-feedback { min-height: 1.1rem; margin-top: 0.6rem; text-align: center; font-family: var(--arc-serif); font-size: small; color: var(--arc-muted); }
+  .export-sheet-feedback { min-height: 1.1rem; margin-top: 0.6rem; text-align: center; font-family: var(--arc-serif); font-size: medium; color: var(--arc-muted); }
   .export-sheet-cancel {
     width: 100%; margin-top: 0.7rem; padding: 0.55rem;
     background: transparent; border: 1px solid var(--arc-hairline); border-radius: var(--arc-r-control);
-    color: var(--arc-muted); font-family: var(--arc-sans); font-size: small; cursor: pointer;
+    color: var(--arc-muted); font-family: var(--arc-sans); font-size: medium; cursor: pointer;
   }
   .export-sheet-cancel:hover { color: var(--arc-cream); border-color: var(--arc-rule); }
 

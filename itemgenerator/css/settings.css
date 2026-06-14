@@ -159,7 +159,7 @@
     flex-wrap: wrap;
   }
   .confirm-modal-btns .btn {
-    font-size: small;
+    font-size: medium;
     padding: 0.4rem 0.85rem;
   }
   .confirm-modal-btns .btn-cancel {
@@ -168,7 +168,7 @@
     color: rgba(210,160,70,0.7);
     border-radius: 4px;
     font-family: 'Cinzel', serif;
-    font-size: small;
+    font-size: medium;
     font-weight: 600;
     letter-spacing: 0.08em;
     padding: 0.4rem 0.85rem;
