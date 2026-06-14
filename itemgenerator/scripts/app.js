@@ -348,10 +348,11 @@ initCollapsibleSections($('tab-edit'), {
   defaultCollapsed: label =>
     ['Images', 'Colours', 'Typography', 'Card Elements', 'Reset'].some(name => label.startsWith(name)),
 });
-// Settings page: one scrolling page; first section open, the rest collapsed.
+// Settings page: one scrolling page. Desktop opens every section by default;
+// mobile keeps the first open and the rest collapsed (matches the 860px breakpoint).
 initCollapsibleSections($('settingsBody'), {
   numbered: false,
-  defaultCollapsed: (label, i) => i > 0,
+  defaultCollapsed: (label, i) => i > 0 && window.matchMedia('(max-width: 860px)').matches,
 });
 
 // ── PROPERTIES FIRST-USE HINT ──
