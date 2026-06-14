@@ -20,6 +20,9 @@ if (_initialHistory.length > 0) {
   syncCard();
 }
 
+// Once on IndexedDB, make 200 the default card-history cap (one-time, only raises).
+window._applyMigratedMaxDefault?.();
+
 // Announce the one-time IndexedDB migration, if it just happened.
 if (_pendingMigrationToast != null) {
   const n = _pendingMigrationToast;

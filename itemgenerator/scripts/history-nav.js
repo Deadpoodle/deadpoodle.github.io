@@ -362,6 +362,23 @@ if ($('persistScaleToggle').checked) {
     }
   };
 
+  // One-time: once the user is on IndexedDB (migrated), make 200 the default cap.
+  // Pre-IndexedDB localStorage builds capped history low, so existing users carry an
+  // old stored value; IndexedDB has the headroom for the full 200. Runs once (flagged
+  // so later deliberate changes stick), skips unlimited/unlocked users, and only ever
+  // RAISES the cap — never trims. Called from boot.js after storage is ready.
+  window._applyMigratedMaxDefault = function() {
+    if (localStorage.getItem('dnd_storage_backend') !== 'indexeddb') return;  // not migrated
+    if (localStorage.getItem('dnd_max_history_default_bumped') === 'true') return;
+    localStorage.setItem('dnd_max_history_default_bumped', 'true');
+    if (unlockToggle.checked) return;                 // leave unlimited users alone
+    if (getMaxHistory() >= LOCKED_MAX) return;        // already at/above the new default
+    localStorage.setItem('dnd_max_history', LOCKED_MAX);
+    localStorage.setItem('dnd_max_history_pre_unlock', LOCKED_MAX);
+    slider.value = LOCKED_MAX;
+    label.textContent = LOCKED_MAX;
+  };
+
   // Init — read stored max directly; do NOT call applyMax here or it would
   // overwrite dnd_max_history with the pre-unlock snapshot if the two ever diverged.
   const wasUnlocked = localStorage.getItem('dnd_max_history_unlocked') === 'true';
