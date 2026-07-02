@@ -1,12 +1,5 @@
 // images.js - image compression, upload zones (bindUpload), scale slider, flip — part of split script.js; see index.html for load order
 // ── IMAGE COMPRESSION ──
-// TODO: Consider migrating image storage from localStorage to IndexedDB in future.
-// localStorage is limited to ~5MB in Firefox, and a single base64-encoded image can
-// easily be 1–2MB, meaning only 2–3 image cards can be stored before hitting the limit.
-// IndexedDB has no practical size limit and stores binary data natively (no base64 overhead),
-// making it far better suited for image-heavy use. Card metadata could remain in localStorage
-// while images are keyed by card ID in an IndexedDB object store. JSON export/import would
-// need updating to embed/extract images separately from the state object.
 // Mild: 800px / 0.85  — noticeable reduction, best quality
 // Standard: 500px / 0.75 — balanced (default)
 // Aggressive: 300px / 0.65 — maximum storage savings
